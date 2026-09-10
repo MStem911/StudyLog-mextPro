@@ -71,13 +71,15 @@ verantwortet — sie haben keine weitere Funktion.
 2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
    Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
-     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. (Schritt 2 „Anlegen
-     Sensorik" hat **keine** Start/Ende-Felder — dort zählt nur die Checkliste.)
+     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. **Schritt 1, 2 und 3 haben
+     keine Start/Ende-Felder** (Schritt 1: Person anlegen; Schritt 2: nur die Checkliste;
+     Schritt 3 „Fragebogen 1": keine Zeiterfassung).
    - **Hinweis / Anmerkung**: Freitext zu diesem Schritt (z. B. Besonderheiten, Abweichungen).
      Sobald etwas eingetragen ist, wird die **Uhrzeit der Notiz** festgehalten und neben dem
      Feld angezeigt („· notiert 14:51"). Gilt in **jedem** Schritt.
-   - **✓ Weiter zum nächsten Schritt**: speichert und öffnet den folgenden Schritt (am
-     letzten Schritt steht hier stattdessen der Export-Button).
+   - **✓ Weiter zum nächsten Schritt**: sitzt in **jedem** Schritt **ganz unten** (nach allen
+     Abschnitten), speichert und öffnet den folgenden Schritt. Am letzten Schritt steht dort
+     stattdessen der Export-Button.
    Eingaben werden sofort gespeichert.
 3. Die **Farbe** jedes Schritts zeigt den Stand auf einen Blick:
    - **grau** – noch nichts erfasst,

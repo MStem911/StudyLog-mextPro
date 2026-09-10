@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.21.2';
+const APP_VERSION = '2.22.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1912,38 +1912,19 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
   if (document.getElementById('screen-ablauf')?.classList.contains('active')) renderAblauf();
 });
 
-// Eingabefelder (Start/Ende/Anmerkung + „Weiter"/„Schritt leeren") für einen Schritt —
-// identisch im Inline-Panel (schmal) wie in der Detailspalte (breit); IDs bleiben eindeutig,
-// da immer nur eine der beiden Stellen gerendert wird. `isLast` = letzter Schritt (kein „Weiter").
-// Schritt 1 (Aufklärung + Einverständnis) hat KEINE Zeitfelder — hier wird nur die Person
-// angelegt (siehe flowStepExtrasHTML) und danach zur Sensorik gewechselt.
-function flowStepFieldsHTML(d, isLast, stepId) {
-  if (stepId === 'fs_01') {
-    // „Weiter zur Sensorik" erst, wenn eine Person angelegt/gewählt ist.
-    return ablaufProband()
-      ? `<div class="btn-col" style="margin-top:4px">
-           <button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zur Sensorik</button>
-         </div>`
-      : '';
-  }
-  const nextBtn  = isLast ? '' : '<button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zum nächsten Schritt</button>';
+// Schritte ohne Start/Ende-Erfassung: 1 (nur Person anlegen), 2 (nur Sensorik-Checkliste),
+// 3 (Fragebogen 1). Hier gibt es nur Anmerkung + schrittabhängige Abschnitte.
+const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_03']);
+
+// Eingabefelder eines Schritts (Start/Ende soweit vorhanden + Anmerkung + „…entfernen"/
+// „Schritt leeren"). **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
+// stepPanelBodyHTML() nach den Zusatzabschnitten angehängt. fs_01 hat gar keine Felder.
+function flowStepFieldsHTML(d, stepId) {
+  if (stepId === 'fs_01') return '';
+  const noTime   = NO_TIME_STEPS.has(stepId);
   const noteTime = (d.noteISO && d.note && d.note.trim())
     ? ` <span class="ablauf-note-time">· notiert ${esc(localTimeStr(d.noteISO))}</span>` : '';
-  const noteBlock = `
-    <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung${noteTime}</label>
-    <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>`;
-
-  // Schritt 2 „Anlegen Sensorik": keine Start/Ende-Felder, kein „Weiter" hier — nur die
-  // Anmerkung (mit Zeitstempel). Reihenfolge (Checkliste oben, „Weiter" ganz unten) baut
-  // stepPanelBodyHTML() zusammen.
-  if (stepId === 'fs_02') {
-    return `${noteBlock}
-    <div class="btn-col" style="margin-top:10px">
-      <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Anmerkung entfernen</button>
-    </div>`;
-  }
-
-  return `
+  const timeFields = noTime ? '' : `
     <div class="edit-row-2">
       <div>
         <label class="field-label" for="ablauf-edit-start">Start</label>
@@ -1959,26 +1940,36 @@ function flowStepFieldsHTML(d, isLast, stepId) {
           <button type="button" class="btn btn-ghost btn-time-now" data-target="ablauf-edit-end">🕐 Jetzt</button>
         </div>
       </div>
-    </div>
-    ${noteBlock}
-    <div class="btn-col" style="margin-top:12px">
-      ${nextBtn}
-      <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Schritt leeren</button>
+    </div>`;
+  const clearLabel = stepId === 'fs_02' ? 'Anmerkung entfernen (Checkliste bleibt)'
+                   : noTime             ? 'Anmerkung entfernen'
+                   : 'Schritt leeren';
+  return `${timeFields}
+    <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung${noteTime}</label>
+    <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>
+    <div class="btn-col" style="margin-top:10px">
+      <button class="btn btn-ghost full-width" id="ablauf-edit-clear">${clearLabel}</button>
     </div>`;
 }
 
-// Kompletter Inhalt eines geöffneten Schritts (Felder + schrittabhängige Zusatzabschnitte).
-// Sonderfall fs_02: Sensorik-Checkliste ganz oben, „✓ Weiter zum nächsten Schritt" ganz unten.
+// Kompletter Inhalt eines geöffneten Schritts. Reihenfolge überall gleich:
+//   [Sensorik-Checkliste nur fs_02] → Felder → Zusatzabschnitte → „✓ Weiter" ganz unten.
 function stepPanelBodyHTML(d, s) {
-  if (s.id === 'fs_02') {
-    return sensorikSectionHTML()
-      + flowStepFieldsHTML(d, false, 'fs_02')
-      + ereignisSectionHTML('fs_02')
-      + `<div class="btn-col" style="margin-top:14px">
-           <button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zum nächsten Schritt</button>
-         </div>`;
+  const isLast = s.id === LAST_FLOW_STEP_ID;
+  const weiterLabel = s.id === 'fs_01' ? '✓ Weiter zur Sensorik' : '✓ Weiter zum nächsten Schritt';
+  const weiter = isLast ? '' : `<div class="btn-col" style="margin-top:14px">
+    <button class="btn btn-primary full-width" id="ablauf-edit-next">${weiterLabel}</button>
+  </div>`;
+
+  if (s.id === 'fs_01') {
+    return probandAnlegenSectionHTML() + ereignisSectionHTML('fs_01') + (ablaufProband() ? weiter : '');
   }
-  return flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID, s.id) + flowStepExtrasHTML(s.id);
+  let body = '';
+  if (s.id === 'fs_02') body += sensorikSectionHTML();
+  body += flowStepFieldsHTML(d, s.id);
+  body += flowStepExtrasHTML(s.id);
+  body += weiter;
+  return body;
 }
 
 function flowStepState(d) {
@@ -2163,11 +2154,10 @@ function renderAblauf() {
   }
 }
 
-// Zusatzinhalte, die nur an bestimmten Schritten im Detailbereich erscheinen.
+// Zusatzinhalte zwischen den Feldern und dem „Weiter"-Button. (fs_01 „Person anlegen" und
+// fs_02 „Sensorik-Checkliste" werden direkt in stepPanelBodyHTML() platziert.)
 function flowStepExtrasHTML(stepId) {
   let html = '';
-  if (stepId === 'fs_01')          html += probandAnlegenSectionHTML();
-  if (stepId === 'fs_02')          html += sensorikSectionHTML();
   if (SZENARIO_STEP_META[stepId])  html += szenarioSectionHTML(stepId);
   if (BEW_STEP_META[stepId])       html += bewSectionHTML(stepId);
   html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt
