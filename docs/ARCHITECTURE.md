@@ -74,7 +74,7 @@ Schema-Versionierung** von `localStorage`-Daten; neue Felder müssen daher stets
 
 | Key | State-Variable | Datensatz-Form (wichtigste Felder) |
 |---|---|---|
-| `sl_probanden` | `probanden` | `{ id, pseudo, sensor, note, handedness, sensorik, ablauf, sensorAngelegtISO, sensorAbgelegtISO, createdAt }` — `sensor`: Sensoriknummer 1–12 **oder `''`**; seit v2.10.1 **nicht mehr im Anlege-Formular**, im Bearbeiten-Dialog optional (nur bei Eingabe auf 1–12 + Eindeutigkeit geprüft). `handedness`: `'Rechts'` \| `'Links'` — Pflichtfeld beim Anlegen/Bearbeiten (Formular erzwingt eine Auswahl). `sensorik`: Objekt `{ [itemId]: isoString }` — Zeitpunkt „angelegt" je Sensorik-Item (Tab „Sensorik"), fehlender Schlüssel = noch nicht angelegt. Item-IDs/-Labels fest in `SENSORIK_ITEMS` (Shimmer ECG / Shimmer GSR+ / Polar Brustgurt / Garmin). `ablauf` (seit v2.13.0): Objekt `{ [stepId]: { startISO, endISO, note } }` — Start-/Endzeit + Anmerkung je Studienschritt (Bereich „Ablauf"), fehlender Schlüssel = Schritt noch offen; leerer Schritt (alle drei Felder leer) wird nicht persistiert. Step-IDs/-Labels/-Reihenfolge fest in `FLOW_STEPS` (`fs_ankommen`, `fs_01`…`fs_18`). Alt-Daten ohne `handedness`/`sensorik`/`ablauf` werden beim Laden als leer normalisiert |
+| `sl_probanden` | `probanden` | `{ id, pseudo, sensor, note, handedness, sensorik, ablauf, sensorAngelegtISO, sensorAbgelegtISO, createdAt }` — `sensor`: Sensoriknummer 1–12 **oder `''`**; seit v2.10.1 **nicht mehr im Anlege-Formular**, im Bearbeiten-Dialog optional (nur bei Eingabe auf 1–12 + Eindeutigkeit geprüft). `handedness`: `'Rechts'` \| `'Links'` — Pflichtfeld beim Anlegen/Bearbeiten (Formular erzwingt eine Auswahl). `sensorik`: Objekt `{ [itemId]: isoString }` — Zeitpunkt „angelegt" je Sensorik-Item (Tab „Sensorik"), fehlender Schlüssel = noch nicht angelegt. Item-IDs/-Labels fest in `SENSORIK_ITEMS` (Shimmer ECG / Shimmer GSR+ / Polar Brustgurt / Garmin). `ablauf` (seit v2.13.0): Objekt `{ [stepId]: { startISO, endISO, note } }` — Start-/Endzeit + Anmerkung je Studienschritt (Bereich „Ablauf"), fehlender Schlüssel = Schritt noch offen; leerer Schritt (alle drei Felder leer) wird nicht persistiert. Step-IDs/-Labels/-Reihenfolge fest in `FLOW_STEPS` (`fs_ankommen`, `fs_01`…`fs_18`). `bewertungen` (seit v2.15.0): Objekt `{ [stepId]: [ { id, label, scores, notes, savedAt } ] }` — Trainerbewertungsbögen je Ablauf-Schritt; angelegt nur an `fs_10` (Hologate-Szenarien, mehrere) und `fs_14` (Rollercoaster), Konfiguration in `BEW_STEP_META`, Bearbeitung im `#bewertung-overlay`. Seit v2.16.0 **reduziert** auf den Block „Vergleich zur Selbsteinschätzung": nur noch Items `BEW_OV_ITEMS` = `z17..z20` (4 Fragen aus `BEW_OV_QUESTIONS`, Text `BEW_OV_INTRO`); `scores` enthält entsprechend nur diese 4 Schlüssel. `ereignisse` (seit v2.17.0): Array `[ { id, stepId, tag, note, type:'timestamp'|'duration', timeISO?|startISO?/endISO?, createdAt } ]` — Ereignisse/Probleme je Ablauf-Schritt, Kategorien aus `eventTags`, Bearbeitung im `#ereignis-overlay`. **Nicht** zu verwechseln mit dem Alt-Key `sl_bewertungen`/`sl_events` (globale Alt-Daten — bleiben unangetastet). Alt-Daten ohne `handedness`/`sensorik`/`ablauf`/`bewertungen`/`ereignisse` werden beim Laden normalisiert |
 | `sl_sessions` | `sessions` | `{ id, probandId, pseudo, sensor, scenarioId, scenarioName, scenarioAbbr, date, startISO, endISO, duration_s, pauses[], pauseCount, pauseDuration_s, deviations[], notes, deviceLabel, createdAt, editedAt? }` |
 | `sl_bewertungen` | `bewertungen` | `{ id, sessionId, pseudo, sensor, scenarioId, scenarioName, scenarioAbbr, date, scores: { a1..z20 }, notes, savedAt }` |
 | `sl_scenarios` | `scenarios` | `{ id, name, abbr, icon }` — Default (nur bei leerem `sl_scenarios`): Tutorial / Hologate / Rollercoaster. Über den Szenario-Manager im Szenario-Screen editierbar |
@@ -159,16 +159,16 @@ Teil des CSV-/JSON-Exports (siehe [DATENFLUSS.md](./DATENFLUSS.md)).
 | Persistence | 58–92 | `save()`, `load()` |
 | Utilities | 92–166 | `uid()`, Datum/Zeit-Formatierung (`formatTime`, `localTimeStr`, `isoToTimeInput`, `rebuildISO`), `esc()` (HTML-Escaping gegen XSS beim Rendern von Nutzereingaben), `showToast()`, `isValidPseudoFormat()`/`setPseudoFieldValidity()` (Pseudonym-Formatprüfung inkl. Live-Rotmarkierung im Formular) |
 | Confirm Dialog | 166–183 | Generischer Bestätigungsdialog (`showConfirm`), von mehreren Lösch-Aktionen wiederverwendet |
-| Navigation | 183–234 | `showScreen()` (Screen-Wechsel + Re-Render des Zielscreens), Nav-Button-Listener. Standard-Einstieg seit v2.13.0: Screen `ablauf` |
+| Navigation | 183–234 | `showScreen()` (Screen-Wechsel + Re-Render). Seit v2.14.0 nur noch `ablauf` (Standard), `probanden` und `export` genutzt; keine Nav-Leisten mehr (siehe „Responsive Layout") |
 | TEILNEHMENDE | 234–~400 | Liste rendern/filtern, Anlegen, Bearbeiten, Löschen von Personen (inkl. Pseudonym-Formatprüfung — live per `input`-Listener und beim Speichern — beim Anlegen/Bearbeiten) |
-| SENSORIK-CHECKLISTE (pro Teilnehmende:r) | vor TIMER | `buildSensorikProbandSelect()` (Personen-Dropdown; Default = zuletzt angelegte Person via `selectedSensorikProbandId`), `renderSensorik()` (Items für die gewählte Person; Empty-State ohne Personen), `toggleSensorik(id)` (setzt/löscht `p.sensorik[id]` = ISO-String, Löschen per `showConfirm`; sobald **alle** `SENSORIK_ITEMS` für die Person gesetzt sind → `showScreen('session')`), Reset-Button `btn-reset-sensorik` (`p.sensorik = {}` für die gewählte Person). Nach „Person anlegen" öffnet `sensorik-prompt-overlay` (Ja → `showScreen('sensorik')`) |
+| SENSORIK-CHECKLISTE (pro Teilnehmende:r) | vor TIMER | `buildSensorikProbandSelect()` (Personen-Dropdown; Default = zuletzt angelegte Person via `selectedSensorikProbandId`), `renderSensorik()`, `toggleSensorik(id)` (setzt/löscht `p.sensorik[id]` = ISO-String, Löschen per `showConfirm`), Reset-Button `btn-reset-sensorik`. **Hinweis v2.14.0:** dieser Screen hat aktuell keinen Aufrufpfad (Tab entfernt, noch nicht in Schritt 2 eingebettet); die früheren Auto-Sprünge (`showScreen('session')` nach vollständiger Checkliste, `sensorik-prompt-overlay` nach „Person anlegen") sind entfernt |
 | SESSION (Nav-Label „Szenario", Screen-ID `session`) | 389–~830 | Szenario-Auswahl, Teilnehmenden-Auswahl (Einzel- **und** Mehrfachauswahl je nach `settings.multiProband`, `getSelectedProbandIds()`; `buildProbandSelect()` wählt im Einzelmodus die aktive Person vor: bestehende Auswahl → `selectedSensorikProbandId` → zuletzt angelegte Person), Start/Pause/Fortsetzen/Stopp-Timer (`startTimer`, `pauseTimer`, `resumeTimer`, `stopTimer`), Tag-Zeilen, Sitzung speichern (ggf. mehrere Einträge bei Mehrfachauswahl), Szenario-/Tag-Manager (CRUD für Konfiguration) |
 | LOG | 830–1034 | Sitzungsliste mit Filtern, Detailansicht, Bearbeiten, Löschen |
 | EXPORT | 1034–1145 | Statistiken, CSV-/JSON-Export, Geräte-Label |
-| EINSTELLUNGEN | ~1195 | `renderSettingsScreen()`, Toggle "Mehrere Teilnehmende gleichzeitig" (`settings.multiProband`), "Alle Daten löschen" (`btn-clear-data`; leert `probanden` inkl. `p.sensorik` und `p.ablauf`) |
+| EINSTELLUNGEN | ~1195 | `renderSettingsScreen()`, Toggle "Mehrere Teilnehmende gleichzeitig" (`settings.multiProband`), "Alle Daten löschen" (`btn-clear-data`; leert `probanden` inkl. `p.sensorik` und `p.ablauf`). Seit v2.14.0 als `#settings-overlay` (über ⚙ oben rechts), nicht mehr als Screen |
 | BEWERTUNGSBOGEN | 1157–1410 | Post-Session-Prompt (inkl. Vorschlag zur gemeinsamen Bewertung bei mehreren Teilnehmenden), Sitzungsauswahl (Einzel- **und** Mehrfachauswahl je nach `settings.multiProband`, `getSelectedBewSessionIds()`), 19 Bewertungsskalen (1–6), Speichern/Überschreiben (ggf. mehrere Einträge bei Mehrfachauswahl) |
 | EREIGNISSE | nach BEWERTUNGSBOGEN | Formular für neue Ereignisse (optionaler Personenbezug, Kategorie-Einfachauswahl, Zeitpunkt-/Zeitraum-Umschalter je mit „Jetzt"-Button), Liste mit Filtern (Kategorie/Person), Löschen per Klick + `showConfirm()`, eigener Kategorien-Manager (`renderEventTagManager()`, analog zum Tag-Manager der Sitzungsaufzeichnung) |
-| ABLAUF (Studien-Zeitleiste) | nach EREIGNISSE | `buildAblaufProbandSelect()` (Personen-Dropdown, Default = zuletzt angelegte Person via `selectedAblaufProbandId`), `renderAblauf()` (Zeitleiste aus `FLOW_STEPS` für die gewählte Person + Fortschrittsbalken; Empty-State ohne Personen), Schritt-Auswahl per `expandedFlowStepId`, `flowStepState()`/`ablaufCounts()` (Farbcodierung offen/teilweise/komplett), `flowStepFieldsHTML()` (Start-/Ende-/Notiz-Felder, einmal gerendert — Inline oder Detailspalte), `writeFlowStep()` (schreibt `p.ablauf[stepId]` aus den Feldern **ohne** Full-Render), `syncAblaufRows()` (aktualisiert Zeilen-Farbe/-Text + Fortschritt in-place, damit das offene Panel den Kopfzeilen-Klick nicht „frisst"), `clearFlowStep()` („Schritt leeren" mit `showConfirm`). **Layout je nach Breite** (`ABLAUF_WIDE_MQ` = `matchMedia('(min-width:1024px)')`, mit `change`-Listener → Re-Render): schmal = einspaltig, Schritt klappt inline auf; breit (Tablet quer) = Master-Detail, Schrittliste links + feste Detailspalte (`#ablauf-detail`, sticky) rechts. Zeiten via `<input type=time>` oder Button „Jetzt", Persistenz analog Sensorik/Ereignisse per `rebuildISO`/`isoToTimeInput` |
+| ABLAUF (Studien-Zeitleiste) | nach EREIGNISSE | `buildAblaufProbandSelect()` (Personen-Dropdown, Default = zuletzt angelegte Person via `selectedAblaufProbandId`), `renderAblauf()` (Zeitleiste aus `FLOW_STEPS` für die gewählte Person + Fortschrittsbalken; Empty-State ohne Personen), Schritt-Auswahl per `expandedFlowStepId`, `flowStepState()`/`ablaufCounts()` (Farbcodierung offen/teilweise/komplett), `flowStepFieldsHTML()` (Start-/Ende-/Notiz-Felder, einmal gerendert — Inline oder Detailspalte), `writeFlowStep()` (schreibt `p.ablauf[stepId]` aus den Feldern **ohne** Full-Render), `syncAblaufRows()` (aktualisiert Zeilen-Farbe/-Text + Fortschritt in-place, damit das offene Panel den Kopfzeilen-Klick nicht „frisst"), `clearFlowStep()` („Schritt leeren" mit `showConfirm`). `advanceFlowStep()` („✓ Weiter" → nächster `FLOW_STEPS`-Eintrag), `flowStepExtrasHTML()` — schrittabhängige Zusatzabschnitte: Sensorik-Checkliste an `fs_02` (`sensorikSectionHTML`/`toggleAblaufSensorik`, schreibt `p.sensorik[itemId]`), Trainerbewertungsbogen an `fs_10`/`fs_14` (`bewSectionHTML` + `#bewertung-overlay`), Ereignisse an **jedem** Schritt (`ereignisSectionHTML` + `#ereignis-overlay`), Export-Button an `LAST_FLOW_STEP_ID`. **Layout** (`ABLAUF_WIDE_MQ` = `matchMedia('(min-width:768px)')`, `change`-Listener → Re-Render): schmal = einspaltig, Schritt klappt inline auf; ab 768px = Schritt-Leiste links (eigener Scroll) + Detailfeld rechts. Zeiten via `<input type=time>` oder Button „Jetzt", Persistenz per `rebuildISO`/`isoToTimeInput`. Teilnehmende anlegen/bearbeiten über `#ablauf-add-proband` (→ `showScreen('probanden')`) / `#ablauf-edit-proband` (→ `openProbandEdit`) |
 | INIT | Dateiende | Startsequenz: `load()`, initiales Rendering aller Screens (inkl. `renderSensorik()`, `renderAblauf()`), Versionsanzeige |
 
 ## Konventionen im Code
@@ -211,22 +211,24 @@ jeweiligen Event-Handler).
 
 ## Responsive Layout
 
-`style.css` implementiert zwei Navigationsmuster über CSS media queries: eine Sidebar
-(`.sidebar`, `.nav-item`) für Desktop/Tablet und eine Bottom-Navigation (`.bottom-nav`,
-`.nav-btn`) für Mobile. Beide Navigationsleisten existieren gleichzeitig im DOM und werden
-per CSS ein-/ausgeblendet; `app.js` hält deshalb für Navigation zwei parallele
-Listener-Registrierungen (`.nav-btn` und `.nav-item`), die beide `showScreen()` aufrufen.
+Seit **v2.14.0** gibt es **keine Tab-Navigation** mehr (`.sidebar`, `.sidebar-nav`,
+`.bottom-nav`, `.page-header` sind aus `index.html` entfernt; deren CSS-Regeln bleiben als
+toter Code stehen). Einzige Ansicht ist `#screen-ablauf`. Eine Topbar über alle Breiten
+zeigt links den App-Namen, rechts das ⚙-Icon (`#btn-open-settings` → `#settings-overlay`).
+`showScreen()` existiert weiter und wird nur noch für `ablauf`, `probanden` (Vollbild-Dialog
+„Teilnehmende verwalten") und `export` (Schritt 18) genutzt; die zugehörigen Sektionen
+tragen eine `.subview-header` mit `[data-back-to-ablauf]`-Schließer. Die alten
+`.nav-btn`/`.nav-item`-Listener greifen ins Leere (kein Element), sind aber harmlos.
 
-Seit v2.13.0 hat die Nav neun Einträge (Ablauf voran). Damit auf schmalen Smartphones die
-Bottom-Nav nicht rechts abgeschnitten wird (`.main-wrapper { overflow: hidden }`), ist
-`.bottom-nav` `overflow-x: auto` (scrollt horizontal statt zu clippen), `.nav-btn` nutzt
-`flex: 1 0 auto; min-width: 60px`, `.nav-label` ist `white-space: nowrap`. Das vollständige
-Ablösen der Tab-Leiste durch die Ablauf-Schritte ist ein späterer Schritt.
-
-Der **Ablauf-Bereich** ist zusätzlich für **Tablet-Querformat** ausgelegt: ab 1024px wird
-`.ablauf-layout` zu einem Grid `1fr 360px` (Schrittliste + sticky Detailspalte
-`.ablauf-detail`), darunter einspaltig mit Inline-Aufklappen. Umschaltung bei
-Orientierungswechsel über einen `matchMedia`-`change`-Listener in `app.js`.
+**Ablauf-Layout** (`.ablauf-layout`): ab **768px** ein Grid `minmax(280px,360px) 1fr` —
+links `.ablauf-timeline` (Schritt-Leiste mit eigener `overflow-y:auto`-Scrollbar), rechts
+`.ablauf-detail` (Detailfeld, eigener Scroll). `#screen-ablauf` bekommt dafür
+`overflow:hidden` + `.screen-inner{height:100%;min-height:0}` und die Leiste/das Feld je
+`flex:1;min-height:0`. Unter 768px: einspaltig, Schritt klappt inline auf
+(`ABLAUF_WIDE_MQ = matchMedia('(min-width:768px)')`, `change`-Listener → Re-Render).
+„✓ Weiter" (`#ablauf-edit-next` → `advanceFlowStep()`) öffnet den nächsten `FLOW_STEPS`-
+Eintrag; am letzten Schritt (`LAST_FLOW_STEP_ID`) stattdessen der Export-Button
+(`flowStepExtrasHTML`).
 
 ## Bewertungsbogen — Item-Struktur
 

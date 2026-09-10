@@ -95,6 +95,8 @@ Gespeichert wird in acht getrennten `localStorage`-Einträgen (Keys `sl_probande
 |---|---|---|---|---|---|---|
 | **Teilnehmenden-Stammdaten** (`sl_probanden`) | Pseudonym, Händigkeit (Pflichtfeld: „Rechts" oder „Links"), Sensoriknummer (1–12, **optional** — nur im Bearbeiten-Dialog), optionale Freitextnotiz, Zeitpunkt Sensorik an-/abgelegt, Sensorik-Checkliste (`sensorik`: pro Item Shimmer ECG / Shimmer GSR+ / Polar Brustgurt / Garmin ein Zeitstempel „angelegt am", ISO 8601, Gerätezeit; **keine** Rohsensordaten), Ablauf-Zeitleiste (`ablauf`: pro Studienschritt Start-/Endzeit als ISO 8601 [Gerätezeit] + Freitext-Anmerkung), Erstellungszeitpunkt | Zuordnung von Sitzungen zu Testpersonen ohne Klarnamen; Händigkeit relevant für Sensorplatzierung; Dokumentation, wann welche Sensorik bei welcher Person angelegt wurde und wann welcher Studienschritt begonnen/beendet wurde | TODO: Datenschutz prüfen | `localStorage`, lokal auf dem jeweiligen Gerät | Unbegrenzt, bis manuelle Löschung (einzeln oder "Alle Daten löschen") | Jeweilige Studienleitung / Gerätebesitzer:in |
 | **Ablauf-Zeitleiste** (Teil von `sl_probanden`, `p.ablauf`) | Pro Studienschritt (feste Schrittfolge „Ankommen" + Schritte 1–18) je ein Objekt `{ startISO, endISO, note }`: Start-/Endzeitpunkt (ISO 8601, Gerätezeit, per Button „Jetzt" oder manueller Uhrzeit-Eingabe) sowie eine Freitext-Anmerkung. Fehlender Schlüssel = Schritt für diese Person noch nicht erfasst. Personenbezug über die Zuordnung zum pseudonymisierten Datensatz | Zeitliche Protokollierung des realen Studienablaufs je Teilnehmende:r (Ersatz/Ergänzung zum bisherigen reinen Szenario-Timer), inkl. schrittbezogener Anmerkungen | TODO: Datenschutz prüfen | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung (Schritt einzeln über „Schritt leeren", Person löschen oder "Alle Daten löschen") | Jeweilige Studienleitung / Gerätebesitzer:in |
+| **Trainerbewertungsbögen im Ablauf** (Teil von `sl_probanden`, `p.bewertungen`) | Objekt `{ [stepId]: [ { id, label, scores, notes, savedAt } ] }` — von der VR-Leitung an Ablauf-Schritt 10 (je Hologate-Szenario) bzw. Schritt 14 (Rollercoaster) ausgefüllt, während die Teilnehmenden den Fragebogen bearbeiten. Seit v2.16.0 **reduziert** auf den Block „Vergleich zur Selbsteinschätzung" (4 Skalenwerte 1–6, spiegeln inhaltlich den Teilnehmerfragebogen). `label` = Freitext (welches Szenario). Personenbezug über den pseudonymisierten Datensatz. Löst den früheren, `sessionId`-basierten Bogen (`sl_bewertungen`) ab; `sl_bewertungen` bleibt für Alt-Daten bestehen | Fremdeinschätzung je VR-Szenario, Grundlage für Selbst-/Fremd-Vergleich | TODO: Datenschutz prüfen — Bewertungsdaten zu einer (pseudonymisierten) Person können besonders schutzwürdig sein | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung (Bogen einzeln, Person löschen oder "Alle Daten löschen") | Jeweilige Studienleitung / Gerätebesitzer:in |
+| **Ereignisse im Ablauf** (Teil von `sl_probanden`, `p.ereignisse`) | Array `[ { id, stepId, tag (Kategorie), note (Freitext), type, timeISO ODER startISO/endISO, createdAt } ]` — je Ablauf-Schritt erfassbare Ereignisse/Probleme (z. B. „Brustgurt verrutscht"), Zeitpunkt oder Zeitraum (Gerätezeit, Button „Jetzt" oder manuell). Kategorien aus `eventTags` (Default: Sensorik/VR/Fragebogen/TMS/Sonstiges). Löst den früheren globalen `sl_events`-Tab ab; `sl_events` bleibt für Alt-Daten bestehen | Dokumentation von Störungen/Auffälligkeiten im Ablauf, je Person und Schritt | TODO: Datenschutz prüfen | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung (Ereignis einzeln, Person löschen oder "Alle Daten löschen") | Jeweilige Studienleitung / Gerätebesitzer:in |
 | **Sitzungsprotokolle** (`sl_sessions`) | Verweis auf Teilnehmende:n (Pseudonym+Sensoriknummer als Kopie), gewähltes Szenario, Start-/Endzeitpunkt (ISO 8601), aktive Dauer, Pausen (je Start-/Endzeitpunkt + Dauer, beliebig oft pro Sitzung), Abweichungs-Tags, Freitextnotizen, Gerätelabel | Nachvollziehbarkeit des Sitzungsablaufs inkl. Unterbrechungen, Basis für Auswertung/Export | TODO: Datenschutz prüfen | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung | Jeweilige Studienleitung / Gerätebesitzer:in |
 | **Trainerbewertungsbogen** (`sl_bewertungen`) | Verweis auf Sitzung, 19 Skalenwerte (Schulnoten-Skala 1–6) zu Leistungsdimensionen (u. a. Lageerkundung, Entscheidungsqualität, Führung/Kommunikation, MANV-Erkennung), Freitextanmerkungen | Strukturierte Leistungsbewertung der Teilnehmenden im Szenario | TODO: Datenschutz prüfen — Bewertungsdaten zu einer identifizierbaren (wenn auch pseudonymisierten) Person können besonders schutzwürdig sein | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung | Jeweilige Studienleitung / Gerätebesitzer:in |
 | **Sensorik-Zeiten & -Checkliste** (Teil von `sl_probanden`) | Uhrzeit "Sensorik angelegt" / "Sensorik abgelegt" sowie die Sensorik-Checkliste (`p.sensorik`: pro Item Shimmer ECG / Shimmer GSR+ / Polar Brustgurt / Garmin ein Zeitstempel „angelegt am"). Alles manuell erfasst, **keine** Rohsensordaten. Personenbezug über die Zuordnung zum pseudonymisierten Datensatz | Dokumentation des Sensorhandlings im Studienablauf je Person | TODO: Datenschutz prüfen | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung (Item-Reset im Tab, Person löschen oder "Alle Daten löschen") | Jeweilige Studienleitung / Gerätebesitzer:in |
@@ -106,8 +108,7 @@ Gespeichert wird in acht getrennten `localStorage`-Einträgen (Keys `sl_probande
 ## Löschverhalten im Detail (technisch verifiziert im Code)
 
 - **Einzelne:n Teilnehmende:n löschen:** Entfernt den Stammdatensatz aus `sl_probanden`
-  (inkl. der zu dieser Person erfassten Sensorik-Checklisten-Zeitpunkte in `p.sensorik`
-  sowie der Ablauf-Zeitleiste in `p.ablauf`).
+  (inkl. `p.sensorik`, `p.ablauf`, `p.bewertungen` und `p.ereignisse`).
   Bereits gespeicherte Sitzungen (`sl_sessions`) und Bewertungen (`sl_bewertungen`) dieser
   Person **bleiben erhalten** (Pseudonym/Sensoriknummer sind dort als Kopie hinterlegt) —
   die App weist beim Löschen explizit darauf hin. TODO: Datenschutz prüfen — im Hinblick auf
@@ -116,9 +117,9 @@ Gespeichert wird in acht getrennten `localStorage`-Einträgen (Keys `sl_probande
 - **Einzelne Sitzung löschen:** Entfernt genau diesen Eintrag aus `sl_sessions`. Zugehörige
   Bewertungsbogen-Einträge in `sl_bewertungen` werden dabei **nicht** automatisch mitgelöscht
   (verwaister Verweis über `sessionId` bleibt bestehen). TODO: Datenschutz prüfen.
-- **"Alle Daten löschen" (Einstellungen-Screen):** Leert `sl_probanden` (inkl. `p.sensorik`
-  und `p.ablauf`), `sl_sessions`, `sl_bewertungen` und `sl_events` sowie den Zeitstempel des
-  letzten Exports vollständig. **Nicht** betroffen
+- **"Alle Daten löschen" (Einstellungen-Overlay):** Leert `sl_probanden` (inkl. `p.sensorik`,
+  `p.ablauf`, `p.bewertungen`, `p.ereignisse`), `sl_sessions`, `sl_bewertungen` und
+  `sl_events` sowie den Zeitstempel des letzten Exports vollständig. **Nicht** betroffen
   sind die Szenario-Konfiguration (`sl_scenarios`), die Tag-Liste (`sl_tags`), die
   Ereignis-Kategorien (`sl_event_tags`) und das
   Geräte-/Betreuungslabel sowie der Schalter "Mehrere Teilnehmende gleichzeitig"
@@ -134,9 +135,11 @@ Gespeichert wird in acht getrennten `localStorage`-Einträgen (Keys `sl_probande
   der aktiven Person (nach Sicherheitsabfrage), sodass dieser Studienschritt wieder als
   „offen" gilt. Werden Start-/Endzeit und Anmerkung eines Schritts alle geleert, wird der
   Eintrag automatisch verworfen. Andere Schritte und Personen bleiben unverändert.
-- **CSV/JSON-Export:** Die Ablauf-Zeitleiste (`p.ablauf`) ist aktuell **nicht** Teil des
-  Exports — sie verbleibt ausschließlich in `localStorage`. TODO: Datenschutz prüfen —
-  falls diese Zeiten später exportiert werden sollen, Zweck und Aufbewahrung ergänzen.
+- **CSV/JSON-Export:** Die im Ablauf erfassten Daten (`p.ablauf`, `p.bewertungen`,
+  `p.ereignisse`, `p.sensorik`) sind aktuell **nicht** Teil des Exports — der Export basiert
+  noch auf den alten `sl_sessions`/`sl_bewertungen`. Sie verbleiben ausschließlich in
+  `localStorage`. TODO: Export auf die Ablauf-Datenstruktur umstellen; Zweck/Aufbewahrung
+  dann ergänzen.
 - **Kein automatischer Ablauf/keine Aufbewahrungsfrist:** Die App löscht nichts von selbst.
   Daten bleiben im `localStorage` des Browsers bestehen, bis eine der obigen Aktionen manuell
   ausgeführt wird, oder bis Nutzer:innen außerhalb der App Browserdaten löschen bzw. die App

@@ -155,7 +155,6 @@ body {
    TABLET (768px+)
 ══════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
-  .topbar { display: none; }
   .bottom-nav { display: none; }
 
   .sidebar {
@@ -1091,6 +1090,16 @@ input[type="time"] { color-scheme: dark; }
 /* ══════════════════════════════════════════════════════
    ABLAUF (Studien-Zeitleiste)
 ══════════════════════════════════════════════════════ */
+.ablauf-proband-row { display: flex; gap: 8px; align-items: center; }
+.ablauf-proband-row .field-select { flex: 1; min-width: 0; }
+
+/* Kopfzeile der Vollbild-Dialoge (Teilnehmende verwalten / Export) */
+.subview-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.subview-title { font-size: var(--text-lg); font-weight: 700; color: var(--text1); }
+
 .ablauf-progress { margin-top: 12px; }
 .ablauf-progress-bar {
   height: 8px; border-radius: 999px;
@@ -1165,21 +1174,48 @@ input[type="time"] { color-scheme: dark; }
   font-size: var(--text-md); font-weight: 700; color: var(--text1);
   margin-bottom: 12px;
 }
+
+/* Trainerbewertungsbogen-Abschnitt im Schritt-Detail */
+.bew-section {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.bew-list { display: flex; flex-direction: column; gap: 6px; }
+.bew-list-item {
+  width: 100%; text-align: left; font-family: inherit; color: inherit;
+  background: var(--surface3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.bew-list-item:hover { background: var(--surface2); border-color: var(--border2); }
+.bew-list-label { font-weight: 700; color: var(--text1); }
+.bew-list-meta  { font-size: var(--text-sm); color: var(--text2); white-space: nowrap; }
+.bew-ov-context { margin-bottom: 8px; }
 .ablauf-detail-empty { font-size: var(--text-sm); color: var(--text3); line-height: 1.5; }
 
-/* breit (Tablet quer / Desktop, ab 1024px): Master-Detail — Schrittliste links,
-   fest sichtbares Detailfeld rechts. Kein Inline-Aufklappen. */
-@media (min-width: 1024px) {
+/* Tablet/Desktop (ab 768px): Ablauf = linke Schritt-Leiste (eigene Scrollbar) +
+   rechtes Detailfeld. Kein Inline-Aufklappen. */
+@media (min-width: 768px) {
+  #screen-ablauf.screen { overflow: hidden; }
+  #screen-ablauf .screen-inner { min-height: 0; height: 100%; }
+
   .ablauf-layout {
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: minmax(280px, 360px) 1fr;
     gap: 20px;
-    align-items: start;
+    flex: 1;
+    min-height: 0;
+  }
+  .ablauf-timeline {
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 4px;
   }
   .ablauf-detail {
     display: block;
-    position: sticky;
-    top: 8px;
+    overflow-y: auto;
+    min-height: 0;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);

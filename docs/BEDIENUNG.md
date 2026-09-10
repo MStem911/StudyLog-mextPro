@@ -14,46 +14,64 @@
    - **Android:** Menü (⋮) öffnen → "Zum Startbildschirm hinzufügen" bzw. "App installieren".
 3. App-Symbol auf dem Home-Bildschirm antippen — die App startet auch ohne Internetverbindung.
 
-## Kernfunktionen im Überblick
+## Aufbau der App
 
-Die App hat neun Bereiche, erreichbar über die Navigation (unten auf dem Smartphone, links
-auf Tablet/Desktop). Beim Start öffnet sich der Bereich **Ablauf**. Auf schmalen Smartphones
-lässt sich die untere Navigationsleiste bei Bedarf seitwärts wischen.
+Ab **v2.14.0** hat die App **keine Tab-Leiste** mehr. Die gesamte Bedienung läuft über den
+**Ablauf** — die chronologische Schrittliste des Studienablaufs:
 
-| Bereich | Zweck |
+- **Tablet (Querformat, empfohlen):** links die Schritt-Leiste (mit eigener Scrollbar, falls
+  nicht alle Schritte auf einmal passen), rechts das Eingabefeld für den gewählten Schritt.
+- **Smartphone:** die Schritt-Leiste füllt den Bildschirm; ein angetippter Schritt klappt in
+  der Liste auf.
+
+Oben rechts neben dem App-Namen öffnet das **⚙-Icon** die **Einstellungen** (Mehrfachauswahl
+von Teilnehmenden, „Alle Daten löschen"). Alles Weitere wird aus dem Ablauf heraus geöffnet:
+
+| Aufruf | Öffnet |
 |---|---|
-| 🗺️ **Ablauf** | Chronologische Zeitleiste des gesamten Studienablaufs für eine ausgewählte Person. Zu jedem Schritt Start-/Endzeit und eine Anmerkung erfassen; Farbe zeigt den Stand (grau = offen, gelb = angefangen, grün = Start und Ende erfasst) |
-| 👤 **Teilnehmende** | Personen mit Pseudonym + Händigkeit anlegen und verwalten (Sensoriknummer optional, nur im Bearbeiten-Dialog) |
-| 🩹 **Sensorik** | Checkliste der Sensorik-Hardware **pro Teilnehmende:r** (im Dropdown wählbar); pro Item wird beim Abhaken automatisch der Anlege-Zeitpunkt erfasst. Sind alle Items abgehakt, springt die App direkt in den Tab **Szenario** |
-| ⏺ **Szenario** | Timer starten/stoppen, Szenario wählen (Tutorial / Hologate / Rollercoaster), Abweichungen/Notizen erfassen. Speichert je Durchlauf eine „Sitzung" (siehe Protokoll) |
-| ☰ **Protokoll** | Übersicht aller gespeicherten Sitzungen, filtern, bearbeiten, löschen |
-| 📝 **Bewertung** | Trainerbewertungsbogen zu einer Sitzung ausfüllen |
-| ❗ **Ereignisse** | Freie Ereignis-/Problemliste (z. B. Sensorik verrutscht) mit Kategorie, Zeitpunkt oder Zeitraum — unabhängig von einer konkreten Sitzung |
-| ↓ **Export** | Daten als CSV/JSON exportieren, Statistiken einsehen |
-| ⚙ **Einstellungen** | App-Verhalten anpassen (z. B. Mehrfachauswahl von Teilnehmenden bei Sitzung **und** Bewertung), alle Daten löschen |
+| **＋** neben der Personen-Auswahl | Vollbild-Dialog „Teilnehmende verwalten" (anlegen, suchen, per Tap bearbeiten). Mit **✕** zurück zum Ablauf |
+| **✎** neben der Personen-Auswahl | Bearbeiten-Dialog der aktuell gewählten Person |
+| Button in **Schritt 18** („Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
 
-## Die Ablauf-Zeitleiste nutzen
+**Trainerbewertungsbogen (Schritt 10 / 14):** Im Detailbereich von **Schritt 10
+„Fragebogen 3"** (für die Hologate-Szenarien) bzw. **Schritt 14 „Fragebogen 4"** (für
+Rollercoaster) → **＋ Bewertungsbogen anlegen** → Bezeichnung eintragen (z. B. „Szenario 1"),
+bewerten, optional Anmerkungen, **💾 speichern**. Für Hologate wird pro durchlaufenem
+Szenario ein eigener Bogen angelegt; bestehende Bögen sind in der Liste antippbar
+(bearbeiten/löschen). Gedacht für VR, während die Teilnehmenden den Fragebogen bearbeiten.
 
-Der Bereich **🗺️ Ablauf** bildet den kompletten Studienablauf als feste Schrittfolge ab
-(„Ankommen, Begrüßung" sowie die Schritte 1–18, z. B. „Aufklärung + Einverständniserklärung",
-„Anlegen Sensorik", „Fragebogen 1", „TMS", … bis „Datensicherung / Aufbereitung"). Die
-Kürzel VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt
-fachlich verantwortet — sie haben keine weitere Funktion.
+Der Bogen ist ab v2.16.0 **reduziert** auf den Block **„Vergleich zur Selbsteinschätzung"** —
+diese vier Fragen entsprechen inhaltlich den Fragen des Teilnehmerfragebogens (Selbst-/
+Fremd-Vergleich), Schulnoten-Skala 1–6:
+1. Die Lage wurde effektiv erfasst.
+2. Die Entscheidungen waren angemessen.
+3. Die richtigen Prioritäten wurden gesetzt.
+4. Gesamtleistung
 
-Auf einem **Tablet im Querformat** erscheint der Bereich zweispaltig: links die Schrittliste,
-rechts ein fest sichtbares Eingabefeld für den gerade gewählten Schritt. Auf dem Smartphone
-bzw. im Hochformat klappt der gewählte Schritt stattdessen direkt in der Liste auf. Die
-Bedienung ist ansonsten identisch.
+**Noch nicht umgestellt:** die VR-Szenario-Timestamps innerhalb von Schritt 8/12
+(Unterteilung eines Szenarios in einzelne, abhakbare Teilschritte). Der CSV/JSON-Export
+bezieht die im Ablauf erfassten Daten (Zeiten, Bewertungen, Ereignisse, Sensorik) noch
+nicht ein. Bereits erfasste Daten bleiben gespeichert.
+
+## Die Ablauf-Schrittliste nutzen
+
+Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab („Ankommen,
+Begrüßung" sowie die Schritte 1–18, z. B. „Aufklärung + Einverständniserklärung", „Anlegen
+Sensorik", „Fragebogen 1", „TMS", … bis „Datensicherung / Aufbereitung"). Die Kürzel
+VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt fachlich
+verantwortet — sie haben keine weitere Funktion.
 
 1. Oben im Dropdown die **Teilnehmende:r** wählen (standardmäßig die zuletzt angelegte
-   Person). Die Zeitleiste gilt jeweils nur für diese Person.
+   Person). Ist noch niemand angelegt: über **＋** eine Person anlegen. Die Schrittliste gilt
+   jeweils nur für die gewählte Person.
 2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
-   Der Schritt zeigt dann drei Felder (rechts in der Spalte bzw. aufgeklappt in der Liste):
+   Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
      übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren.
    - **Hinweis / Anmerkung**: Freitext zu diesem Schritt (z. B. Besonderheiten, Abweichungen).
-   Eingaben werden sofort gespeichert; ein erneutes Antippen des Schritts hebt die Auswahl
-   wieder auf (im Hochformat klappt er dabei zu).
+   - **✓ Weiter zum nächsten Schritt**: speichert und öffnet den folgenden Schritt (am
+     letzten Schritt steht hier stattdessen der Export-Button).
+   Eingaben werden sofort gespeichert.
 3. Die **Farbe** jedes Schritts zeigt den Stand auf einen Blick:
    - **grau** – noch nichts erfasst,
    - **gelb** – angefangen (nur Start *oder* Ende *oder* nur eine Anmerkung),
@@ -62,11 +80,29 @@ Bedienung ist ansonsten identisch.
    Fortschrittsbalken („X / 19 komplett").
 4. **Schritt leeren** (im aufgeklappten Schritt) entfernt nach Rückfrage die erfassten Zeiten
    und die Anmerkung dieses einen Schritts.
+5. **Ereignisse / Probleme** (an jedem Schritt): über **＋ Ereignis erfassen** eine Kategorie
+   wählen (Sensorik / VR / Fragebogen / TMS / Sonstiges), eine kurze Beschreibung eintragen
+   und entweder einen **Zeitpunkt** oder einen **Zeitraum** festhalten (Button „Jetzt" oder
+   manuell). Erfasste Ereignisse stehen als Liste am jeweiligen Schritt und lassen sich
+   antippen zum Bearbeiten/Löschen.
 
-Die Ablauf-Zeiten werden lokal bei der jeweiligen Person gespeichert. Sie sind aktuell
-**nicht** Teil des CSV-/JSON-Exports.
+Einzelne Schritte haben zusätzliche Felder:
+- **Schritt 2 „Anlegen Sensorik"**: die **Sensorik-Checkliste** (Shimmer ECG, Shimmer GSR+,
+  Polar Brustgurt, Garmin). Ein Item antippen, sobald die Sensorik angelegt ist — der
+  Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)
+  rückgängig.
+- **Schritt 10 / Schritt 14**: der **Trainerbewertungsbogen** (siehe unten).
+
+Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind
+aktuell **nicht** Teil des CSV-/JSON-Exports.
 
 ## Typischer Ablauf einer Nutzungssitzung
+
+> **Hinweis:** Die folgenden Abschnitte 2–7 beschreiben noch den früheren Tab-Ablauf
+> (Sensorik-, Szenario-, Bewertungs-, Ereignis- und Protokoll-Tab). Diese Bereiche sind ab
+> v2.14.0 nicht mehr direkt erreichbar und werden gerade in die Ablauf-Schritte überführt.
+> Aktuell gültig sind „Aufbau der App" und „Die Ablauf-Schrittliste nutzen" oben sowie
+> Abschnitt 1 (Person anlegen — jetzt über **＋** im Ablauf) und der Export (über Schritt 18).
 
 ### 1. Teilnehmende Person anlegen (einmalig pro Person)
 

@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.13.0';
+const APP_VERSION = '2.17.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -72,6 +72,30 @@ const FLOW_STEPS = [
   { id: 'fs_17', nr: '17', label: 'Verabschiedung',                                          tag: 'VR / SEN' },
   { id: 'fs_18', nr: '18', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
 ];
+const LAST_FLOW_STEP_ID = FLOW_STEPS[FLOW_STEPS.length - 1].id;
+
+// Schritte, an denen VR den Trainerbewertungsbogen zum vorangegangenen VR-Szenario ausfüllt
+// (nach dem Ablegen, während die Teilnehmenden den Fragebogen bearbeiten). Ein Bogen pro
+// VR-Szenario — Hologate (Schritt 8) hat mehrere, Rollercoaster (Schritt 12) i.d.R. einen.
+const BEW_STEP_META = {
+  fs_10: { scenarioLabel: 'Hologate-Szenarien (Schritt 8)',   defaultLabel: 'Szenario ' },
+  fs_14: { scenarioLabel: 'Rollercoaster / Varjo (Schritt 12)', defaultLabel: 'Rollercoaster' },
+};
+
+// Trainerbewertungsbogen (reduziert, ab v2.16.0): nur der Block „Vergleich zur
+// Selbsteinschätzung" — 4 Items, Schulnoten-Skala 1–6. Item-Schlüssel z17..z20 wie zuvor,
+// nur die Fragetexte sind angepasst (spiegeln den Teilnehmerfragebogen).
+const BEW_OV_ITEMS  = ['z17', 'z18', 'z19', 'z20'];
+const BEW_OV_TITLE  = 'Vergleich zur Selbsteinschätzung';
+const BEW_OV_INTRO   = 'Die folgenden Fragen entsprechen inhaltlich den Fragen des ' +
+  'Teilnehmerfragebogens und dienen dem späteren Vergleich zwischen Selbst- und ' +
+  'Fremdeinschätzung der gezeigten Leistung.';
+const BEW_OV_QUESTIONS = [
+  ['z17', '1. Die Lage wurde effektiv erfasst.'],
+  ['z18', '2. Die Entscheidungen waren angemessen.'],
+  ['z19', '3. Die richtigen Prioritäten wurden gesetzt.'],
+  ['z20', '4. Gesamtleistung'],
+];
 
 // ── State ────────────────────────────────────────────────────────────────────
 let probanden        = [];
@@ -138,6 +162,10 @@ function load() {
     probanden.forEach(pr => { if (!pr.sensorik || typeof pr.sensorik !== 'object') pr.sensorik = {}; });
     // Ablauf-Zeitleiste wird pro Person in p.ablauf geführt; für Alt-Daten Objekt sicherstellen.
     probanden.forEach(pr => { if (!pr.ablauf || typeof pr.ablauf !== 'object') pr.ablauf = {}; });
+    // Trainerbewertungsbögen im Ablauf: p.bewertungen = { [stepId]: [ {id,label,scores,notes,savedAt} ] }
+    probanden.forEach(pr => { if (!pr.bewertungen || typeof pr.bewertungen !== 'object' || Array.isArray(pr.bewertungen)) pr.bewertungen = {}; });
+    // Ereignisse im Ablauf: p.ereignisse = [ {id, stepId, tag, note, type, timeISO?|startISO?/endISO?, createdAt} ]
+    probanden.forEach(pr => { if (!Array.isArray(pr.ereignisse)) pr.ereignisse = []; });
     localStorage.removeItem(KEY_SENSORIK);
     scenarios = sc ? JSON.parse(sc) : deepCopy(DEFAULT_SCENARIOS);
     if (!scenarios.length) scenarios = deepCopy(DEFAULT_SCENARIOS);
@@ -369,17 +397,15 @@ function saveNewProband() {
   document.getElementById('add-form').classList.add('hidden');
   renderProbanden(document.getElementById('search-input').value);
   showToast('✓ ' + pseudo + ' angelegt');
-  // Direkt anbieten, die Sensorik für die neue Person zu erfassen
+  // Neue Person wird die aktive im Ablauf; zurück zum Ablauf.
   selectedSensorikProbandId = newId;
   selectedAblaufProbandId   = newId;
   expandedFlowStepId        = '';
-  document.getElementById('sensorik-prompt-msg').textContent =
-    `„${pseudo}" wurde angelegt. Jetzt die Sensorik für diese Person erfassen?`;
-  document.getElementById('sensorik-prompt-overlay').classList.remove('hidden');
+  renderAblauf();
+  showScreen('ablauf');
 }
 document.getElementById('sensorik-prompt-yes').addEventListener('click', () => {
   document.getElementById('sensorik-prompt-overlay').classList.add('hidden');
-  showScreen('sensorik');
 });
 document.getElementById('sensorik-prompt-no').addEventListener('click', () => {
   document.getElementById('sensorik-prompt-overlay').classList.add('hidden');
@@ -669,14 +695,7 @@ function toggleSensorik(id) {
     save();
     renderSensorik();
     if (SENSORIK_ITEMS.every(it => p.sensorik[it.id])) {
-      // Gesamte Sensorik für diese Person angelegt → direkt weiter zum Szenario-Tab,
-      // dort dieselbe Person vorauswählen
-      showToast('✓ Sensorik komplett — weiter zu Szenario');
-      setTimeout(() => {
-        const sessSel = document.getElementById('sel-proband');
-        if (sessSel) sessSel.value = selectedSensorikProbandId;
-        showScreen('session');
-      }, 600);
+      showToast('✓ Sensorik komplett erfasst');
     } else {
       showToast('✓ ' + item.label + '  ·  ' + localTimeStr(p.sensorik[id]));
     }
@@ -1854,10 +1873,10 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
   if (document.getElementById('screen-ablauf')?.classList.contains('active')) renderAblauf();
 });
 
-// Eingabefelder (Start/Ende/Anmerkung + „Schritt leeren") für einen Schritt — identisch
-// im Inline-Panel (schmal) wie in der Detailspalte (breit); IDs bleiben eindeutig, da
-// immer nur eine der beiden Stellen gerendert wird.
-function flowStepFieldsHTML(d) {
+// Eingabefelder (Start/Ende/Anmerkung + „Weiter"/„Schritt leeren") für einen Schritt —
+// identisch im Inline-Panel (schmal) wie in der Detailspalte (breit); IDs bleiben eindeutig,
+// da immer nur eine der beiden Stellen gerendert wird. `isLast` = letzter Schritt (kein „Weiter").
+function flowStepFieldsHTML(d, isLast) {
   return `
     <div class="edit-row-2">
       <div>
@@ -1877,8 +1896,9 @@ function flowStepFieldsHTML(d) {
     </div>
     <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung</label>
     <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>
-    <div class="btn-row" style="margin-top:10px">
-      <button class="btn btn-ghost flex-1" id="ablauf-edit-clear">Schritt leeren</button>
+    <div class="btn-col" style="margin-top:12px">
+      ${isLast ? '' : '<button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zum nächsten Schritt</button>'}
+      <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Schritt leeren</button>
     </div>`;
 }
 
@@ -1955,7 +1975,7 @@ function renderAblauf() {
         </span>
         <span class="ablauf-step-chevron">${isOpen ? '▾' : '▸'}</span>
       </button>
-      ${(!wide && isOpen) ? `<div class="ablauf-step-panel">${flowStepFieldsHTML(d)}</div>` : ''}
+      ${(!wide && isOpen) ? `<div class="ablauf-step-panel">${flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID)}${flowStepExtrasHTML(s.id)}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1966,7 +1986,7 @@ function renderAblauf() {
       const d = (s && p.ablauf[s.id]) || {};
       detail.innerHTML = s
         ? `<div class="ablauf-detail-head">${s.nr ? 'Schritt ' + esc(s.nr) + ' · ' : ''}${esc(s.label)}</div>` +
-          flowStepFieldsHTML(d)
+          flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID) + flowStepExtrasHTML(s.id)
         : '';
     } else if (wide) {
       detail.innerHTML = '<div class="ablauf-detail-empty">Einen Schritt links auswählen, um Start-/Endzeit und eine Anmerkung zu erfassen.</div>';
@@ -2005,6 +2025,404 @@ function renderAblauf() {
   });
   const clearBtn = document.getElementById('ablauf-edit-clear');
   if (clearBtn) clearBtn.addEventListener('click', () => clearFlowStep(expandedFlowStepId));
+  const nextBtn = document.getElementById('ablauf-edit-next');
+  if (nextBtn) nextBtn.addEventListener('click', advanceFlowStep);
+  const expBtn = document.getElementById('ablauf-open-export');
+  if (expBtn) expBtn.addEventListener('click', () => showScreen('export'));
+
+  // Trainerbewertungsbogen-Buttons (nur an fs_10 / fs_14)
+  const extrasScope = wide && detail ? detail : timeline;
+  extrasScope.querySelectorAll('[data-bew-add]').forEach(btn =>
+    btn.addEventListener('click', () => openBewOverlay(btn.dataset.bewAdd, null))
+  );
+  extrasScope.querySelectorAll('[data-bew-edit]').forEach(btn =>
+    btn.addEventListener('click', () => openBewOverlay(expandedFlowStepId, btn.dataset.bewEdit))
+  );
+  // Sensorik-Checkliste (nur an fs_02)
+  extrasScope.querySelectorAll('[data-sensorik-toggle]').forEach(btn =>
+    btn.addEventListener('click', () => toggleAblaufSensorik(btn.dataset.sensorikToggle))
+  );
+  const sensResetBtn = document.getElementById('ablauf-sensorik-reset');
+  if (sensResetBtn) sensResetBtn.addEventListener('click', resetAblaufSensorik);
+  // Ereignis-Buttons (jeder Schritt)
+  extrasScope.querySelectorAll('[data-ev-add]').forEach(btn =>
+    btn.addEventListener('click', () => openEreignisOverlay(btn.dataset.evAdd, null))
+  );
+  extrasScope.querySelectorAll('[data-ev-edit]').forEach(btn =>
+    btn.addEventListener('click', () => openEreignisOverlay(expandedFlowStepId, btn.dataset.evEdit))
+  );
+
+  // gewählten Schritt in der linken Leiste sichtbar scrollen
+  if (expandedFlowStepId) {
+    const selRow = timeline.querySelector('.ablauf-step.selected');
+    if (selRow) selRow.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+// Zusatzinhalte, die nur an bestimmten Schritten im Detailbereich erscheinen.
+function flowStepExtrasHTML(stepId) {
+  let html = '';
+  if (stepId === 'fs_02')        html += sensorikSectionHTML();
+  if (BEW_STEP_META[stepId])     html += bewSectionHTML(stepId);
+  html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt
+  if (stepId === LAST_FLOW_STEP_ID) {
+    html += `<div class="btn-col" style="margin-top:12px">
+      <button class="btn btn-ghost full-width" id="ablauf-open-export">⬇ Daten exportieren (CSV / JSON)</button>
+    </div>`;
+  }
+  return html;
+}
+
+// Abschnitt „Ereignisse / Probleme" im Detailbereich jedes Schritts.
+function ereignisSectionHTML(stepId) {
+  const p = ablaufProband();
+  if (!p) return '';
+  const list = (p.ereignisse || []).filter(e => e.stepId === stepId);
+  const rows = list.map(e => {
+    const t = e.type === 'duration'
+      ? localTimeStr(e.startISO) + ' – ' + localTimeStr(e.endISO)
+      : localTimeStr(e.timeISO);
+    return `<button class="bew-list-item" data-ev-edit="${esc(e.id)}">
+      <span class="bew-list-label">${esc(e.tag)} · ${esc(e.note)}</span>
+      <span class="bew-list-meta">${esc(t)}</span>
+    </button>`;
+  }).join('');
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">EREIGNISSE / PROBLEME</div>
+    <div class="bew-list">${rows || '<div class="meta-text">Kein Ereignis zu diesem Schritt.</div>'}</div>
+    <button class="btn btn-ghost full-width" data-ev-add="${esc(stepId)}" style="margin-top:8px">＋ Ereignis erfassen</button>
+  </div>`;
+}
+
+// Abschnitt „Sensorik-Checkliste" im Detailbereich von Schritt 2 (Anlegen Sensorik).
+// Pro Hardware-Item wird der Anlege-Zeitpunkt in p.sensorik[itemId] (ISO) festgehalten.
+function sensorikSectionHTML() {
+  const p = ablaufProband();
+  if (!p) return '';
+  if (!p.sensorik) p.sensorik = {};
+  const anyDone = SENSORIK_ITEMS.some(it => p.sensorik[it.id]);
+  const items = SENSORIK_ITEMS.map(item => {
+    const at   = p.sensorik[item.id] || null;
+    const done = !!at;
+    return `<button class="sensorik-item${done ? ' checked' : ''}" data-sensorik-toggle="${esc(item.id)}">
+      <span class="sensorik-check">${done ? '✓' : ''}</span>
+      <span class="sensorik-info">
+        <span class="sensorik-name">${esc(item.label)}</span>
+        <span class="sensorik-time">${done ? esc(localDatetimeStr(at)) : 'noch nicht angelegt'}</span>
+      </span>
+    </button>`;
+  }).join('');
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">SENSORIK-CHECKLISTE</div>
+    <p class="meta-text" style="margin-bottom:8px">Auf ein Item tippen, sobald die Sensorik bei dieser Person angelegt wurde — der Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung rückgängig.</p>
+    <div class="sensorik-list">${items}</div>
+    ${anyDone ? '<button class="btn btn-ghost full-width" id="ablauf-sensorik-reset" style="margin-top:8px">↺ Checkliste zurücksetzen</button>' : ''}
+  </div>`;
+}
+
+function toggleAblaufSensorik(id) {
+  const p = ablaufProband();
+  if (!p) return;
+  if (!p.sensorik) p.sensorik = {};
+  const item = SENSORIK_ITEMS.find(x => x.id === id);
+  if (!item) return;
+  if (p.sensorik[id]) {
+    showConfirm('Erfassung rückgängig machen',
+      `„${item.label}" wurde für ${p.pseudo} um ${localTimeStr(p.sensorik[id])} als angelegt erfasst. Erfassung wirklich entfernen?`,
+      () => { delete p.sensorik[id]; save(); renderAblauf(); showToast('Erfassung entfernt'); });
+  } else {
+    p.sensorik[id] = new Date().toISOString();
+    save();
+    renderAblauf();
+    showToast('✓ ' + item.label + '  ·  ' + localTimeStr(p.sensorik[id]));
+  }
+}
+
+function resetAblaufSensorik() {
+  const p = ablaufProband();
+  if (!p || !p.sensorik || !Object.keys(p.sensorik).length) return;
+  showConfirm('Checkliste zurücksetzen',
+    `Alle erfassten Sensorik-Zeitpunkte für „${p.pseudo}" werden entfernt.`,
+    () => { p.sensorik = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
+}
+
+// Abschnitt „Trainerbewertungsbogen" im Detailbereich der Schritte fs_10 / fs_14.
+function bewSectionHTML(stepId) {
+  const p = ablaufProband();
+  if (!p) return '';
+  const meta  = BEW_STEP_META[stepId];
+  const list  = (p.bewertungen && p.bewertungen[stepId]) || [];
+  const rows  = list.map(b => {
+    const filled = BEW_OV_ITEMS.filter(k => b.scores && b.scores[k] != null).length;
+    return `<button class="bew-list-item" data-bew-edit="${esc(b.id)}">
+      <span class="bew-list-label">${esc(b.label || 'Bewertungsbogen')}</span>
+      <span class="bew-list-meta">${filled}/${BEW_OV_ITEMS.length} ausgefüllt</span>
+    </button>`;
+  }).join('');
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">TRAINERBEWERTUNGSBOGEN · ${esc(meta.scenarioLabel)}</div>
+    <p class="meta-text" style="margin-bottom:8px">Ein Bogen pro VR-Szenario — von VR ausfüllen, während die Teilnehmenden den Fragebogen bearbeiten.</p>
+    <div class="bew-list">${rows || '<div class="meta-text">Noch kein Bogen angelegt.</div>'}</div>
+    <button class="btn btn-primary full-width" data-bew-add="${esc(stepId)}" style="margin-top:8px">＋ Bewertungsbogen anlegen</button>
+  </div>`;
+}
+
+// ── Trainerbewertungsbogen-Overlay ──────────────────────────────────────────────
+let bewOvStepId = '';
+let bewOvId     = '';
+
+function bewFormHTML() {
+  const legend =
+    `<div class="bew-legend card"><div class="card-label" style="margin-bottom:8px">SKALA</div><div class="bew-legend-row">` +
+    BEW_SCALE_LABELS.map((lab, i) => `<span class="bew-legend-item"><span class="bew-pip bew-pip-${i+1}">${i+1}</span> ${esc(lab)}</span>`).join('') +
+    `</div></div>`;
+  const block = `
+    <div class="card">
+      <div class="card-label bew-dim-label">${esc(BEW_OV_TITLE)}</div>
+      <p class="privacy-text" style="color:var(--text2);line-height:1.5;margin:0 0 12px">${esc(BEW_OV_INTRO)}</p>
+      <div class="bew-items">
+        ${BEW_OV_QUESTIONS.map(([key, text]) => `
+          <div class="bew-item">
+            <span class="bew-item-label">${esc(text)}</span>
+            <div class="bew-scale-wrap"><div class="bew-scale bew-ov-scale" data-item="${esc(key)}"></div></div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  return legend + block;
+}
+
+function renderBewOvScale(key, val) {
+  const container = document.querySelector(`#bew-ov-form .bew-ov-scale[data-item="${key}"]`);
+  if (!container) return;
+  container.innerHTML =
+    `<span class="bew-scale-endlabel bew-scale-endlabel-left">${BEW_SCALE_LABELS[0]}</span>` +
+    `<div class="bew-scale-btns">` +
+    [1,2,3,4,5,6].map(n =>
+      `<div class="bew-scale-btn-cell"><button type="button" class="bew-pip-btn bew-pip-${n}${val === n ? ' selected' : ''}" data-val="${n}" aria-label="Note ${n}: ${BEW_SCALE_LABELS[n-1]}">${n}</button></div>`
+    ).join('') +
+    `</div>` +
+    `<span class="bew-scale-endlabel bew-scale-endlabel-right">${BEW_SCALE_LABELS[5]}</span>`;
+  container.querySelectorAll('.bew-pip-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.bew-pip-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    })
+  );
+}
+
+function readBewOvScores() {
+  const scores = {};
+  BEW_OV_ITEMS.forEach(key => {
+    const sel = document.querySelector(`#bew-ov-form .bew-ov-scale[data-item="${key}"] .bew-pip-btn.selected`);
+    scores[key] = sel ? parseInt(sel.dataset.val, 10) : null;
+  });
+  return scores;
+}
+
+function openBewOverlay(stepId, bid) {
+  const p = ablaufProband();
+  const meta = BEW_STEP_META[stepId];
+  if (!p || !meta) return;
+  bewOvStepId = stepId;
+  bewOvId     = bid || '';
+  const list  = (p.bewertungen && p.bewertungen[stepId]) || [];
+  const existing = bid ? list.find(b => b.id === bid) : null;
+
+  document.getElementById('bew-ov-title').textContent = existing ? 'Bewertungsbogen bearbeiten' : 'Neuer Bewertungsbogen';
+  document.getElementById('bew-ov-context').textContent = `${p.pseudo} · ${meta.scenarioLabel}`;
+  document.getElementById('bew-ov-label').value = existing
+    ? (existing.label || '')
+    : (stepId === 'fs_10' ? meta.defaultLabel + (list.length + 1) : meta.defaultLabel);
+  document.getElementById('bew-ov-notes').value = existing ? (existing.notes || '') : '';
+  document.getElementById('bew-ov-form').innerHTML = bewFormHTML();
+  BEW_OV_ITEMS.forEach(key => renderBewOvScale(key, existing && existing.scores ? existing.scores[key] : null));
+  document.getElementById('bew-ov-delete').classList.toggle('hidden', !existing);
+  document.getElementById('bewertung-overlay').classList.remove('hidden');
+  document.getElementById('bewertung-overlay').scrollTop = 0;
+}
+
+function closeBewOverlay() {
+  document.getElementById('bewertung-overlay').classList.add('hidden');
+  bewOvStepId = ''; bewOvId = '';
+}
+
+function saveBewOverlay() {
+  const p = ablaufProband();
+  if (!p || !bewOvStepId) return;
+  if (!p.bewertungen) p.bewertungen = {};
+  if (!Array.isArray(p.bewertungen[bewOvStepId])) p.bewertungen[bewOvStepId] = [];
+  const label  = document.getElementById('bew-ov-label').value.trim();
+  const notes  = document.getElementById('bew-ov-notes').value.trim();
+  const scores = readBewOvScores();
+  const filled = BEW_OV_ITEMS.filter(k => scores[k] != null).length;
+  if (!label)       { showToast('⚠ Bezeichnung eingeben'); return; }
+  if (filled === 0) { showToast('⚠ Mindestens eine Bewertung eingeben'); return; }
+
+  const commit = () => {
+    const arr = p.bewertungen[bewOvStepId];
+    const idx = bewOvId ? arr.findIndex(b => b.id === bewOvId) : -1;
+    const entry = {
+      id: idx >= 0 ? arr[idx].id : uid(),
+      label, scores, notes, savedAt: new Date().toISOString()
+    };
+    if (idx >= 0) arr[idx] = entry; else arr.push(entry);
+    save();
+    closeBewOverlay();
+    renderAblauf();
+    showToast(idx >= 0 ? '✓ Bewertung aktualisiert' : '✓ Bewertung gespeichert');
+  };
+  if (filled < BEW_OV_ITEMS.length) {
+    showConfirm('Nicht vollständig ausgefüllt',
+      `Es sind erst ${filled} von ${BEW_OV_ITEMS.length} Bewertungen eingetragen. Trotzdem speichern?`, commit);
+  } else {
+    commit();
+  }
+}
+
+function deleteBewCurrent() {
+  const p = ablaufProband();
+  if (!p || !bewOvStepId || !bewOvId) return;
+  const arr = (p.bewertungen && p.bewertungen[bewOvStepId]) || [];
+  const b = arr.find(x => x.id === bewOvId);
+  showConfirm('Bogen löschen', `„${b ? b.label : 'Bewertungsbogen'}" wirklich löschen?`, () => {
+    p.bewertungen[bewOvStepId] = arr.filter(x => x.id !== bewOvId);
+    save();
+    closeBewOverlay();
+    renderAblauf();
+    showToast('Bogen gelöscht');
+  });
+}
+
+document.getElementById('bew-ov-close').addEventListener('click', closeBewOverlay);
+document.getElementById('bew-ov-cancel').addEventListener('click', closeBewOverlay);
+document.getElementById('bew-ov-save').addEventListener('click', saveBewOverlay);
+document.getElementById('bew-ov-delete').addEventListener('click', deleteBewCurrent);
+document.getElementById('bewertung-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('bewertung-overlay')) closeBewOverlay();
+});
+
+// ── Ereignis-Overlay ───────────────────────────────────────────────────────────
+let evOvStepId = '';
+let evOvId     = '';
+let evOvType   = 'timestamp';
+
+function setEvOvType(type) {
+  evOvType = type;
+  document.getElementById('ev-ov-type-ts').classList.toggle('selected', type === 'timestamp');
+  document.getElementById('ev-ov-type-dur').classList.toggle('selected', type === 'duration');
+  document.getElementById('ev-ov-ts-fields').classList.toggle('hidden', type !== 'timestamp');
+  document.getElementById('ev-ov-dur-fields').classList.toggle('hidden', type !== 'duration');
+}
+
+function renderEvOvTags(selected) {
+  const box = document.getElementById('ev-ov-tags');
+  box.innerHTML = eventTags.map(t =>
+    `<button type="button" class="tag${t === selected ? ' active' : ''}" data-tag="${esc(t)}">${esc(t)}</button>`
+  ).join('');
+  box.querySelectorAll('.tag').forEach(btn =>
+    btn.addEventListener('click', () => {
+      box.querySelectorAll('.tag').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    })
+  );
+}
+
+function openEreignisOverlay(stepId, evId) {
+  const p = ablaufProband();
+  if (!p) return;
+  evOvStepId = stepId;
+  evOvId     = evId || '';
+  const step = FLOW_STEPS.find(s => s.id === stepId);
+  const ex   = evId ? (p.ereignisse || []).find(e => e.id === evId) : null;
+
+  document.getElementById('ev-ov-title').textContent = ex ? 'Ereignis bearbeiten' : 'Ereignis erfassen';
+  document.getElementById('ev-ov-context').textContent =
+    `${p.pseudo} · ${step ? (step.nr ? 'Schritt ' + step.nr + ' · ' : '') + step.label : ''}`;
+  renderEvOvTags(ex ? ex.tag : null);
+  document.getElementById('ev-ov-note').value  = ex ? (ex.note || '') : '';
+  document.getElementById('ev-ov-time').value  = ex && ex.timeISO  ? isoToTimeInput(ex.timeISO)  : '';
+  document.getElementById('ev-ov-start').value = ex && ex.startISO ? isoToTimeInput(ex.startISO) : '';
+  document.getElementById('ev-ov-end').value   = ex && ex.endISO   ? isoToTimeInput(ex.endISO)   : '';
+  setEvOvType(ex ? ex.type : 'timestamp');
+  document.getElementById('ev-ov-delete').classList.toggle('hidden', !ex);
+  document.getElementById('ereignis-overlay').classList.remove('hidden');
+}
+
+function closeEreignisOverlay() {
+  document.getElementById('ereignis-overlay').classList.add('hidden');
+  evOvStepId = ''; evOvId = '';
+}
+
+function saveEreignisOverlay() {
+  const p = ablaufProband();
+  if (!p || !evOvStepId) return;
+  if (!Array.isArray(p.ereignisse)) p.ereignisse = [];
+  const tagBtn = document.querySelector('#ev-ov-tags .tag.active');
+  const tag    = tagBtn ? tagBtn.dataset.tag : '';
+  const note   = document.getElementById('ev-ov-note').value.trim();
+  if (!tag)  { showToast('⚠ Kategorie wählen'); return; }
+  if (!note) { showToast('⚠ Beschreibung eingeben'); return; }
+  const nowISO = new Date().toISOString();
+  const base   = { type: evOvType, tag, note };
+  if (evOvType === 'duration') {
+    const s = document.getElementById('ev-ov-start').value;
+    const e = document.getElementById('ev-ov-end').value;
+    if (!s || !e) { showToast('⚠ Start- und Endzeit eingeben'); return; }
+    base.startISO = rebuildISO(nowISO, s);
+    base.endISO   = rebuildISO(nowISO, e);
+    if (new Date(base.endISO) < new Date(base.startISO)) { showToast('⚠ Ende liegt vor Start'); return; }
+  } else {
+    const t = document.getElementById('ev-ov-time').value;
+    if (!t) { showToast('⚠ Zeitpunkt eingeben'); return; }
+    base.timeISO = rebuildISO(nowISO, t);
+  }
+  const idx = evOvId ? p.ereignisse.findIndex(e => e.id === evOvId) : -1;
+  const entry = {
+    id: idx >= 0 ? p.ereignisse[idx].id : uid(),
+    stepId: evOvStepId,
+    ...base,
+    createdAt: idx >= 0 ? p.ereignisse[idx].createdAt : nowISO
+  };
+  if (idx >= 0) p.ereignisse[idx] = entry; else p.ereignisse.push(entry);
+  save();
+  closeEreignisOverlay();
+  renderAblauf();
+  showToast(idx >= 0 ? '✓ Ereignis aktualisiert' : '✓ Ereignis gespeichert');
+}
+
+function deleteEreignisCurrent() {
+  const p = ablaufProband();
+  if (!p || !evOvId) return;
+  const e = (p.ereignisse || []).find(x => x.id === evOvId);
+  showConfirm('Ereignis löschen', `„${e ? e.note : 'Ereignis'}" löschen?`, () => {
+    p.ereignisse = (p.ereignisse || []).filter(x => x.id !== evOvId);
+    save();
+    closeEreignisOverlay();
+    renderAblauf();
+    showToast('Ereignis gelöscht');
+  });
+}
+
+document.getElementById('ev-ov-close').addEventListener('click', closeEreignisOverlay);
+document.getElementById('ev-ov-cancel').addEventListener('click', closeEreignisOverlay);
+document.getElementById('ev-ov-save').addEventListener('click', saveEreignisOverlay);
+document.getElementById('ev-ov-delete').addEventListener('click', deleteEreignisCurrent);
+document.getElementById('ev-ov-type-ts').addEventListener('click', () => setEvOvType('timestamp'));
+document.getElementById('ev-ov-type-dur').addEventListener('click', () => setEvOvType('duration'));
+document.getElementById('ereignis-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('ereignis-overlay')) closeEreignisOverlay();
+});
+
+// „Weiter": aktuellen Schritt sichern und den nächsten Schritt der Liste öffnen.
+function advanceFlowStep() {
+  if (expandedFlowStepId && document.getElementById('ablauf-edit-note')) {
+    writeFlowStep(expandedFlowStepId);
+  }
+  const idx = FLOW_STEPS.findIndex(s => s.id === expandedFlowStepId);
+  if (idx >= 0 && idx < FLOW_STEPS.length - 1) {
+    expandedFlowStepId = FLOW_STEPS[idx + 1].id;
+  }
+  renderAblauf();
 }
 
 // Zählt komplette/angefangene Schritte für die aktuell aktive Person.
@@ -2105,6 +2523,34 @@ if (ablaufSelectEl) ablaufSelectEl.addEventListener('change', e => {
   expandedFlowStepId = '';
   renderAblauf();
 });
+
+// Teilnehmende aus dem Ablauf heraus anlegen / bearbeiten (Vollbild-Dialog bzw. Overlay)
+const ablaufAddBtn = document.getElementById('ablauf-add-proband');
+if (ablaufAddBtn) ablaufAddBtn.addEventListener('click', () => showScreen('probanden'));
+const ablaufEditBtn = document.getElementById('ablauf-edit-proband');
+if (ablaufEditBtn) ablaufEditBtn.addEventListener('click', () => {
+  if (selectedAblaufProbandId) openProbandEdit(selectedAblaufProbandId);
+  else showToast('⚠ Erst eine Person wählen oder anlegen');
+});
+
+// "✕ Zurück zum Ablauf" in den Vollbild-Dialogen (Teilnehmende verwalten / Export)
+document.querySelectorAll('[data-back-to-ablauf]').forEach(btn =>
+  btn.addEventListener('click', () => showScreen('ablauf'))
+);
+
+// Einstellungen-Overlay über das ⚙-Icon oben rechts
+const settingsOverlay = document.getElementById('settings-overlay');
+const btnOpenSettings = document.getElementById('btn-open-settings');
+if (btnOpenSettings && settingsOverlay) {
+  btnOpenSettings.addEventListener('click', () => {
+    renderSettingsScreen();
+    settingsOverlay.classList.remove('hidden');
+  });
+  document.getElementById('settings-close').addEventListener('click', () => settingsOverlay.classList.add('hidden'));
+  settingsOverlay.addEventListener('click', e => {
+    if (e.target === settingsOverlay) settingsOverlay.classList.add('hidden');
+  });
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 load();

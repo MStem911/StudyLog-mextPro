@@ -14,13 +14,25 @@ gestoppt, notiert und bewertet, wer wann welches Szenario durchlaufen hat — in
 eines strukturierten Bewertungsbogens für die durchführende Trainingsleitung. Alle Daten
 bleiben dabei ausschließlich auf dem jeweiligen Gerät.
 
-Seit **v2.13.0** ist der Einstiegs-Bereich **Ablauf**: eine chronologische Zeitleiste des
-gesamten Studienablaufs (feste Schrittfolge „Ankommen" + Schritte 1–18). Zu jedem Schritt
-werden pro Teilnehmende:r Start- und Endzeit (Button „Jetzt" oder manuelle Eingabe) sowie
-eine Anmerkung erfasst; eine Farbcodierung (grau = offen, gelb = angefangen, grün = Start
-und Ende erfasst) gibt den Überblick. Die bisherige Tab-Navigation (Teilnehmende, Sensorik,
-Szenario, Protokoll, Bewertung, Ereignisse, Export, Einstellungen) bleibt vollständig
-erhalten; das schrittweise Überführen dieser Funktionen in die Ablauf-Schritte ist geplant.
+Seit **v2.14.0** ist die App **eine einzige Ansicht: der Ablauf** — eine chronologische
+Schrittliste des gesamten Studienablaufs (feste Schrittfolge „Ankommen" + Schritte 1–18).
+Links die Schritt-Leiste (mit eigener Scrollbar), rechts das Detailfeld für den gewählten
+Schritt; auf dem Smartphone klappt der Schritt in der Liste auf. Zu jedem Schritt werden
+pro Teilnehmende:r Start- und Endzeit (Button „Jetzt" oder manuelle Eingabe) sowie eine
+Anmerkung erfasst; eine Farbcodierung (grau = offen, gelb = angefangen, grün = Start und
+Ende erfasst) gibt den Überblick. „✓ Weiter" öffnet den nächsten Schritt, per Tap in der
+Leiste kann jederzeit frei gesprungen werden.
+
+Die frühere Tab-Navigation entfällt. Einstellungen liegen hinter dem ⚙-Icon oben rechts
+(Overlay). Teilnehmende anlegen/verwalten (＋ / ✎ neben der Personenauswahl) und der
+CSV/JSON-Export (in Schritt 18) öffnen jeweils einen Vollbild-Dialog aus dem Ablauf heraus.
+Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2),
+**Trainerbewertungsbogen** (Schritt 10 je Hologate-Szenario, Schritt 14 für Rollercoaster —
+seit v2.16.0 reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items) und
+**Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum). **Noch nicht überführt
+(Screen ohne Aufruf, Daten in `localStorage` erhalten):** Szenario-Timer / VR-Szenario-
+Timestamps und die Protokoll-Liste; auch der CSV/JSON-Export basiert noch auf der alten
+Datenstruktur (`sl_sessions`/`sl_bewertungen`).
 
 ## Zielgruppe / Anwendungskontext
 
@@ -71,7 +83,7 @@ Sensorik an-/abgelegt wurde) — nicht die Rohdaten des Sensors selbst. Details 
 flowchart TB
     subgraph Device["Gerät der Studienleitung (Smartphone/Tablet/Desktop)"]
         direction TB
-        UI["index.html + style.css<br/>(UI-Schicht: 9 Screens inkl. Ablauf, Overlays/Dialoge)"]
+        UI["index.html + style.css<br/>(UI-Schicht: Ablauf als einzige Ansicht,<br/>Overlays/Vollbild-Dialoge)"]
         Logic["app.js<br/>(Anwendungslogik, In-Memory-State,<br/>Rendering, Validierung)"]
         LS[("localStorage<br/>(persistenter Datenspeicher)")]
         SW["sw.js (Service Worker)<br/>Cache für App-Shell (HTML/CSS/JS/Icons)"]
@@ -98,8 +110,8 @@ einem Gerät wegzubekommen, ist der manuelle CSV/JSON-Export (siehe
 
 | Datei | Rolle |
 |---|---|
-| `index.html` | App-Shell: alle 9 Screens (Ablauf [Screen-ID `ablauf`, Standard-Einstieg], Teilnehmende, Sensorik, Szenario [Screen-ID `session`], Protokoll, Bewertung, Ereignisse, Export, Einstellungen) sowie alle Overlays/Dialoge als statisches Markup, anfangs versteckt (`.hidden`) |
-| `style.css` | Dark-Mode-Design, responsives Layout (Sidebar auf Desktop/Tablet, Bottom-Nav auf Mobile) |
+| `index.html` | App-Shell: **`#screen-ablauf` ist die einzige aufgerufene Ansicht.** Weiter im Markup vorhanden, aber ohne Navigation: `#screen-probanden` und `#screen-export` (Vollbild-Dialoge mit `[data-back-to-ablauf]`, aus dem Ablauf geöffnet) sowie `#screen-sensorik`/`#screen-session`/`#screen-log`/`#screen-bewertung`/`#screen-ereignisse` (derzeit ohne Aufrufpfad, warten auf Einbettung in Schritte). Einstellungen als `#settings-overlay`. Topbar (alle Breiten): App-Name links, ⚙ rechts |
+| `style.css` | Dark-Mode-Design; Ablauf ab 768px zweispaltig (Schritt-Leiste links mit eigener Scrollbar + Detailfeld rechts), darunter einspaltig mit Inline-Aufklappen |
 | `app.js` | Gesamte Anwendungslogik: State-Verwaltung, Persistenz (`localStorage`), Rendering aller Screens, Event-Handling, Export |
 | `sw.js` | Service Worker: cached die App-Shell-Dateien für Offline-Nutzung, Cache-Invalidierung über Versionsnummer |
 | `manifest.json` | PWA-Manifest (Name, Icons, Startverhalten) |

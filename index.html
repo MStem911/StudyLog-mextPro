@@ -15,63 +15,10 @@
 <body>
 <div id="app">
 
-  <!-- ── Sidebar Nav (Desktop/Tablet) ── -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="logo">SL</div>
-      <div class="sidebar-titles">
-        <span class="sidebar-title">mextPro</span>
-        <span class="sidebar-sub" id="sidebar-sub">UniBw München</span>
-      </div>
-    </div>
-    <nav class="sidebar-nav">
-      <button class="nav-item active" data-screen="ablauf">
-        <span class="nav-icon">🗺️</span>
-        <span class="nav-label">Ablauf</span>
-      </button>
-      <button class="nav-item" data-screen="probanden">
-        <span class="nav-icon">👤</span>
-        <span class="nav-label">Teilnehmende</span>
-      </button>
-      <button class="nav-item" data-screen="sensorik">
-        <span class="nav-icon">🩹</span>
-        <span class="nav-label">Sensorik</span>
-      </button>
-      <button class="nav-item" data-screen="session">
-        <span class="nav-icon">⏺</span>
-        <span class="nav-label">Szenario</span>
-      </button>
-      <button class="nav-item" data-screen="log">
-        <span class="nav-icon">☰</span>
-        <span class="nav-label">Protokoll</span>
-      </button>
-      <button class="nav-item" data-screen="bewertung">
-        <span class="nav-icon">📝</span>
-        <span class="nav-label">Bewertung</span>
-      </button>
-      <button class="nav-item" data-screen="ereignisse">
-        <span class="nav-icon">❗</span>
-        <span class="nav-label">Ereignisse</span>
-      </button>
-      <button class="nav-item" data-screen="export">
-        <span class="nav-icon">↓</span>
-        <span class="nav-label">Export</span>
-      </button>
-      <button class="nav-item" data-screen="settings">
-        <span class="nav-icon">⚙</span>
-        <span class="nav-label">Einstellungen</span>
-      </button>
-    </nav>
-    <div class="sidebar-footer">
-      <span class="app-version">v2.13.0</span>
-      <span class="lock-icon">🔒</span>
-    </div>
-  </aside>
-
   <!-- ── Main content area ── -->
   <div class="main-wrapper">
 
-    <!-- Topbar (Mobile only) -->
+    <!-- Topbar (alle Breiten): App-Name links, Einstellungen-Icon rechts -->
     <header class="topbar">
       <div class="topbar-left">
         <div class="logo">SL</div>
@@ -81,32 +28,24 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span class="app-version">v2.13.0</span>
-        <span class="lock-icon">🔒</span>
+        <button class="btn-icon-sm" id="btn-open-settings" aria-label="Einstellungen" title="Einstellungen">⚙</button>
       </div>
-    </header>
-
-    <!-- Page header (Desktop/Tablet) -->
-    <header class="page-header" id="page-header">
-      <h1 class="page-title" id="page-title">Teilnehmende</h1>
-      <span class="page-date" id="page-date"></span>
     </header>
 
     <main class="screen-container">
 
-      <!-- ── Ablauf (Studien-Zeitleiste) ── -->
+      <!-- ── Ablauf (Studien-Zeitleiste = einzige Ansicht) ── -->
       <section class="screen active" id="screen-ablauf">
         <div class="screen-inner">
           <div class="card">
             <div class="card-label">TEILNEHMENDE:R</div>
-            <select id="ablauf-proband-select" class="field-select"></select>
+            <div class="ablauf-proband-row">
+              <select id="ablauf-proband-select" class="field-select"></select>
+              <button class="btn-icon btn-primary" id="ablauf-add-proband" aria-label="Neue Person anlegen" title="Neue Person anlegen">+</button>
+              <button class="btn-icon" id="ablauf-edit-proband" aria-label="Person bearbeiten" title="Person bearbeiten">✎</button>
+            </div>
             <div class="ablauf-progress" id="ablauf-progress"></div>
           </div>
-          <p class="privacy-text" style="color:var(--text2); line-height:1.5; margin:0 2px">
-            Auf einen Schritt tippen, um Start- und Endzeit (Button „Jetzt" oder manuelle
-            Eingabe) sowie eine Anmerkung zu erfassen. Reihenfolge frei wählbar. Farbe zeigt
-            den Stand: grau = offen, gelb = angefangen, grün = Start und Ende erfasst.
-          </p>
           <div class="ablauf-layout" id="ablauf-layout">
             <div class="ablauf-timeline" id="ablauf-timeline"></div>
             <aside class="ablauf-detail" id="ablauf-detail"></aside>
@@ -114,7 +53,7 @@
           <div id="ablauf-empty" class="empty-state hidden">
             <div class="empty-icon">🗺️</div>
             <div class="empty-text">Noch keine Teilnehmenden angelegt</div>
-            <div class="empty-sub">Lege zuerst im Bereich „Teilnehmende" eine Person an</div>
+            <div class="empty-sub">Über „+" oben eine Person anlegen</div>
           </div>
         </div>
       </section>
@@ -122,6 +61,10 @@
       <!-- ── Teilnehmende ── -->
       <section class="screen" id="screen-probanden">
         <div class="screen-inner">
+          <div class="subview-header">
+            <h2 class="subview-title">Teilnehmende verwalten</h2>
+            <button class="btn-icon-sm" data-back-to-ablauf aria-label="Zurück zum Ablauf" title="Zurück zum Ablauf">✕</button>
+          </div>
           <div class="search-row">
             <input type="text" id="search-input" placeholder="🔍  Suchen…" autocomplete="off" autocorrect="off" autocapitalize="none">
             <button class="btn-icon btn-primary" id="btn-add-proband" aria-label="Neu" title="Neue Person anlegen">+</button>
@@ -438,6 +381,10 @@
       <!-- ── Export ── -->
       <section class="screen" id="screen-export">
         <div class="screen-inner">
+          <div class="subview-header">
+            <h2 class="subview-title">Datensicherung / Export</h2>
+            <button class="btn-icon-sm" data-back-to-ablauf aria-label="Zurück zum Ablauf" title="Zurück zum Ablauf">✕</button>
+          </div>
           <div class="export-layout">
             <div class="export-col-main">
               <div class="card privacy-card">
@@ -466,46 +413,7 @@
         </div>
       </section>
 
-      <!-- ── Einstellungen ── -->
-      <section class="screen" id="screen-settings">
-        <div class="screen-inner">
-          <div class="card">
-            <div class="card-label">SITZUNGSAUFZEICHNUNG</div>
-            <div class="settings-row">
-              <div class="settings-row-text">
-                <div class="settings-row-title">Mehrere Teilnehmende gleichzeitig</div>
-                <div class="settings-row-desc">Erlaubt die Auswahl mehrerer Teilnehmender für eine gemeinsame Sitzungsaufzeichnung sowie einen gemeinsamen Trainerbewertungsbogen.</div>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="chk-multi-proband">
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-label" style="color:var(--coral-txt)">⚠ GEFAHRENZONE</div>
-            <p class="privacy-text" style="color:var(--text2)">Löscht alle Teilnehmenden, Sitzungsdaten und Bewertungen unwiderruflich auf diesem Gerät. Vorher exportieren!</p>
-            <div class="danger-zone">
-              <button class="btn btn-danger full-width" id="btn-clear-data">⚠ Alle Daten löschen</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
     </main>
-
-    <!-- Bottom Nav (Mobile only) -->
-    <nav class="bottom-nav">
-      <button class="nav-btn active" data-screen="ablauf"><span class="nav-icon">🗺️</span><span class="nav-label">Ablauf</span></button>
-      <button class="nav-btn" data-screen="probanden"><span class="nav-icon">👤</span><span class="nav-label">Teilnehmende</span></button>
-      <button class="nav-btn" data-screen="sensorik"><span class="nav-icon">🩹</span><span class="nav-label">Sensorik</span></button>
-      <button class="nav-btn" data-screen="session"><span class="nav-icon">⏺</span><span class="nav-label">Szenario</span></button>
-      <button class="nav-btn" data-screen="log"><span class="nav-icon">☰</span><span class="nav-label">Protokoll</span></button>
-      <button class="nav-btn" data-screen="bewertung"><span class="nav-icon">📝</span><span class="nav-label">Bewertung</span></button>
-      <button class="nav-btn" data-screen="ereignisse"><span class="nav-icon">❗</span><span class="nav-label">Ereignisse</span></button>
-      <button class="nav-btn" data-screen="export"><span class="nav-icon">↓</span><span class="nav-label">Export</span></button>
-      <button class="nav-btn" data-screen="settings"><span class="nav-icon">⚙</span><span class="nav-label">Einstellungen</span></button>
-    </nav>
 
   </div><!-- /main-wrapper -->
 
@@ -534,6 +442,114 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+
+  <!-- Ereignis erfassen (aus einem Ablauf-Schritt geöffnet) -->
+  <div id="ereignis-overlay" class="overlay hidden">
+    <div class="dialog-box wide">
+      <div class="detail-header">
+        <div class="dialog-title" id="ev-ov-title">Ereignis erfassen</div>
+        <button class="btn-icon-sm" id="ev-ov-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="edit-content">
+        <div class="meta-text" id="ev-ov-context"></div>
+        <label class="field-label">Kategorie</label>
+        <div class="tag-row" id="ev-ov-tags"></div>
+        <label class="field-label" for="ev-ov-note">Beschreibung</label>
+        <input type="text" id="ev-ov-note" placeholder="z.B. Sensorik verrutscht" autocorrect="off">
+        <label class="field-label">Erfassungsart</label>
+        <div class="scenario-grid event-type-row">
+          <button type="button" class="scenario-btn" id="ev-ov-type-ts" data-type="timestamp"><span class="sc-icon">🕐</span><span>Zeitpunkt</span></button>
+          <button type="button" class="scenario-btn" id="ev-ov-type-dur" data-type="duration"><span class="sc-icon">⏱</span><span>Zeitraum</span></button>
+        </div>
+        <div id="ev-ov-ts-fields">
+          <label class="field-label" for="ev-ov-time">Zeitpunkt</label>
+          <div class="time-capture-row">
+            <input type="time" id="ev-ov-time" step="1">
+            <button type="button" class="btn btn-ghost btn-time-now" data-target="ev-ov-time">🕐 Jetzt</button>
+          </div>
+        </div>
+        <div id="ev-ov-dur-fields" class="hidden">
+          <div class="edit-row-2">
+            <div>
+              <label class="field-label" for="ev-ov-start">Start</label>
+              <div class="time-capture-row">
+                <input type="time" id="ev-ov-start" step="1">
+                <button type="button" class="btn btn-ghost btn-time-now" data-target="ev-ov-start">🕐 Jetzt</button>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="ev-ov-end">Ende</label>
+              <div class="time-capture-row">
+                <input type="time" id="ev-ov-end" step="1">
+                <button type="button" class="btn btn-ghost btn-time-now" data-target="ev-ov-end">🕐 Jetzt</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-col" style="margin-top:14px">
+        <button class="btn btn-primary full-width" id="ev-ov-save">✓ Ereignis speichern</button>
+        <button class="btn btn-danger full-width" id="ev-ov-delete">Ereignis löschen</button>
+        <button class="btn btn-ghost full-width" id="ev-ov-cancel">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trainerbewertungsbogen (aus einem Ablauf-Schritt geöffnet) -->
+  <div id="bewertung-overlay" class="overlay hidden">
+    <div class="dialog-box wide">
+      <div class="detail-header">
+        <div class="dialog-title" id="bew-ov-title">Trainerbewertungsbogen</div>
+        <button class="btn-icon-sm" id="bew-ov-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="edit-content">
+        <div class="bew-ov-context meta-text" id="bew-ov-context"></div>
+        <label class="field-label" for="bew-ov-label">Bezeichnung (welches Szenario?)</label>
+        <input type="text" id="bew-ov-label" placeholder="z.B. Szenario 1" autocorrect="off">
+        <div id="bew-ov-form"></div>
+        <label class="field-label" for="bew-ov-notes">Anmerkungen (optional)</label>
+        <textarea id="bew-ov-notes" rows="3" placeholder="Ergänzende Beobachtungen…"></textarea>
+      </div>
+      <div class="btn-col" style="margin-top:14px">
+        <button class="btn btn-primary full-width" id="bew-ov-save">💾 Bewertung speichern</button>
+        <button class="btn btn-danger full-width" id="bew-ov-delete">Bogen löschen</button>
+        <button class="btn btn-ghost full-width" id="bew-ov-cancel">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Einstellungen (über ⚙ oben rechts) -->
+  <div id="settings-overlay" class="overlay hidden">
+    <div class="dialog-box wide">
+      <div class="detail-header">
+        <div class="dialog-title">Einstellungen</div>
+        <button class="btn-icon-sm" id="settings-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="edit-content">
+        <div class="card" style="background:var(--surface3)">
+          <div class="card-label">SITZUNGSAUFZEICHNUNG</div>
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <div class="settings-row-title">Mehrere Teilnehmende gleichzeitig</div>
+              <div class="settings-row-desc">Erlaubt die Auswahl mehrerer Teilnehmender für eine gemeinsame Sitzungsaufzeichnung sowie einen gemeinsamen Trainerbewertungsbogen.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="chk-multi-proband">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="card" style="background:var(--surface3)">
+          <div class="card-label" style="color:var(--coral-txt)">⚠ GEFAHRENZONE</div>
+          <p class="privacy-text" style="color:var(--text2)">Löscht alle Teilnehmenden, Sitzungsdaten und Bewertungen unwiderruflich auf diesem Gerät. Vorher exportieren!</p>
+          <div class="danger-zone">
+            <button class="btn btn-danger full-width" id="btn-clear-data">⚠ Alle Daten löschen</button>
+          </div>
+        </div>
+        <div class="meta-text" style="text-align:center">mextPro <span class="app-version">v2.17.0</span></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Confirm -->
   <div id="confirm-overlay" class="overlay hidden">
