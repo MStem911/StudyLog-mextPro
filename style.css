@@ -1090,8 +1090,12 @@ input[type="time"] { color-scheme: dark; }
 /* ══════════════════════════════════════════════════════
    ABLAUF (Studien-Zeitleiste)
 ══════════════════════════════════════════════════════ */
+/* Kompakte Personen-Kopfzeile: Label neben dem Dropdown statt darüber */
+.ablauf-proband-card { padding: 10px 12px; }
 .ablauf-proband-row { display: flex; gap: 8px; align-items: center; }
 .ablauf-proband-row .field-select { flex: 1; min-width: 0; }
+.ablauf-proband-label { margin-bottom: 0; flex-shrink: 0; white-space: nowrap; }
+.ablauf-proband-card .ablauf-progress { margin-top: 8px; }
 
 /* Kopfzeile der Vollbild-Dialoge (Teilnehmende verwalten / Export) */
 .subview-header {
