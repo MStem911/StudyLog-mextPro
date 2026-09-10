@@ -96,6 +96,11 @@ verantwortet — sie haben keine weitere Funktion.
    antippen zum Bearbeiten/Löschen.
 
 Einzelne Schritte haben zusätzliche Felder:
+- **Fragebogen-Schritte (3, 5, 10, 14)**: eine Checkbox **„Fragebogen ausgefüllt"**. Antippen,
+  sobald die teilnehmende Person den jeweiligen Fragebogen bearbeitet hat — der Schritt wird
+  dann **grün** (Anzeige „Fragebogen ausgefüllt"), unabhängig von Start/Ende. Erneutes Antippen
+  hebt die Bestätigung wieder auf. „Schritt leeren" bzw. „Anmerkung entfernen" lässt die
+  Bestätigung stehen.
 - **Schritt 2 „Anlegen Sensorik"**: **nur** die **Sensorik-Checkliste** (Shimmer, Brustgurt,
   Uhr) — keine Start/Ende-Felder. Ein Item antippen, sobald die Sensorik angelegt ist — der
   Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)

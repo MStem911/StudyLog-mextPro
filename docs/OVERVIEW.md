@@ -36,8 +36,10 @@ Schritt 7 frei anlegbare Durchläufe mit Phasen direkt im Schritt, Schritt 8 fü
 Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi — je nur Start + Stopp direkt im
 Schritt und ohne eigene Schritt-Zeiterfassung, Schritt 12 über ein Overlay),
 **Trainerbewertungsbogen** (Schritt 10 je Hologate-Szenario, Schritt 14 für Rollercoaster —
-seit v2.16.0 reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items) und
-**Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum). **Noch offen:** der
+seit v2.16.0 reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items),
+**Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum) und eine Bestätigungs-Checkbox
+„Fragebogen ausgefüllt" an den Fragebogen-Schritten 3/5/10/14 (seit v2.25.0 — färbt den
+Schritt grün). **Noch offen:** der
 CSV/JSON-Export basiert noch auf der alten Datenstruktur (`sl_sessions`/`sl_bewertungen`)
 und bezieht die neuen Ablauf-Daten nicht ein; die alte Protokoll-Liste hat keinen Aufruf
 mehr.

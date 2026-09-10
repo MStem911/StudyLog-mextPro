@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.24.0';
+const APP_VERSION = '2.25.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1926,6 +1926,11 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
 // Anmerkung + schrittabhängige Abschnitte.
 const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_03', 'fs_08']);
 
+// Fragebogen-Schritte (3 / 5 / 10 / 14): zusätzlich eine Bestätigungs-Checkbox „Fragebogen
+// ausgefüllt". Ist sie gesetzt (p.ablauf[stepId].done = ISO-Zeitstempel), gilt der Schritt
+// als komplett (grün) — unabhängig von Start/Ende.
+const FRAGEBOGEN_STEPS = new Set(['fs_03', 'fs_05', 'fs_10', 'fs_14']);
+
 // Eingabefelder eines Schritts (Start/Ende soweit vorhanden + Anmerkung + „…entfernen"/
 // „Schritt leeren"). **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
 // stepPanelBodyHTML() nach den Zusatzabschnitten angehängt. fs_01 hat gar keine Felder.
@@ -1954,7 +1959,19 @@ function flowStepFieldsHTML(d, stepId) {
   const clearLabel = stepId === 'fs_02' ? 'Anmerkung entfernen (Checkliste bleibt)'
                    : noTime             ? 'Anmerkung entfernen'
                    : 'Schritt leeren';
-  return `${timeFields}
+  let fragebogenToggle = '';
+  if (FRAGEBOGEN_STEPS.has(stepId)) {
+    const fbDone = !!d.done;
+    const fbSub  = fbDone ? `bestätigt ${esc(localTimeStr(d.done))}` : 'noch nicht bestätigt';
+    fragebogenToggle = `<button class="sensorik-item${fbDone ? ' checked' : ''}" id="ablauf-edit-done" style="margin-bottom:12px">
+      <span class="sensorik-check">${fbDone ? '✓' : ''}</span>
+      <span class="sensorik-info">
+        <span class="sensorik-name">Fragebogen ausgefüllt</span>
+        <span class="sensorik-time">${fbSub}</span>
+      </span>
+    </button>`;
+  }
+  return `${fragebogenToggle}${timeFields}
     <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung${noteTime}</label>
     <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>
     <div class="btn-col" style="margin-top:10px">
@@ -2013,6 +2030,7 @@ function flowStepStateFor(stepId, d) {
     if (started > 0 || hasNote) return 'teilweise';
     return 'offen';
   }
+  if (FRAGEBOGEN_STEPS.has(stepId) && d && d.done) return 'komplett';
   return flowStepState(d);
 }
 
@@ -2074,6 +2092,7 @@ function renderAblauf() {
       const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
       summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
     }
+    if (FRAGEBOGEN_STEPS.has(s.id) && d.done) summary = 'Fragebogen ausgefüllt';
     const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
     return `
     <div class="ablauf-step-wrap">
@@ -2135,6 +2154,8 @@ function renderAblauf() {
   });
   const clearBtn = document.getElementById('ablauf-edit-clear');
   if (clearBtn) clearBtn.addEventListener('click', () => clearFlowStep(expandedFlowStepId));
+  const doneBtn = document.getElementById('ablauf-edit-done');
+  if (doneBtn) doneBtn.addEventListener('click', () => toggleFragebogenDone(expandedFlowStepId));
   const nextBtn = document.getElementById('ablauf-edit-next');
   if (nextBtn) nextBtn.addEventListener('click', advanceFlowStep);
   const expBtn = document.getElementById('ablauf-open-export');
@@ -2891,6 +2912,7 @@ function syncAblaufRows() {
         const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
         summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
       }
+      if (FRAGEBOGEN_STEPS.has(s.id) && d && d.done) summary = 'Fragebogen ausgefüllt';
       sub.textContent = `${s.tag}  ·  ${summary}`;
     }
     const label = row.querySelector('.ablauf-step-label');
@@ -2937,10 +2959,14 @@ function writeFlowStep(stepId) {
   let noteISO = prev.noteISO || null;
   if (note && !noteISO) noteISO = new Date().toISOString();
   if (!note)            noteISO = null;
-  if (!startISO && !endISO && !note) {
+  // Fragebogen-Bestätigung (fs_03/05/10/14) hat ein eigenes Bedienelement — hier nur erhalten.
+  const done = prev.done || null;
+  if (!startISO && !endISO && !note && !done) {
     delete p.ablauf[stepId];
   } else {
-    p.ablauf[stepId] = { startISO, endISO, note, noteISO };
+    p.ablauf[stepId] = done
+      ? { startISO, endISO, note, noteISO, done }
+      : { startISO, endISO, note, noteISO };
   }
   save();
 }
@@ -2951,17 +2977,43 @@ function clearFlowStep(stepId) {
   if (!p.ablauf || !p.ablauf[stepId]) { renderAblauf(); return; }
   const step  = FLOW_STEPS.find(s => s.id === stepId);
   const label = step ? step.label : 'diesen Schritt';
-  const isS2  = stepId === 'fs_02';
-  showConfirm(isS2 ? 'Anmerkung entfernen' : 'Schritt leeren',
+  const isS2   = stepId === 'fs_02';
+  const noTime = NO_TIME_STEPS.has(stepId);
+  const isFb   = FRAGEBOGEN_STEPS.has(stepId);
+  const what   = noTime ? 'Anmerkung' : 'Erfasste Zeiten und Anmerkung';
+  const fbHint = isFb ? ' (Die Fragebogen-Bestätigung bleibt erhalten.)' : '';
+  showConfirm((isS2 || noTime) ? 'Anmerkung entfernen' : 'Schritt leeren',
     isS2
       ? `Anmerkung für „${label}" entfernen? (Die Sensorik-Checkliste bleibt erhalten.)`
-      : `Erfasste Zeiten und Anmerkung für „${label}" entfernen?`,
+      : `${what} für „${label}" entfernen?${fbHint}`,
     () => {
+      const keepDone = p.ablauf[stepId] && p.ablauf[stepId].done;
       delete p.ablauf[stepId];
+      if (keepDone) p.ablauf[stepId] = { done: keepDone };
       save();
       renderAblauf();
       showToast(isS2 ? 'Anmerkung entfernt' : 'Schritt geleert');
     });
+}
+
+// Fragebogen-Bestätigung umschalten (fs_03 / fs_05 / fs_10 / fs_14). Gesetzt → Schritt grün.
+function toggleFragebogenDone(stepId) {
+  const p = ablaufProband();
+  if (!p || !stepId || !FRAGEBOGEN_STEPS.has(stepId)) return;
+  if (!p.ablauf) p.ablauf = {};
+  const prev = p.ablauf[stepId] || {};
+  if (prev.done) {
+    delete prev.done;
+    const empty = !prev.startISO && !prev.endISO && !(prev.note && prev.note.trim());
+    if (empty) delete p.ablauf[stepId];
+    else       p.ablauf[stepId] = prev;
+  } else {
+    prev.done = new Date().toISOString();
+    p.ablauf[stepId] = prev;
+    showToast('✓ Fragebogen bestätigt');
+  }
+  save();
+  renderAblauf();
 }
 
 const ablaufSelectEl = document.getElementById('ablauf-proband-select');
