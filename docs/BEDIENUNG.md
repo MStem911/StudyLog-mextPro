@@ -71,8 +71,11 @@ verantwortet — sie haben keine weitere Funktion.
 2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
    Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
-     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren.
+     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. (Schritt 2 „Anlegen
+     Sensorik" hat **keine** Start/Ende-Felder — dort zählt nur die Checkliste.)
    - **Hinweis / Anmerkung**: Freitext zu diesem Schritt (z. B. Besonderheiten, Abweichungen).
+     Sobald etwas eingetragen ist, wird die **Uhrzeit der Notiz** festgehalten und neben dem
+     Feld angezeigt („· notiert 14:51"). Gilt in **jedem** Schritt.
    - **✓ Weiter zum nächsten Schritt**: speichert und öffnet den folgenden Schritt (am
      letzten Schritt steht hier stattdessen der Export-Button).
    Eingaben werden sofort gespeichert.
@@ -91,9 +94,11 @@ verantwortet — sie haben keine weitere Funktion.
    antippen zum Bearbeiten/Löschen.
 
 Einzelne Schritte haben zusätzliche Felder:
-- **Schritt 2 „Anlegen Sensorik"**: die **Sensorik-Checkliste** (Shimmer, Brustgurt, Uhr).
-  Ein Item antippen, sobald die Sensorik angelegt ist — der Zeitpunkt wird automatisch
-  erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage) rückgängig.
+- **Schritt 2 „Anlegen Sensorik"**: **nur** die **Sensorik-Checkliste** (Shimmer, Brustgurt,
+  Uhr) — keine Start/Ende-Felder. Ein Item antippen, sobald die Sensorik angelegt ist — der
+  Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)
+  rückgängig. Der Schritt wird grün, sobald alle drei Items angelegt sind (Anzeige
+  „Sensorik 3/3"). Eine Anmerkung (mit Uhrzeit) ist wie in jedem Schritt möglich.
 - **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe** — pro Durchlauf über
   **＋ Durchlauf hinzufügen** eine Bezeichnung vergeben und die festen Phasen abhaken.
   „Starten" und „Beendet" erfassen beim Abhaken automatisch die Uhrzeit; die übrigen Phasen

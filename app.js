@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.20.0';
+const APP_VERSION = '2.21.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1926,6 +1926,23 @@ function flowStepFieldsHTML(d, isLast, stepId) {
          </div>`
       : '';
   }
+  const nextBtn  = isLast ? '' : '<button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zum nächsten Schritt</button>';
+  const noteTime = (d.noteISO && d.note && d.note.trim())
+    ? ` <span class="ablauf-note-time">· notiert ${esc(localTimeStr(d.noteISO))}</span>` : '';
+  const noteBlock = `
+    <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung${noteTime}</label>
+    <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>`;
+
+  // Schritt 2 „Anlegen Sensorik": keine Start/Ende-Felder — nur Anmerkung (mit Zeitstempel)
+  // + Weiter. Die Sensorik-Checkliste selbst kommt aus flowStepExtrasHTML().
+  if (stepId === 'fs_02') {
+    return `${noteBlock}
+    <div class="btn-col" style="margin-top:12px">
+      ${nextBtn}
+      <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Anmerkung entfernen</button>
+    </div>`;
+  }
+
   return `
     <div class="edit-row-2">
       <div>
@@ -1943,10 +1960,9 @@ function flowStepFieldsHTML(d, isLast, stepId) {
         </div>
       </div>
     </div>
-    <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung</label>
-    <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>
+    ${noteBlock}
     <div class="btn-col" style="margin-top:12px">
-      ${isLast ? '' : '<button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zum nächsten Schritt</button>'}
+      ${nextBtn}
       <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Schritt leeren</button>
     </div>`;
 }
@@ -1960,9 +1976,18 @@ function flowStepState(d) {
   if (hasStart || hasEnd || hasNote) return 'teilweise';
   return 'offen';
 }
-// Schritt 1 hat keine Zeitfelder — er gilt als erledigt, sobald eine Person aktiv ist.
+// Schritt 1: erledigt, sobald eine Person aktiv ist. Schritt 2: nach Sensorik-Checkliste
+// (alle Items angelegt = komplett), sonst Standard-Logik über Start/Ende/Anmerkung.
 function flowStepStateFor(stepId, d) {
   if (stepId === 'fs_01') return ablaufProband() ? 'komplett' : 'offen';
+  if (stepId === 'fs_02') {
+    const p = ablaufProband();
+    const done = (p && p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
+    const hasNote = !!(d && d.note && d.note.trim());
+    if (done === SENSORIK_ITEMS.length) return 'komplett';
+    if (done > 0 || hasNote) return 'teilweise';
+    return 'offen';
+  }
   return flowStepState(d);
 }
 
@@ -2015,6 +2040,10 @@ function renderAblauf() {
     const endTxt   = d.endISO   ? localTimeStr(d.endISO)   : '–';
     let summary   = (d.startISO || d.endISO) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
     if (s.id === 'fs_01') summary = p ? 'Teilnehmende:r angelegt' : 'Teilnehmende:n anlegen';
+    if (s.id === 'fs_02') {
+      const sDone = (p && p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
+      summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
+    }
     const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
     return `
     <div class="ablauf-step-wrap">
@@ -2674,6 +2703,10 @@ function syncAblaufRows() {
       const endTxt   = d && d.endISO   ? localTimeStr(d.endISO)   : '–';
       let summary    = (d && (d.startISO || d.endISO)) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
       if (s.id === 'fs_01') summary = 'Teilnehmende:r angelegt';
+      if (s.id === 'fs_02') {
+        const sDone = (p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
+        summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
+      }
       sub.textContent = `${s.tag}  ·  ${summary}`;
     }
     const label = row.querySelector('.ablauf-step-label');
@@ -2715,27 +2748,35 @@ function writeFlowStep(stepId) {
   if (startISO && endISO && new Date(endISO) < new Date(startISO)) {
     showToast('⚠ Ende liegt vor Start — trotzdem gespeichert');
   }
+  // Anmerkung bekommt einen Zeitstempel (Zeitpunkt der ersten Erfassung); wird die Anmerkung
+  // geleert, entfällt auch der Zeitstempel.
+  let noteISO = prev.noteISO || null;
+  if (note && !noteISO) noteISO = new Date().toISOString();
+  if (!note)            noteISO = null;
   if (!startISO && !endISO && !note) {
     delete p.ablauf[stepId];
   } else {
-    p.ablauf[stepId] = { startISO, endISO, note };
+    p.ablauf[stepId] = { startISO, endISO, note, noteISO };
   }
   save();
 }
 
 function clearFlowStep(stepId) {
   const p = ablaufProband();
-  if (!p || !stepId) { expandedFlowStepId = ''; renderAblauf(); return; }
-  if (!p.ablauf || !p.ablauf[stepId]) { expandedFlowStepId = ''; renderAblauf(); return; }
-  const step = FLOW_STEPS.find(s => s.id === stepId);
-  showConfirm('Schritt leeren',
-    `Erfasste Zeiten und Anmerkung für „${step ? step.label : 'diesen Schritt'}" entfernen?`,
+  if (!p || !stepId) return;
+  if (!p.ablauf || !p.ablauf[stepId]) { renderAblauf(); return; }
+  const step  = FLOW_STEPS.find(s => s.id === stepId);
+  const label = step ? step.label : 'diesen Schritt';
+  const isS2  = stepId === 'fs_02';
+  showConfirm(isS2 ? 'Anmerkung entfernen' : 'Schritt leeren',
+    isS2
+      ? `Anmerkung für „${label}" entfernen? (Die Sensorik-Checkliste bleibt erhalten.)`
+      : `Erfasste Zeiten und Anmerkung für „${label}" entfernen?`,
     () => {
       delete p.ablauf[stepId];
       save();
-      expandedFlowStepId = '';
       renderAblauf();
-      showToast('Schritt geleert');
+      showToast(isS2 ? 'Anmerkung entfernt' : 'Schritt geleert');
     });
 }
 
