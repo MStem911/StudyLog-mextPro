@@ -1,45 +1,125 @@
-# StudyLog-Mext — Projektkontext für Claude
+# StudyLog-Mext (Ablauf-Variante) — Projektkontext für Claude
 
 ## Was ist das
 Progressive Web App zur Durchführung von Studien-Sessions mit Teilnehmenden in VR-Szenarien.
-Abgeleitet von StudyLog-V2, angepasst für einen speziellen Verwendungszweck mit erweitertem
-Funktionsumfang (siehe "Neue Anforderungen" unten). Mehrere Studienleitungen nutzen die App
-gleichzeitig auf eigenen Smartphones, vollständig offline. Deployment: GitHub Pages
-(Repo: `studylog-mext`).
+**Diese Repo-Kopie basiert auf StudyLog-Mext und wird strukturell umgebaut:** weg von der
+bisherigen Tab-/Screen-Navigation, hin zu einem **einzigen chronologischen Studienablauf**
+aus einzelnen Ablaufschritten (siehe "Umbau: Von Tabs zu Ablaufschritten" unten). Mehrere
+Studienleitungen (VR-Team und SEN-Team) nutzen die App gleichzeitig auf eigenen Smartphones,
+vollständig offline. Deployment: GitHub Pages.
+
+> Repo-Name / Deployment-Ziel für diese Variante: noch festzulegen (TODO).
 
 ## Tech-Stack
 Vanilla HTML/CSS/JS, kein Build-Schritt, keine Frameworks/Dependencies. Datenhaltung
 ausschließlich lokal via `localStorage`. Offline-Fähigkeit über Service Worker (`sw.js`).
 
-## Neue Anforderungen (Abweichungen von StudyLog-V2)
+## Umbau: Von Tabs zu Ablaufschritten
 
-Diese vier Punkte sind der Grund für die Ausgliederung in ein eigenes Repo. Details zur
-Umsetzung (Datenmodell, UI) sind noch offen und werden iterativ mit Claude besprochen.
+### Ziel
+Die bisherige Navigation über Tabs/Screens (Teilnehmende · Sensorik · Szenario · Protokoll ·
+Bewertung · Ereignisse · Export · Einstellungen) wird für die **Session-Durchführung** ersetzt
+durch einen **linearen, zeitlich geordneten Ablauf**, der 1:1 dem realen Studienablauf folgt.
 
-1. **Neuer Tab "Sensorik"**: Checkliste für Sensorik-Items, jedes Item abhakbar; beim Abhaken
-   wird automatisch ein Timestamp erfasst (wann welche Sensorik angelegt wurde). Analog zum
-   bestehenden Prinzip der Deviation-Tags, aber als eigener Tab mit eigenem Datenmodell.
-2. **VR-Szenario-Ablauf mit Timestamps**: Der Ablauf innerhalb eines Szenarios soll in
-   einzelne Schritte unterteilt und jeweils mit Timestamp abhakbar sein (Erweiterung des
-   bestehenden Session-Timers, der bisher nur Start/Ende eines Szenarios erfasst).
-3. **Trainerbewertungsbogen mehrfach pro Session**: Der bestehende 20-Item-Bewertungsbogen
-   soll nicht mehr einmal pro Session, sondern einmal **pro VR-Szenario** ausgefüllt werden
-   können — d.h. eine Session mit mehreren Szenarien erzeugt mehrere Bewertungsbögen,
-   zugeordnet zu Teilnehmer*in + Szenario.
-4. **Auswahl Links-/Rechtshänder**: Neues Attribut in der Teilnehmendenverwaltung (vermutlich
-   relevant für Sensorplatzierung).
+Pro Ablaufschritt:
+- **Start** und **Ende** erfassbar — entweder per Button (Timestamp = jetzt) oder per
+  manueller Eingabe/Korrektur einer Uhrzeit.
+- **Hinweis/Anmerkung** als Freitext pro Schritt hinzufügbar.
+- Schritte sind der/dem aktuell laufenden Teilnehmenden zugeordnet.
+
+Die Labels **VR / SEN / TMS (extern)** an den Schritten sind **rein informativ** (Kontext,
+welches Team den Schritt fachlich verantwortet) — keine Filter-, Rollen- oder
+gerätespezifische Logik.
+
+### Kanonischer Ablauf (Schritte)
+
+| Nr. | Schritt | Label |
+|-----|---------|-------|
+| –   | Ankommen, Begrüßung | VR / SEN |
+| 1   | Aufklärung + Einverständniserklärung | VR / SEN |
+| 2   | Anlegen Sensorik (Shimmer, Brustgurt, Uhr) | SEN |
+| 3   | Fragebogen 1 | SEN / VR |
+| 4   | TMS (ca. 0,5 h) | TMS (extern) |
+| 5   | Fragebogen 2 | SEN / VR |
+| 6   | Anlegen VR-Equipment (Hologate) | VR |
+| 7   | Einweisung + Tutorial VR (Hologate) | VR |
+| 8   | VR-Szenarien Hologate (5 Szenarien) | VR |
+| 9   | Ablegen VR-Equipment (Hologate) | VR |
+| 10  | Fragebogen 3 | SEN / VR |
+| 11  | VR-Brille anlegen (Rollercoaster) | VR |
+| 12  | Rollercoaster (Varjo) | VR |
+| 13  | VR-Brille ablegen (Rollercoaster) | VR |
+| 14  | Fragebogen 4 | SEN / VR |
+| 15  | Stop Sensorik (Aufzeichnung beenden) | SEN |
+| 16  | Sensorik ablegen | SEN |
+| 17  | Verabschiedung | VR / SEN |
+| 18  | Datensicherung (VR) / Desinfektion & Aufbereitung Sensorik (SEN) / StudyLog-Daten sichern (beide) | VR / SEN |
+
+Diese Liste ist die Referenz für die Default-Schritte. Ob die Schrittliste im UI
+editierbar/erweiterbar ist, ist noch offen (siehe unten).
+
+### Teilnehmende anlegen — Verortung im Ablauf
+Das **Anlegen neuer Teilnehmender erfolgt durch das VR-Team**, zeitlich **nach Schritt 1
+(Aufklärung + Einverständniserklärung)** und **parallel zu Schritt 2** (während das SEN-Team
+die Sensorik anlegt).
+
+- Einwilligung zuerst: Schritt 1 muss abgeschlossen sein, bevor personenbezogene Daten
+  (Pseudonym, Handedness) angelegt werden — deckt sich mit DSGVO (Einwilligung vor
+  Verarbeitung).
+- Schritt 2 hat damit zwei nebenläufige Stränge, die unabhängig Start/Ende + Notiz tragen:
+  - **SEN:** Sensorik anlegen (Sensorik-Checkliste mit Timestamps).
+  - **VR:** Teilnehmende:n im System anlegen (Pseudonym-Vergabe, Handedness).
+- Die Anlage-Aktion wird an/neben Schritt 2 in den Ablauf eingebettet (Vermerk „Anlegen
+  durch VR"), nicht in eine dauerhaft eigene Rahmen-Ansicht ausgelagert.
+
+### Bestehende Funktionen wandern in den Ablauf
+Die Inhalte der bisherigen Feature-Tabs werden **kontextabhängig in die passenden
+Ablaufschritte eingebettet**, nicht als separate Tabs beibehalten:
+- **Sensorik-Checkliste** (abhakbare Items mit Timestamp) → Schritt 2 „Anlegen Sensorik".
+- **VR-Szenario-Ablauf mit Timestamps** (Szenario in Teilschritte unterteilt, je abhakbar) →
+  Schritt 8 „VR-Szenarien Hologate" bzw. Schritt 12 „Rollercoaster".
+- **Trainerbewertungsbogen (20 Items), einmal pro VR-Szenario** → bei den VR-Szenario-
+  Schritten, je Teilnehmer*in + Szenario ein Bogen.
+- **Ereignis-Erfassung** (Zeitpunkt-/Zeitraum-Erfassung von Problemen) → pro Schritt bzw. als
+  schrittübergreifende Erfassung im Ablauf.
+- **Handedness (Links-/Rechtshänder)** → Attribut der Teilnehmenden, gesetzt beim Anlegen
+  durch VR (parallel zu Schritt 2), relevant für Sensorplatzierung.
+
+**Export** und **Einstellungen** bleiben zunächst als Rahmen-Ansichten bestehen (kein
+Ablaufschritt).
+
+### Noch offen (iterativ mit Claude klären, dann /docs ergänzen)
+- Datenmodell für Ablauf-Instanz pro Teilnehmende:r (Schritt-IDs, Start/Ende, Notiz,
+  Status offen/laufend/erledigt; nebenläufige Stränge in Schritt 2).
+- Ob „Teilnehmende:n auswählen/wechseln" trotz Einbettung der Anlage weiterhin jederzeit
+  global erreichbar sein muss (gestaffelte Durchläufe mehrerer Personen) oder ob der Ablauf
+  strikt an genau eine:n aktive:n Teilnehmende:n gebunden ist.
+- Wie werden bestehende `localStorage`-Daten aus der Tab-Version migriert bzw. koexistieren?
+- Editierbarkeit der Schrittliste (fixe Defaults vs. pro Session anpassbar).
+- Navigation im Ablauf: freies Springen vs. sequenziell; Verhalten bei parallelen Geräten
+  (VR-Team/SEN-Team) ohne Sync.
+- Zusammenspiel „ein Ablauf" mit „mehreren VR-Szenarien" (Schritt 8: 5 Szenarien) und
+  mehreren Bewertungsbögen.
+- Ob der bisherige Session-Timer/„Protokoll" vollständig im Ablauf aufgeht.
 
 ## Datenschutz (hart, nicht verhandelbar)
 - Keine Daten verlassen das Gerät — kein externer Server, kein Tracking, keine Analytics.
 - Pseudonymisierung nach Art. 4 Nr. 5 DSGVO.
+- Einwilligung vor Verarbeitung: personenbezogene Teilnehmendendaten erst nach Schritt 1
+  (Einverständniserklärung) anlegen.
 - Gendergerechte Sprache im UI: "Teilnehmende", nicht "Probanden" (Variablennamen im Code
   dürfen weiterhin `Proband*` heißen — nur sichtbare UI-Texte müssen genderneutral sein).
 - Handedness-Auswahl: keine besondere Sensitivität, aber wie alle Teilnehmendendaten
   ausschließlich lokal speichern.
 
 ## Nicht verhandelbare Arbeitsregeln
-1. **Strict non-regression**: Änderungen sind rein additiv oder visuell. Bestehende
-   Funktionalität darf nie brechen oder sich unangekündigt ändern.
+1. **Strukturumbau ist die einzige bewusste Ausnahme von "strict non-regression":** Der
+   Wechsel von Tabs zu Ablaufschritten ist gewollt und darf die Navigation/Screens ersetzen.
+   **Innerhalb dieses Umbaus gilt weiterhin: kein stiller Funktions- oder Datenverlust.**
+   Jede bestehende Erfassungsmöglichkeit (Sensorik-Items, Szenario-Timestamps, 20-Item-
+   Bogen, Ereignisse, Handedness, Teilnehmenden-Anlage, Export-Umfang) muss im neuen
+   Ablauf-UI erhalten bleiben oder bewusst und abgesprochen entfallen. Alles außerhalb des
+   Umbaus bleibt rein additiv oder visuell.
 2. **Minimale Diffs**: Kein Refactoring "nebenbei". Wenn ein Bug auftritt: auf den letzten
    bestätigt stabilen Stand zurück, dann nur die minimal nötige Änderung.
 3. **Root Cause statt Symptom-Fix**: Ursache systematisch diagnostizieren, keine
@@ -53,13 +133,17 @@ Single Source of Truth: `const APP_VERSION` ganz oben in `app.js`.
 Bei **jedem Commit, der Funktionalität/Inhalt ändert** (nicht bei reinen Doku-Änderungen):
 1. `APP_VERSION` in `app.js` hochzählen — Patch (`2.2.1` → `2.2.2`) für Bugfixes/kleine
    Änderungen, Minor (`2.2.x` → `2.3.0`) für neue Features, Major nur nach expliziter Absprache.
-2. `CACHE`-Konstante in `sw.js` synchron auf denselben Wert setzen (z.B.
-   `studylog-mext-v2.3.0`) — erzwingt Invalidierung des alten Service-Worker-Caches.
+2. `CACHE`-Konstante in `sw.js` synchron auf denselben Wert setzen (aktuelles Schema:
+   `studylog-v<version>`, z.B. `studylog-v2.13.0`) — erzwingt Invalidierung des alten
+   Service-Worker-Caches.
 3. Die statischen `<span class="app-version">` Platzhalter in `index.html` (aktuell 2x:
    Sidebar-Footer + mobile Topbar) auf denselben Wert setzen — sie werden zusätzlich beim
    Laden per JS aus `APP_VERSION` überschrieben (Zeile mit
    `document.querySelectorAll('.app-version')...` im INIT-Block von `app.js`), das ist nur
    der No-Flash-Fallback für den ersten Paint.
+
+> Der Tabs→Ablauf-Umbau ist ein Kandidat für einen **Major-Bump** — vor dem ersten
+> Umbau-Commit mit dem/der Nutzer:in klären.
 
 ## Bekannte, bereits gelöste Bugs (nicht wiederholen)
 - iOS Safari PWA: `<div>` als Klick-Ziel funktioniert nicht zuverlässig → immer `<button>`.
@@ -90,5 +174,6 @@ Datenschutz-Bewertung (DSGVO/DSFA) und für neue Entwickler:innen/KI-Modelle ohn
 **Bei jeder Code-Änderung, die Datenerfassung, -speicherung, -übertragung, Architektur oder
 Bedienung betrifft, die passende(n) Datei(en) in `/docs` automatisch mitaktualisieren** —
 ohne dass extra danach gefragt werden muss. Unklare Datenschutz-Aspekte in `DATENFLUSS.md`
-weiterhin mit "TODO: Datenschutz prüfen" markieren. **Bei den vier neuen Anforderungen oben
-gilt dasselbe: sobald Umsetzungsdetails feststehen, entsprechende /docs-Dateien ergänzen.**
+weiterhin mit "TODO: Datenschutz prüfen" markieren. **Der Tabs→Ablauf-Umbau betrifft
+Architektur und Bedienung umfassend: sobald Umsetzungsdetails feststehen, alle vier
+/docs-Dateien entsprechend nachziehen.**
