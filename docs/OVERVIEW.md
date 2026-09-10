@@ -29,8 +29,11 @@ keine Zeitfelder — dort wird die Person angelegt („＋ Teilnehmende:n anlege
 es automatisch zu Schritt 2 (Sensorik). Weitere Personen über ＋ oben; bearbeiten über ✎.
 Der CSV/JSON-Export (in Schritt 18) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
-Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe**
-(Schritt 7/8/12 — feste Phasen je Durchlauf, „Szenario starten/beendet" mit Zeitstempel),
+Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), eine reine **Anzeigeliste des
+VR-Equipments** (Schritt 6 — Fußtracker / Handtracker / Weste / VR-Brille, ohne Abhaken),
+**VR-Szenario-Durchläufe** (Schritt 7/8/12 — feste Phasen je Durchlauf, „Szenario
+starten/beendet" mit Zeitstempel; Schritt 7 wird direkt im Schritt bearbeitet, Schritt 8/12
+über ein Overlay),
 **Trainerbewertungsbogen** (Schritt 10 je Hologate-Szenario, Schritt 14 für Rollercoaster —
 seit v2.16.0 reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items) und
 **Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum). **Noch offen:** der

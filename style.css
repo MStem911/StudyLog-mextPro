@@ -1197,6 +1197,23 @@ input[type="time"] { color-scheme: dark; }
 .bew-list-label { font-weight: 700; color: var(--text1); }
 .bew-list-meta  { font-size: var(--text-sm); color: var(--text2); white-space: nowrap; }
 .bew-ov-context { margin-bottom: 8px; }
+
+/* Reine Anzeigeliste (Schritt 6 „VR-Equipment anlegen") — kein Abhaken */
+.ablauf-equip-list { display: flex; flex-direction: column; gap: 6px; }
+.ablauf-equip-item {
+  background: var(--surface3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  font-weight: 700; color: var(--text1);
+}
+
+/* Inline-Durchlauf (Schritt 7) */
+.ablauf-sz-run { margin-bottom: 12px; }
+.ablauf-sz-run + .ablauf-sz-run { padding-top: 12px; border-top: 1px solid var(--border); }
+.ablauf-sz-label {
+  width: 100%; font-family: inherit; font-size: var(--text-md); font-weight: 700;
+  background: var(--surface3); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text1);
+}
 .ablauf-detail-empty { font-size: var(--text-sm); color: var(--text3); line-height: 1.5; }
 
 /* Tablet/Desktop (ab 768px): Ablauf = linke Schritt-Leiste (eigene Scrollbar) +

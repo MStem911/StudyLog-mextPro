@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.22.0';
+const APP_VERSION = '2.23.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -2139,12 +2139,30 @@ function renderAblauf() {
   extrasScope.querySelectorAll('[data-ev-edit]').forEach(btn =>
     btn.addEventListener('click', () => openEreignisOverlay(expandedFlowStepId, btn.dataset.evEdit))
   );
-  // VR-Szenario-Durchläufe (fs_07 / fs_08 / fs_12)
+  // VR-Szenario-Durchläufe — Overlay-Variante (fs_08 / fs_12)
   extrasScope.querySelectorAll('[data-sz-add]').forEach(btn =>
     btn.addEventListener('click', () => addSzenarioRun(btn.dataset.szAdd))
   );
   extrasScope.querySelectorAll('[data-sz-edit]').forEach(btn =>
     btn.addEventListener('click', () => openSzenarioOverlay(expandedFlowStepId, btn.dataset.szEdit))
+  );
+  // VR-Szenario-Durchläufe — Inline-Variante (fs_07): direkt im Schritt
+  extrasScope.querySelectorAll('[data-sz-add-inline]').forEach(btn =>
+    btn.addEventListener('click', () => addSzenarioRunInline(btn.dataset.szAddInline))
+  );
+  extrasScope.querySelectorAll('[data-sz-del-inline]').forEach(btn =>
+    btn.addEventListener('click', () => deleteSzenarioRunInline(expandedFlowStepId, btn.dataset.szDelInline))
+  );
+  extrasScope.querySelectorAll('[data-sz-phase-inline]').forEach(btn =>
+    btn.addEventListener('click', () => toggleRunPhase(expandedFlowStepId, btn.dataset.szRun, btn.dataset.szPhaseInline))
+  );
+  extrasScope.querySelectorAll('[data-sz-label]').forEach(inp =>
+    inp.addEventListener('change', () => {
+      const p = ablaufProband();
+      if (!p) return;
+      const run = ((p.szenarien && p.szenarien[expandedFlowStepId]) || []).find(r => r.id === inp.dataset.szLabel);
+      if (run) { run.label = inp.value.trim(); save(); }
+    })
   );
 
   // gewählten Schritt in der linken Leiste sichtbar scrollen
@@ -2158,6 +2176,7 @@ function renderAblauf() {
 // fs_02 „Sensorik-Checkliste" werden direkt in stepPanelBodyHTML() platziert.)
 function flowStepExtrasHTML(stepId) {
   let html = '';
+  if (stepId === 'fs_06')          html += vrEquipmentSectionHTML();
   if (SZENARIO_STEP_META[stepId])  html += szenarioSectionHTML(stepId);
   if (BEW_STEP_META[stepId])       html += bewSectionHTML(stepId);
   html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt
@@ -2276,10 +2295,23 @@ function bewSectionHTML(stepId) {
   </div>`;
 }
 
+// Ausrüstung, die in Schritt 6 anzulegen ist — reine Anzeigeliste, kein Abhaken.
+const VR_EQUIPMENT_ITEMS = ['Fußtracker', 'Handtracker', 'Weste', 'VR-Brille'];
+function vrEquipmentSectionHTML() {
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">VR-EQUIPMENT ANLEGEN</div>
+    <div class="ablauf-equip-list">${
+      VR_EQUIPMENT_ITEMS.map(x => `<div class="ablauf-equip-item">${esc(x)}</div>`).join('')
+    }</div>
+  </div>`;
+}
+
 // Abschnitt „VR-Szenario-Durchläufe" im Detailbereich von fs_07 / fs_08 / fs_12.
+// fs_07 (Tutorial): Phasen direkt im Schritt (kein Overlay). fs_08/fs_12: Liste + Overlay.
 function szenarioSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
+  if (stepId === 'fs_07') return szenarioInlineSectionHTML(stepId);
   const meta = SZENARIO_STEP_META[stepId];
   const list = (p.szenarien && p.szenarien[stepId]) || [];
   const phases = szPhasesFor(stepId);
@@ -2295,6 +2327,45 @@ function szenarioSectionHTML(stepId) {
     <p class="meta-text" style="margin-bottom:8px">Je Durchlauf die Phasen abhaken — „Szenario starten" und „Szenario beendet" erfassen dabei einen Zeitstempel.</p>
     <div class="bew-list">${rows || '<div class="meta-text">Noch kein Durchlauf angelegt.</div>'}</div>
     <button class="btn btn-primary full-width" data-sz-add="${esc(stepId)}" style="margin-top:8px">＋ Durchlauf hinzufügen</button>
+  </div>`;
+}
+
+// fs_07: Durchläufe mit Phasen direkt im Schritt-Panel (ohne Overlay).
+function szenarioInlineSectionHTML(stepId) {
+  const p = ablaufProband();
+  if (!p) return '';
+  const meta   = SZENARIO_STEP_META[stepId];
+  const list   = (p.szenarien && p.szenarien[stepId]) || [];
+  const phases = szPhasesFor(stepId);
+  const runsHTML = list.map(run => {
+    if (!run.phases) run.phases = {};
+    const rows = phases.map(ph => {
+      const val  = run.phases[ph.id];
+      const done = !!val;
+      const sub  = ph.ts
+        ? (done ? localDatetimeStr(val) : 'Zeitstempel beim Abhaken')
+        : (done ? 'erledigt' : 'offen');
+      return `<button class="sensorik-item${done ? ' checked' : ''}" data-sz-phase-inline="${esc(ph.id)}" data-sz-run="${esc(run.id)}">
+        <span class="sensorik-check">${done ? '✓' : ''}</span>
+        <span class="sensorik-info">
+          <span class="sensorik-name">${esc(ph.label)}</span>
+          <span class="sensorik-time">${esc(sub)}</span>
+        </span>
+      </button>`;
+    }).join('');
+    return `<div class="ablauf-sz-run">
+      <input type="text" class="ablauf-sz-label" data-sz-label="${esc(run.id)}" value="${esc(run.label || '')}" placeholder="Bezeichnung" autocorrect="off">
+      <div class="sensorik-list" style="margin-top:8px">${rows}</div>
+      <div class="btn-col" style="margin-top:8px">
+        <button class="btn btn-ghost full-width" data-sz-del-inline="${esc(run.id)}">Durchlauf löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLAUF · ${esc(meta.title)}</div>
+    <p class="meta-text" style="margin-bottom:8px">Phasen abhaken — „Tutorial starten" und „Tutorial beendet" erfassen dabei einen Zeitstempel.</p>
+    ${runsHTML || '<div class="meta-text" style="margin-bottom:8px">Noch kein Durchlauf angelegt.</div>'}
+    <button class="btn btn-primary full-width" data-sz-add-inline="${esc(stepId)}" style="margin-top:8px">＋ Durchlauf hinzufügen</button>
   </div>`;
 }
 
@@ -2608,25 +2679,55 @@ function renderSzOvPhases() {
   );
 }
 
-function toggleSzPhase(phaseId) {
-  const p   = ablaufProband();
-  const run = szCurrentRun();
-  const ph  = szPhasesFor(szOvStepId).find(x => x.id === phaseId);
-  if (!p || !run || !ph) return;
+// Gemeinsame Phasen-Logik für Overlay (fs_08/fs_12) und Inline-Darstellung (fs_07).
+function toggleRunPhase(stepId, runId, phaseId, afterFn) {
+  const p = ablaufProband();
+  if (!p) return;
+  const run = ((p.szenarien && p.szenarien[stepId]) || []).find(r => r.id === runId);
+  const ph  = szPhasesFor(stepId).find(x => x.id === phaseId);
+  if (!run || !ph) return;
+  if (!run.phases) run.phases = {};
+  const commit = () => { save(); if (afterFn) afterFn(); renderAblauf(); };
   if (run.phases[phaseId]) {
     const msg = ph.ts
       ? `„${ph.label}" wurde um ${localTimeStr(run.phases[phaseId])} erfasst. Häkchen (und Zeitstempel) entfernen?`
       : `Häkchen bei „${ph.label}" entfernen?`;
-    showConfirm('Phase zurücksetzen', msg, () => {
-      delete run.phases[phaseId]; save(); renderSzOvPhases(); renderAblauf();
-    });
+    showConfirm('Phase zurücksetzen', msg, () => { delete run.phases[phaseId]; commit(); });
   } else {
     run.phases[phaseId] = ph.ts ? new Date().toISOString() : true;
-    save();
-    renderSzOvPhases();
-    renderAblauf();
     if (ph.ts) showToast('✓ ' + ph.label + '  ·  ' + localTimeStr(run.phases[phaseId]));
+    commit();
   }
+}
+function toggleSzPhase(phaseId) {
+  toggleRunPhase(szOvStepId, szOvId, phaseId, renderSzOvPhases);
+}
+
+// Inline-Variante (fs_07): Durchlauf anlegen / löschen ohne Overlay.
+function addSzenarioRunInline(stepId) {
+  const p = ablaufProband();
+  const meta = SZENARIO_STEP_META[stepId];
+  if (!p || !meta) return;
+  if (!p.szenarien) p.szenarien = {};
+  if (!Array.isArray(p.szenarien[stepId])) p.szenarien[stepId] = [];
+  const n = p.szenarien[stepId].length + 1;
+  const label = stepId === 'fs_08' ? meta.defaultLabel + n
+              : (n > 1 ? meta.defaultLabel + ' ' + n : meta.defaultLabel);
+  p.szenarien[stepId].push({ id: uid(), label, phases: {} });
+  save();
+  renderAblauf();
+}
+function deleteSzenarioRunInline(stepId, runId) {
+  const p = ablaufProband();
+  if (!p) return;
+  const arr = (p.szenarien && p.szenarien[stepId]) || [];
+  const run = arr.find(r => r.id === runId);
+  showConfirm('Durchlauf löschen', `„${run ? run.label : 'Durchlauf'}" wirklich löschen?`, () => {
+    p.szenarien[stepId] = arr.filter(r => r.id !== runId);
+    save();
+    renderAblauf();
+    showToast('Durchlauf gelöscht');
+  });
 }
 
 function closeSzenarioOverlay() {

@@ -101,16 +101,19 @@ Einzelne Schritte haben zusätzliche Felder:
   Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)
   rückgängig. Der Schritt wird grün, sobald alle drei Items angelegt sind (Anzeige
   „Sensorik 3/3"). Eine Anmerkung (mit Uhrzeit) ist wie in jedem Schritt möglich.
+- **Schritt 6 „Anlegen VR-Equipment"**: reine **Anzeigeliste** des anzulegenden Equipments
+  (Fußtracker, Handtracker, Weste, VR-Brille) — nichts zum Abhaken, nur als Erinnerung.
 - **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe** — pro Durchlauf über
   **＋ Durchlauf hinzufügen** eine Bezeichnung vergeben und die festen Phasen abhaken.
   „Starten" und „Beendet" erfassen beim Abhaken automatisch die Uhrzeit; die übrigen Phasen
   sind reine Häkchen. Für Hologate (Schritt 8) je durchlaufenem Szenario einen Durchlauf.
-  - **Schritt 8 / 12 (Szenario):** Szenario starten (Zeit) · Person kalibriert · Person
-    durchläuft das Szenario · Szenario beendet (Zeit) · Brille abgezogen · Selbstbewertung
-    + Bewertungsbogen.
-  - **Schritt 7 (Tutorial):** kürzer — Tutorial starten (Zeit) · Person kalibriert · Person
-    durchläuft das Tutorial · Tutorial beendet (Zeit) · **Direkt ins VR-Szenario gewechselt**
-    (keine Bewertung, Brille bleibt auf).
+  - **Schritt 8 / 12 (Szenario):** Bezeichnung und Phasen werden in einem Overlay bearbeitet.
+    Szenario starten (Zeit) · Person kalibriert · Person durchläuft das Szenario · Szenario
+    beendet (Zeit) · Brille abgezogen · Selbstbewertung + Bewertungsbogen.
+  - **Schritt 7 (Tutorial):** Bezeichnung und Phasen werden **direkt im Schritt** bearbeitet
+    (kein Overlay). Kürzer — Tutorial starten (Zeit) · Person kalibriert · Person durchläuft
+    das Tutorial · Tutorial beendet (Zeit) · **Direkt ins VR-Szenario gewechselt** (keine
+    Bewertung, Brille bleibt auf).
 - **Schritt 10 / Schritt 14**: der **Trainerbewertungsbogen** (siehe unten).
 
 Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind
