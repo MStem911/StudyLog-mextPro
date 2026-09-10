@@ -24,9 +24,10 @@ Ende erfasst) gibt den Überblick. „✓ Weiter" öffnet den nächsten Schritt,
 Leiste kann jederzeit frei gesprungen werden.
 
 Die frühere Tab-Navigation entfällt. Einstellungen liegen hinter dem ⚙-Icon oben rechts
-(Overlay). Teilnehmende anlegen über ＋ oben bzw. „＋ Teilnehmende:n anlegen" in Schritt 1
-(Aufklärung + Einverständnis); bearbeiten über ✎. Der CSV/JSON-Export (in Schritt 18)
-öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
+(Overlay). **Schritt 1 (Aufklärung + Einverständnis)** ist beim Start direkt geöffnet und hat
+keine Zeitfelder — dort wird die Person angelegt („＋ Teilnehmende:n anlegen"), danach geht
+es automatisch zu Schritt 2 (Sensorik). Weitere Personen über ＋ oben; bearbeiten über ✎.
+Der CSV/JSON-Export (in Schritt 18) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
 Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe**
 (Schritt 7/8/12 — feste Phasen je Durchlauf, „Szenario starten/beendet" mit Zeitstempel),

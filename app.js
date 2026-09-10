@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.19.0';
+const APP_VERSION = '2.20.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -436,10 +436,10 @@ function saveNewProband() {
   const searchEl = document.getElementById('search-input');
   renderProbanden(searchEl ? searchEl.value : '');
   showToast('✓ ' + pseudo + ' angelegt');
-  // Neue Person wird die aktive im Ablauf; zurück zum Ablauf.
+  // Neue Person wird die aktive im Ablauf; nach dem Anlegen direkt weiter zur Sensorik.
   selectedSensorikProbandId = newId;
   selectedAblaufProbandId   = newId;
-  expandedFlowStepId        = '';
+  expandedFlowStepId        = 'fs_02';
   renderAblauf();
   showScreen('ablauf');
 }
@@ -1905,7 +1905,7 @@ document.getElementById('btn-add-event-tag').addEventListener('click', () => {
 //   breit  (Tablet quer, ab 1024px): zweispaltig (Master-Detail) — links die Schrittliste,
 //          rechts ein fest sichtbares Detailfeld für den gewählten Schritt.
 let selectedAblaufProbandId = '';
-let expandedFlowStepId       = '';
+let expandedFlowStepId       = 'fs_01';  // Schritt 1 ist beim Start direkt geöffnet
 const ABLAUF_WIDE_MQ = window.matchMedia('(min-width: 1024px)');
 // Beim Wechsel Hoch-/Querformat neu aufbauen, damit Inline-Panel <-> Detailspalte umschaltet.
 ABLAUF_WIDE_MQ.addEventListener('change', () => {
@@ -1915,7 +1915,17 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
 // Eingabefelder (Start/Ende/Anmerkung + „Weiter"/„Schritt leeren") für einen Schritt —
 // identisch im Inline-Panel (schmal) wie in der Detailspalte (breit); IDs bleiben eindeutig,
 // da immer nur eine der beiden Stellen gerendert wird. `isLast` = letzter Schritt (kein „Weiter").
-function flowStepFieldsHTML(d, isLast) {
+// Schritt 1 (Aufklärung + Einverständnis) hat KEINE Zeitfelder — hier wird nur die Person
+// angelegt (siehe flowStepExtrasHTML) und danach zur Sensorik gewechselt.
+function flowStepFieldsHTML(d, isLast, stepId) {
+  if (stepId === 'fs_01') {
+    // „Weiter zur Sensorik" erst, wenn eine Person angelegt/gewählt ist.
+    return ablaufProband()
+      ? `<div class="btn-col" style="margin-top:4px">
+           <button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zur Sensorik</button>
+         </div>`
+      : '';
+  }
   return `
     <div class="edit-row-2">
       <div>
@@ -1950,6 +1960,11 @@ function flowStepState(d) {
   if (hasStart || hasEnd || hasNote) return 'teilweise';
   return 'offen';
 }
+// Schritt 1 hat keine Zeitfelder — er gilt als erledigt, sobald eine Person aktiv ist.
+function flowStepStateFor(stepId, d) {
+  if (stepId === 'fs_01') return ablaufProband() ? 'komplett' : 'offen';
+  return flowStepState(d);
+}
 
 function ablaufProband() {
   return probanden.find(p => p.id === selectedAblaufProbandId) || null;
@@ -1976,16 +1991,12 @@ function renderAblauf() {
   const progress = document.getElementById('ablauf-progress');
   if (!timeline) return;
   buildAblaufProbandSelect();
-  const p = ablaufProband();
-  if (!p) {
-    timeline.innerHTML = '';
-    if (detail) detail.innerHTML = '';
-    if (layout) layout.classList.add('hidden');
-    progress.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
-  if (!p.ablauf) p.ablauf = {};
+  const p   = ablaufProband();
+  const abl = (p && p.ablauf) ? p.ablauf : {};
+  if (p && !p.ablauf) p.ablauf = abl;
+  // Ohne Person ist trotzdem der Ablauf sichtbar und Schritt 1 offen — dort wird die Person
+  // angelegt. Nur die restlichen Schritte sind bis dahin nicht sinnvoll bedienbar.
+  if (!p && !expandedFlowStepId) expandedFlowStepId = 'fs_01';
   empty.classList.add('hidden');
   if (layout) layout.classList.remove('hidden');
   const wide = ABLAUF_WIDE_MQ.matches;
@@ -1997,12 +2008,13 @@ function renderAblauf() {
     `${c.teilweise ? '  ·  ' + c.teilweise + ' angefangen' : ''}</div>`;
 
   timeline.innerHTML = FLOW_STEPS.map(s => {
-    const d       = p.ablauf[s.id] || {};
-    const state   = flowStepState(d);
+    const d       = abl[s.id] || {};
+    const state   = flowStepStateFor(s.id, d);
     const isOpen  = expandedFlowStepId === s.id;
     const startTxt = d.startISO ? localTimeStr(d.startISO) : '–';
     const endTxt   = d.endISO   ? localTimeStr(d.endISO)   : '–';
-    const summary  = (d.startISO || d.endISO) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
+    let summary   = (d.startISO || d.endISO) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
+    if (s.id === 'fs_01') summary = p ? 'Teilnehmende:r angelegt' : 'Teilnehmende:n anlegen';
     const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
     return `
     <div class="ablauf-step-wrap">
@@ -2014,7 +2026,7 @@ function renderAblauf() {
         </span>
         <span class="ablauf-step-chevron">${isOpen ? '▾' : '▸'}</span>
       </button>
-      ${(!wide && isOpen) ? `<div class="ablauf-step-panel">${flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID)}${flowStepExtrasHTML(s.id)}</div>` : ''}
+      ${(!wide && isOpen) ? `<div class="ablauf-step-panel">${flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID, s.id)}${flowStepExtrasHTML(s.id)}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -2022,10 +2034,10 @@ function renderAblauf() {
   if (detail) {
     if (wide && expandedFlowStepId) {
       const s = FLOW_STEPS.find(x => x.id === expandedFlowStepId);
-      const d = (s && p.ablauf[s.id]) || {};
+      const d = (s && abl[s.id]) || {};
       detail.innerHTML = s
         ? `<div class="ablauf-detail-head">${s.nr ? 'Schritt ' + esc(s.nr) + ' · ' : ''}${esc(s.label)}</div>` +
-          flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID) + flowStepExtrasHTML(s.id)
+          flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID, s.id) + flowStepExtrasHTML(s.id)
         : '';
     } else if (wide) {
       detail.innerHTML = '<div class="ablauf-detail-empty">Einen Schritt links auswählen, um Start-/Endzeit und eine Anmerkung zu erfassen.</div>';
@@ -2633,11 +2645,12 @@ function advanceFlowStep() {
   renderAblauf();
 }
 
-// Zählt komplette/angefangene Schritte für die aktuell aktive Person.
+// Zählt komplette/angefangene Schritte für die aktuell aktive Person (p darf null sein).
 function ablaufCounts(p) {
+  const abl = (p && p.ablauf) || {};
   let komplett = 0, teilweise = 0;
   FLOW_STEPS.forEach(s => {
-    const st = flowStepState(p.ablauf && p.ablauf[s.id]);
+    const st = flowStepStateFor(s.id, abl[s.id]);
     if (st === 'komplett') komplett++;
     else if (st === 'teilweise') teilweise++;
   });
@@ -2654,12 +2667,13 @@ function syncAblaufRows() {
     const d   = p.ablauf[s.id];
     const row = document.querySelector(`.ablauf-step[data-id="${s.id}"]`);
     if (!row) return;
-    row.dataset.state = flowStepState(d);
+    row.dataset.state = flowStepStateFor(s.id, d);
     const sub = row.querySelector('.ablauf-step-sub');
     if (sub) {
       const startTxt = d && d.startISO ? localTimeStr(d.startISO) : '–';
       const endTxt   = d && d.endISO   ? localTimeStr(d.endISO)   : '–';
-      const summary  = (d && (d.startISO || d.endISO)) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
+      let summary    = (d && (d.startISO || d.endISO)) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
+      if (s.id === 'fs_01') summary = 'Teilnehmende:r angelegt';
       sub.textContent = `${s.tag}  ·  ${summary}`;
     }
     const label = row.querySelector('.ablauf-step-label');

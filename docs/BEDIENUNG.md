@@ -60,11 +60,14 @@ bis „Datensicherung / Aufbereitung"). Die Kürzel
 VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt fachlich
 verantwortet — sie haben keine weitere Funktion.
 
-1. Oben im Dropdown die **Teilnehmende:r** wählen (standardmäßig die zuletzt angelegte
-   Person). Neue Person anlegen: über **＋** oben **oder** direkt in **Schritt 1
-   „Aufklärung + Einverständniserklärung"** über „＋ Teilnehmende:n anlegen" (Overlay:
-   Pseudonym + Händigkeit + optionale Notiz). Die Schrittliste gilt jeweils nur für die
-   gewählte Person.
+1. Beim Start ist **Schritt 1 „Aufklärung + Einverständniserklärung"** direkt geöffnet.
+   Dieser Schritt hat **keine Zeitfelder** — sobald die Einverständniserklärung
+   unterschrieben ist, hier über **„＋ Teilnehmende:n anlegen"** die Person anlegen (Overlay:
+   Pseudonym + Händigkeit + optionale Notiz). Nach dem Bestätigen springt die App
+   automatisch zu **Schritt 2 „Anlegen Sensorik"**. Schritt 1 wird grün markiert
+   („Teilnehmende:r angelegt"). Weitere Personen später ebenso oder über das **＋** oben;
+   die aktive Person wird über das Dropdown gewechselt. Die Schrittliste gilt jeweils nur
+   für die gewählte Person.
 2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
    Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
