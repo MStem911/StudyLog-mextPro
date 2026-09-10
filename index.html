@@ -58,49 +58,23 @@
         </div>
       </section>
 
-      <!-- ── Teilnehmende ── -->
+      <!-- ── Teilnehmende (Vollbild-Dialog, aus dem Ablauf) ── -->
       <section class="screen" id="screen-probanden">
         <div class="screen-inner">
           <div class="subview-header">
-            <h2 class="subview-title">Teilnehmende verwalten</h2>
+            <h2 class="subview-title">Teilnehmende</h2>
             <button class="btn-icon-sm" data-back-to-ablauf aria-label="Zurück zum Ablauf" title="Zurück zum Ablauf">✕</button>
           </div>
           <div class="search-row">
             <input type="text" id="search-input" placeholder="🔍  Suchen…" autocomplete="off" autocorrect="off" autocapitalize="none">
             <button class="btn-icon btn-primary" id="btn-add-proband" aria-label="Neu" title="Neue Person anlegen">+</button>
           </div>
-          <div class="card form-card hidden" id="add-form">
-            <div class="card-label">NEUE PERSON ANLEGEN</div>
-            <div class="form-grid">
-              <div>
-                <label class="field-label" for="inp-pseudo">Pseudonym</label>
-                <input type="text" id="inp-pseudo" placeholder="z.B. P1234ABC" autocomplete="off" autocorrect="off" autocapitalize="characters">
-                <div class="field-error hidden" id="inp-pseudo-error">Format nicht korrekt – erwartet: 1 Buchstabe, 4 Zahlen, 3 Buchstaben (z.B. P1234ABC)</div>
-              </div>
-              <div>
-                <label class="field-label" for="inp-handedness">Händigkeit</label>
-                <select id="inp-handedness" class="field-select">
-                  <option value="" disabled selected>– bitte wählen –</option>
-                  <option value="Rechts">Rechts</option>
-                  <option value="Links">Links</option>
-                </select>
-              </div>
-              <div class="form-grid-full">
-                <label class="field-label" for="inp-note">Notiz (optional)</label>
-                <input type="text" id="inp-note" placeholder="z.B. Brille" autocorrect="off">
-              </div>
-            </div>
-            <div class="btn-row">
-              <button class="btn btn-primary flex-1" id="btn-save-proband">✓ Anlegen</button>
-              <button class="btn btn-ghost" id="btn-cancel-proband">Abbrechen</button>
-            </div>
-          </div>
           <div class="section-label" id="proband-count-label">TEILNEHMENDE</div>
           <div id="proband-list" class="item-list proband-grid"></div>
           <div id="proband-empty" class="empty-state hidden">
             <div class="empty-icon">👥</div>
             <div class="empty-text">Noch keine Teilnehmenden angelegt</div>
-            <div class="empty-sub">Klicke auf + um eine Person hinzuzufügen</div>
+            <div class="empty-sub">Über „+" eine Person hinzufügen</div>
           </div>
         </div>
       </section>
@@ -443,6 +417,39 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <!-- Neue Person anlegen (aus Schritt 1 „Aufklärung + Einverständnis" bzw. „+" oben) -->
+  <div id="proband-add-overlay" class="overlay hidden">
+    <div class="dialog-box wide">
+      <div class="detail-header">
+        <div class="dialog-title">Teilnehmende:n anlegen</div>
+        <button class="btn-icon-sm" id="proband-add-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="edit-content" id="add-form">
+        <div class="edit-row-2">
+          <div>
+            <label class="field-label" for="inp-pseudo">Pseudonym</label>
+            <input type="text" id="inp-pseudo" placeholder="z.B. P1234ABC" autocomplete="off" autocorrect="off" autocapitalize="characters">
+            <div class="field-error hidden" id="inp-pseudo-error">Format nicht korrekt – erwartet: 1 Buchstabe, 4 Zahlen, 3 Buchstaben (z.B. P1234ABC)</div>
+          </div>
+          <div>
+            <label class="field-label" for="inp-handedness">Händigkeit</label>
+            <select id="inp-handedness" class="field-select">
+              <option value="" disabled selected>– bitte wählen –</option>
+              <option value="Rechts">Rechts</option>
+              <option value="Links">Links</option>
+            </select>
+          </div>
+        </div>
+        <label class="field-label" for="inp-note">Notiz (optional)</label>
+        <input type="text" id="inp-note" placeholder="z.B. Brille" autocorrect="off">
+      </div>
+      <div class="btn-col" style="margin-top:14px">
+        <button class="btn btn-primary full-width" id="btn-save-proband">✓ Anlegen</button>
+        <button class="btn btn-ghost full-width" id="btn-cancel-proband">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Ereignis erfassen (aus einem Ablauf-Schritt geöffnet) -->
   <div id="ereignis-overlay" class="overlay hidden">
     <div class="dialog-box wide">
@@ -567,7 +574,7 @@
             <button class="btn btn-danger full-width" id="btn-clear-data">⚠ Alle Daten löschen</button>
           </div>
         </div>
-        <div class="meta-text" style="text-align:center">mextPro <span class="app-version">v2.18.0</span></div>
+        <div class="meta-text" style="text-align:center">mextPro <span class="app-version">v2.19.0</span></div>
       </div>
     </div>
   </div>

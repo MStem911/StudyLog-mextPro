@@ -29,7 +29,7 @@ von Teilnehmenden, „Alle Daten löschen"). Alles Weitere wird aus dem Ablauf h
 
 | Aufruf | Öffnet |
 |---|---|
-| **＋** neben der Personen-Auswahl | Vollbild-Dialog „Teilnehmende verwalten" (anlegen, suchen, per Tap bearbeiten). Mit **✕** zurück zum Ablauf |
+| **＋** neben der Personen-Auswahl (oder „＋ Teilnehmende:n anlegen" in Schritt 1) | Overlay „Teilnehmende:n anlegen": Pseudonym + Händigkeit + optionale Notiz |
 | **✎** neben der Personen-Auswahl | Bearbeiten-Dialog der aktuell gewählten Person |
 | Button in **Schritt 18** („Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
 
@@ -54,15 +54,17 @@ basiert weiter auf der alten Datenstruktur. Bereits erfasste Daten bleiben gespe
 
 ## Die Ablauf-Schrittliste nutzen
 
-Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab („Ankommen,
-Begrüßung" sowie die Schritte 1–18, z. B. „Aufklärung + Einverständniserklärung", „Anlegen
-Sensorik", „Fragebogen 1", „TMS", … bis „Datensicherung / Aufbereitung"). Die Kürzel
+Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab (Schritte 1–18,
+von „Aufklärung + Einverständniserklärung" über „Anlegen Sensorik", „Fragebogen 1", „TMS", …
+bis „Datensicherung / Aufbereitung"). Die Kürzel
 VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt fachlich
 verantwortet — sie haben keine weitere Funktion.
 
 1. Oben im Dropdown die **Teilnehmende:r** wählen (standardmäßig die zuletzt angelegte
-   Person). Ist noch niemand angelegt: über **＋** eine Person anlegen. Die Schrittliste gilt
-   jeweils nur für die gewählte Person.
+   Person). Neue Person anlegen: über **＋** oben **oder** direkt in **Schritt 1
+   „Aufklärung + Einverständniserklärung"** über „＋ Teilnehmende:n anlegen" (Overlay:
+   Pseudonym + Händigkeit + optionale Notiz). Die Schrittliste gilt jeweils nur für die
+   gewählte Person.
 2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
    Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
@@ -76,7 +78,7 @@ verantwortet — sie haben keine weitere Funktion.
    - **gelb** – angefangen (nur Start *oder* Ende *oder* nur eine Anmerkung),
    - **grün** – Start *und* Ende erfasst.
    Ein ✎ neben dem Schrittnamen zeigt an, dass eine Anmerkung hinterlegt ist. Oben läuft ein
-   Fortschrittsbalken („X / 19 komplett").
+   Fortschrittsbalken („X / 18 komplett").
 4. **Schritt leeren** (im aufgeklappten Schritt) entfernt nach Rückfrage die erfassten Zeiten
    und die Anmerkung dieses einen Schritts.
 5. **Ereignisse / Probleme** (an jedem Schritt): über **＋ Ereignis erfassen** eine Kategorie
@@ -90,11 +92,15 @@ Einzelne Schritte haben zusätzliche Felder:
   Ein Item antippen, sobald die Sensorik angelegt ist — der Zeitpunkt wird automatisch
   erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage) rückgängig.
 - **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe** — pro Durchlauf über
-  **＋ Durchlauf hinzufügen** eine Bezeichnung vergeben und die festen Phasen abhaken:
-  *Szenario starten* (Zeitstempel), *Person kalibriert*, *Person durchläuft das Szenario*,
-  *Szenario beendet* (Zeitstempel), *Brille abgezogen*, *Selbstbewertung + Bewertungsbogen*.
+  **＋ Durchlauf hinzufügen** eine Bezeichnung vergeben und die festen Phasen abhaken.
   „Starten" und „Beendet" erfassen beim Abhaken automatisch die Uhrzeit; die übrigen Phasen
   sind reine Häkchen. Für Hologate (Schritt 8) je durchlaufenem Szenario einen Durchlauf.
+  - **Schritt 8 / 12 (Szenario):** Szenario starten (Zeit) · Person kalibriert · Person
+    durchläuft das Szenario · Szenario beendet (Zeit) · Brille abgezogen · Selbstbewertung
+    + Bewertungsbogen.
+  - **Schritt 7 (Tutorial):** kürzer — Tutorial starten (Zeit) · Person kalibriert · Person
+    durchläuft das Tutorial · Tutorial beendet (Zeit) · **Direkt ins VR-Szenario gewechselt**
+    (keine Bewertung, Brille bleibt auf).
 - **Schritt 10 / Schritt 14**: der **Trainerbewertungsbogen** (siehe unten).
 
 Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind

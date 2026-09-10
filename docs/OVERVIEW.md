@@ -15,7 +15,7 @@ eines strukturierten Bewertungsbogens für die durchführende Trainingsleitung. 
 bleiben dabei ausschließlich auf dem jeweiligen Gerät.
 
 Seit **v2.14.0** ist die App **eine einzige Ansicht: der Ablauf** — eine chronologische
-Schrittliste des gesamten Studienablaufs (feste Schrittfolge „Ankommen" + Schritte 1–18).
+Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–18).
 Links die Schritt-Leiste (mit eigener Scrollbar), rechts das Detailfeld für den gewählten
 Schritt; auf dem Smartphone klappt der Schritt in der Liste auf. Zu jedem Schritt werden
 pro Teilnehmende:r Start- und Endzeit (Button „Jetzt" oder manuelle Eingabe) sowie eine
@@ -24,8 +24,9 @@ Ende erfasst) gibt den Überblick. „✓ Weiter" öffnet den nächsten Schritt,
 Leiste kann jederzeit frei gesprungen werden.
 
 Die frühere Tab-Navigation entfällt. Einstellungen liegen hinter dem ⚙-Icon oben rechts
-(Overlay). Teilnehmende anlegen/verwalten (＋ / ✎ neben der Personenauswahl) und der
-CSV/JSON-Export (in Schritt 18) öffnen jeweils einen Vollbild-Dialog aus dem Ablauf heraus.
+(Overlay). Teilnehmende anlegen über ＋ oben bzw. „＋ Teilnehmende:n anlegen" in Schritt 1
+(Aufklärung + Einverständnis); bearbeiten über ✎. Der CSV/JSON-Export (in Schritt 18)
+öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
 Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe**
 (Schritt 7/8/12 — feste Phasen je Durchlauf, „Szenario starten/beendet" mit Zeitstempel),

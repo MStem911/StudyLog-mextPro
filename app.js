@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.18.0';
+const APP_VERSION = '2.19.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -51,7 +51,6 @@ const DEFAULT_EVENT_TAGS = ['Sensorik', 'VR', 'Fragebogen', 'TMS', 'Sonstiges'];
 // gespeichert (fehlender Schlüssel = Schritt noch nicht angefasst). Die Labels (tag) sind
 // rein informativ — kein Filter-/Rollenverhalten. Reihenfolge = Anzeigereihenfolge.
 const FLOW_STEPS = [
-  { id: 'fs_ankommen', nr: '',   label: 'Ankommen, Begrüßung',                                tag: 'VR / SEN' },
   { id: 'fs_01', nr: '1',  label: 'Aufklärung + Einverständniserklärung',                     tag: 'VR / SEN' },
   { id: 'fs_02', nr: '2',  label: 'Anlegen Sensorik (Shimmer, Brustgurt, Uhr)',              tag: 'SEN' },
   { id: 'fs_03', nr: '3',  label: 'Fragebogen 1',                                            tag: 'SEN / VR' },
@@ -105,15 +104,26 @@ const SZENARIO_STEP_META = {
   fs_12: { title: 'Rollercoaster-Durchlauf (Varjo)',    defaultLabel: 'Rollercoaster' },
 };
 // Feste Phasen je Durchlauf. `ts: true` → beim Abhaken wird ein Zeitstempel erfasst;
-// `ts: false` → reines Häkchen ohne Zeit.
-const SZENARIO_PHASES = [
-  { id: 'p_start',  label: 'Szenario starten',                 ts: true  },
-  { id: 'p_kalib',  label: 'Person kalibriert',                ts: false },
-  { id: 'p_run',    label: 'Person durchläuft das Szenario',   ts: false },
-  { id: 'p_end',    label: 'Szenario beendet',                 ts: true  },
-  { id: 'p_brille', label: 'Brille abgezogen',                 ts: false },
+// `ts: false` → reines Häkchen ohne Zeit. Tutorial (fs_07) hat eine eigene, kürzere Liste:
+// keine Bewertung, Brille wird nicht abgezogen — es geht direkt ins VR-Szenario.
+const SZENARIO_PHASES_TUTORIAL = [
+  { id: 'p_start',   label: 'Tutorial starten',                  ts: true  },
+  { id: 'p_kalib',   label: 'Person kalibriert',                 ts: false },
+  { id: 'p_run',     label: 'Person durchläuft das Tutorial',    ts: false },
+  { id: 'p_end',     label: 'Tutorial beendet',                  ts: true  },
+  { id: 'p_wechsel', label: 'Direkt ins VR-Szenario gewechselt', ts: false },
+];
+const SZENARIO_PHASES_RUN = [
+  { id: 'p_start',  label: 'Szenario starten',                  ts: true  },
+  { id: 'p_kalib',  label: 'Person kalibriert',                 ts: false },
+  { id: 'p_run',    label: 'Person durchläuft das Szenario',    ts: false },
+  { id: 'p_end',    label: 'Szenario beendet',                  ts: true  },
+  { id: 'p_brille', label: 'Brille abgezogen',                  ts: false },
   { id: 'p_bew',    label: 'Selbstbewertung + Bewertungsbogen', ts: false },
 ];
+function szPhasesFor(stepId) {
+  return stepId === 'fs_07' ? SZENARIO_PHASES_TUTORIAL : SZENARIO_PHASES_RUN;
+}
 
 // ── State ────────────────────────────────────────────────────────────────────
 let probanden        = [];
@@ -387,12 +397,20 @@ function renderProbanden(filter = '') {
 
 document.getElementById('search-input').addEventListener('input', e => renderProbanden(e.target.value));
 
-document.getElementById('btn-add-proband').addEventListener('click', () =>
-  document.getElementById('add-form').classList.toggle('hidden')
-);
-document.getElementById('btn-cancel-proband').addEventListener('click', () => {
-  document.getElementById('add-form').classList.add('hidden');
+// „Neue Person anlegen" ist jetzt ein Overlay (aus Schritt 1 bzw. dem „+" oben im Ablauf).
+function openProbandAddOverlay() {
   clearAddForm();
+  document.getElementById('proband-add-overlay').classList.remove('hidden');
+}
+function closeProbandAddOverlay() {
+  document.getElementById('proband-add-overlay').classList.add('hidden');
+  clearAddForm();
+}
+document.getElementById('btn-add-proband').addEventListener('click', openProbandAddOverlay);
+document.getElementById('proband-add-close').addEventListener('click', closeProbandAddOverlay);
+document.getElementById('btn-cancel-proband').addEventListener('click', closeProbandAddOverlay);
+document.getElementById('proband-add-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('proband-add-overlay')) closeProbandAddOverlay();
 });
 document.getElementById('btn-save-proband').addEventListener('click', saveNewProband);
 document.getElementById('inp-pseudo').addEventListener('input', () =>
@@ -414,8 +432,9 @@ function saveNewProband() {
   probanden.push({ id: newId, pseudo, sensor: '', note, handedness, sensorik: {}, ablauf: {}, sensorAngelegtISO: null, sensorAbgelegtISO: null, createdAt: nowISO });
   save();
   clearAddForm();
-  document.getElementById('add-form').classList.add('hidden');
-  renderProbanden(document.getElementById('search-input').value);
+  document.getElementById('proband-add-overlay').classList.add('hidden');
+  const searchEl = document.getElementById('search-input');
+  renderProbanden(searchEl ? searchEl.value : '');
   showToast('✓ ' + pseudo + ' angelegt');
   // Neue Person wird die aktive im Ablauf; zurück zum Ablauf.
   selectedSensorikProbandId = newId;
@@ -2052,6 +2071,9 @@ function renderAblauf() {
 
   // Trainerbewertungsbogen-Buttons (nur an fs_10 / fs_14)
   const extrasScope = wide && detail ? detail : timeline;
+  extrasScope.querySelectorAll('[data-proband-add]').forEach(btn =>
+    btn.addEventListener('click', openProbandAddOverlay)
+  );
   extrasScope.querySelectorAll('[data-bew-add]').forEach(btn =>
     btn.addEventListener('click', () => openBewOverlay(btn.dataset.bewAdd, null))
   );
@@ -2089,6 +2111,7 @@ function renderAblauf() {
 // Zusatzinhalte, die nur an bestimmten Schritten im Detailbereich erscheinen.
 function flowStepExtrasHTML(stepId) {
   let html = '';
+  if (stepId === 'fs_01')          html += probandAnlegenSectionHTML();
   if (stepId === 'fs_02')          html += sensorikSectionHTML();
   if (SZENARIO_STEP_META[stepId])  html += szenarioSectionHTML(stepId);
   if (BEW_STEP_META[stepId])       html += bewSectionHTML(stepId);
@@ -2124,6 +2147,19 @@ function ereignisSectionHTML(stepId) {
 
 // Abschnitt „Sensorik-Checkliste" im Detailbereich von Schritt 2 (Anlegen Sensorik).
 // Pro Hardware-Item wird der Anlege-Zeitpunkt in p.sensorik[itemId] (ISO) festgehalten.
+// Abschnitt „Teilnehmende:n anlegen" im Detailbereich von Schritt 1 (Aufklärung + Einverständnis).
+function probandAnlegenSectionHTML() {
+  const p = ablaufProband();
+  const hint = p
+    ? `Aktuell gewählt: <strong>${esc(p.pseudo)}</strong>. Neue Person anlegen, sobald die Einverständniserklärung unterschrieben ist.`
+    : 'Sobald die Einverständniserklärung unterschrieben ist, hier die Person als Teilnehmende:n anlegen.';
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">TEILNEHMENDE:N ANLEGEN</div>
+    <p class="meta-text" style="margin-bottom:8px">${hint}</p>
+    <button class="btn btn-primary full-width" data-proband-add="1">＋ Teilnehmende:n anlegen</button>
+  </div>`;
+}
+
 function sensorikSectionHTML() {
   const p = ablaufProband();
   if (!p) return '';
@@ -2201,11 +2237,12 @@ function szenarioSectionHTML(stepId) {
   if (!p) return '';
   const meta = SZENARIO_STEP_META[stepId];
   const list = (p.szenarien && p.szenarien[stepId]) || [];
+  const phases = szPhasesFor(stepId);
   const rows = list.map(run => {
-    const done = SZENARIO_PHASES.filter(ph => run.phases && run.phases[ph.id]).length;
+    const done = phases.filter(ph => run.phases && run.phases[ph.id]).length;
     return `<button class="bew-list-item" data-sz-edit="${esc(run.id)}">
       <span class="bew-list-label">${esc(run.label || 'Durchlauf')}</span>
-      <span class="bew-list-meta">${done}/${SZENARIO_PHASES.length} Phasen</span>
+      <span class="bew-list-meta">${done}/${phases.length} Phasen</span>
     </button>`;
   }).join('');
   return `<div class="bew-section">
@@ -2507,7 +2544,7 @@ function renderSzOvPhases() {
   const box = document.getElementById('sz-ov-phases');
   const run = szCurrentRun();
   if (!box || !run) return;
-  box.innerHTML = SZENARIO_PHASES.map(ph => {
+  box.innerHTML = szPhasesFor(szOvStepId).map(ph => {
     const val  = run.phases[ph.id];
     const done = !!val;
     const sub  = ph.ts
@@ -2529,7 +2566,7 @@ function renderSzOvPhases() {
 function toggleSzPhase(phaseId) {
   const p   = ablaufProband();
   const run = szCurrentRun();
-  const ph  = SZENARIO_PHASES.find(x => x.id === phaseId);
+  const ph  = szPhasesFor(szOvStepId).find(x => x.id === phaseId);
   if (!p || !run || !ph) return;
   if (run.phases[phaseId]) {
     const msg = ph.ts
@@ -2697,7 +2734,7 @@ if (ablaufSelectEl) ablaufSelectEl.addEventListener('change', e => {
 
 // Teilnehmende aus dem Ablauf heraus anlegen / bearbeiten (Vollbild-Dialog bzw. Overlay)
 const ablaufAddBtn = document.getElementById('ablauf-add-proband');
-if (ablaufAddBtn) ablaufAddBtn.addEventListener('click', () => showScreen('probanden'));
+if (ablaufAddBtn) ablaufAddBtn.addEventListener('click', openProbandAddOverlay);
 const ablaufEditBtn = document.getElementById('ablauf-edit-proband');
 if (ablaufEditBtn) ablaufEditBtn.addEventListener('click', () => {
   if (selectedAblaufProbandId) openProbandEdit(selectedAblaufProbandId);
