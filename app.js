@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.26.0';
+const APP_VERSION = '2.26.1';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1922,15 +1922,16 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
   if (document.getElementById('screen-ablauf')?.classList.contains('active')) renderAblauf();
 });
 
-// Schritte ohne Start/Ende-Erfassung: 1 (nur Person anlegen), 2 (nur Sensorik-Checkliste),
-// 3 (Fragebogen 1), 7 (Zeit steckt im Tutorial-Durchlauf), 8 (Zeiten stecken in den 5
-// Hologate-Durchläufen). Hier gibt es nur Anmerkung + schrittabhängige Abschnitte.
-const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_03', 'fs_07', 'fs_08']);
-
-// Fragebogen-Schritte (3 / 5 / 10 / 14): zusätzlich eine Bestätigungs-Checkbox „Fragebogen
-// ausgefüllt". Ist sie gesetzt (p.ablauf[stepId].done = ISO-Zeitstempel), gilt der Schritt
-// als komplett (grün) — unabhängig von Start/Ende.
+// Fragebogen-Schritte (3 / 5 / 10 / 14): einheitlich aufgebaut wie Schritt 3 — keine
+// Start/Ende-Erfassung, nur die Bestätigungs-Checkbox „Fragebogen ausgefüllt" (+ Anmerkung).
+// Ist sie gesetzt (p.ablauf[stepId].done = ISO-Zeitstempel), gilt der Schritt als komplett.
 const FRAGEBOGEN_STEPS = new Set(['fs_03', 'fs_05', 'fs_10', 'fs_14']);
+
+// Schritte ohne Start/Ende-Erfassung: 1 (nur Person anlegen), 2 (nur Sensorik-Checkliste),
+// die Fragebogen-Schritte 3/5/10/14, 7 (Zeit steckt im Tutorial-Durchlauf), 8 (Zeiten
+// stecken in den 5 Hologate-Durchläufen). Hier gibt es nur Anmerkung + schrittabhängige
+// Abschnitte.
+const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_07', 'fs_08', ...FRAGEBOGEN_STEPS]);
 
 // Eingabefelder eines Schritts (Start/Ende soweit vorhanden + Anmerkung + „…entfernen"/
 // „Schritt leeren"). **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
