@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.17.0';
+const APP_VERSION = '2.18.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -24,14 +24,13 @@ const DEFAULT_SCENARIOS = [
   { id: 'sc_rc',   name: 'Rollercoaster', abbr: 'RC',  icon: '🎢' },
 ];
 
-// Sensorik-Hardware-Items (Tab "Sensorik"): feste Liste, kein UI zum Bearbeiten.
-// Der Zeitpunkt "angelegt" wird PRO Teilnehmende:r in p.sensorik[itemId] als ISO-String
+// Sensorik-Hardware-Items (Schritt 2 „Anlegen Sensorik"): feste Liste, kein UI zum Bearbeiten.
+// Der Zeitpunkt „angelegt" wird PRO Teilnehmende:r in p.sensorik[itemId] als ISO-String
 // gespeichert (fehlender Schlüssel = für diese Person noch nicht angelegt).
 const SENSORIK_ITEMS = [
-  { id: 'se_ecg',    label: 'Shimmer ECG' },
-  { id: 'se_gsr',    label: 'Shimmer GSR+' },
-  { id: 'se_polar',  label: 'Polar Brustgurt' },
-  { id: 'se_garmin', label: 'Garmin' },
+  { id: 'se_shimmer',   label: 'Shimmer' },
+  { id: 'se_brustgurt', label: 'Brustgurt' },
+  { id: 'se_uhr',       label: 'Uhr' },
 ];
 
 const DEFAULT_TAGS = [
@@ -95,6 +94,25 @@ const BEW_OV_QUESTIONS = [
   ['z18', '2. Die Entscheidungen waren angemessen.'],
   ['z19', '3. Die richtigen Prioritäten wurden gesetzt.'],
   ['z20', '4. Gesamtleistung'],
+];
+
+// VR-Szenario-Durchläufe: Schritte, die in einzelne, abhakbare Teilschritte („Phasen")
+// zerlegt werden (Anforderung „VR-Szenario-Ablauf mit Timestamps"). Pro Schritt eine Liste
+// von Durchläufen in p.szenarien[stepId] = [ { id, label, phases: { [phaseId]: ISO | true } } ].
+const SZENARIO_STEP_META = {
+  fs_07: { title: 'Tutorial-Durchlauf (Hologate)',      defaultLabel: 'Tutorial' },
+  fs_08: { title: 'Hologate-Szenario-Durchläufe (5)',   defaultLabel: 'Szenario ' },
+  fs_12: { title: 'Rollercoaster-Durchlauf (Varjo)',    defaultLabel: 'Rollercoaster' },
+};
+// Feste Phasen je Durchlauf. `ts: true` → beim Abhaken wird ein Zeitstempel erfasst;
+// `ts: false` → reines Häkchen ohne Zeit.
+const SZENARIO_PHASES = [
+  { id: 'p_start',  label: 'Szenario starten',                 ts: true  },
+  { id: 'p_kalib',  label: 'Person kalibriert',                ts: false },
+  { id: 'p_run',    label: 'Person durchläuft das Szenario',   ts: false },
+  { id: 'p_end',    label: 'Szenario beendet',                 ts: true  },
+  { id: 'p_brille', label: 'Brille abgezogen',                 ts: false },
+  { id: 'p_bew',    label: 'Selbstbewertung + Bewertungsbogen', ts: false },
 ];
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -166,6 +184,8 @@ function load() {
     probanden.forEach(pr => { if (!pr.bewertungen || typeof pr.bewertungen !== 'object' || Array.isArray(pr.bewertungen)) pr.bewertungen = {}; });
     // Ereignisse im Ablauf: p.ereignisse = [ {id, stepId, tag, note, type, timeISO?|startISO?/endISO?, createdAt} ]
     probanden.forEach(pr => { if (!Array.isArray(pr.ereignisse)) pr.ereignisse = []; });
+    // VR-Szenario-Durchläufe: p.szenarien = { [stepId]: [ {id, label, phases:{[phaseId]: ISO|true}} ] }
+    probanden.forEach(pr => { if (!pr.szenarien || typeof pr.szenarien !== 'object' || Array.isArray(pr.szenarien)) pr.szenarien = {}; });
     localStorage.removeItem(KEY_SENSORIK);
     scenarios = sc ? JSON.parse(sc) : deepCopy(DEFAULT_SCENARIOS);
     if (!scenarios.length) scenarios = deepCopy(DEFAULT_SCENARIOS);
@@ -2051,6 +2071,13 @@ function renderAblauf() {
   extrasScope.querySelectorAll('[data-ev-edit]').forEach(btn =>
     btn.addEventListener('click', () => openEreignisOverlay(expandedFlowStepId, btn.dataset.evEdit))
   );
+  // VR-Szenario-Durchläufe (fs_07 / fs_08 / fs_12)
+  extrasScope.querySelectorAll('[data-sz-add]').forEach(btn =>
+    btn.addEventListener('click', () => addSzenarioRun(btn.dataset.szAdd))
+  );
+  extrasScope.querySelectorAll('[data-sz-edit]').forEach(btn =>
+    btn.addEventListener('click', () => openSzenarioOverlay(expandedFlowStepId, btn.dataset.szEdit))
+  );
 
   // gewählten Schritt in der linken Leiste sichtbar scrollen
   if (expandedFlowStepId) {
@@ -2062,8 +2089,9 @@ function renderAblauf() {
 // Zusatzinhalte, die nur an bestimmten Schritten im Detailbereich erscheinen.
 function flowStepExtrasHTML(stepId) {
   let html = '';
-  if (stepId === 'fs_02')        html += sensorikSectionHTML();
-  if (BEW_STEP_META[stepId])     html += bewSectionHTML(stepId);
+  if (stepId === 'fs_02')          html += sensorikSectionHTML();
+  if (SZENARIO_STEP_META[stepId])  html += szenarioSectionHTML(stepId);
+  if (BEW_STEP_META[stepId])       html += bewSectionHTML(stepId);
   html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt
   if (stepId === LAST_FLOW_STEP_ID) {
     html += `<div class="btn-col" style="margin-top:12px">
@@ -2164,6 +2192,27 @@ function bewSectionHTML(stepId) {
     <p class="meta-text" style="margin-bottom:8px">Ein Bogen pro VR-Szenario — von VR ausfüllen, während die Teilnehmenden den Fragebogen bearbeiten.</p>
     <div class="bew-list">${rows || '<div class="meta-text">Noch kein Bogen angelegt.</div>'}</div>
     <button class="btn btn-primary full-width" data-bew-add="${esc(stepId)}" style="margin-top:8px">＋ Bewertungsbogen anlegen</button>
+  </div>`;
+}
+
+// Abschnitt „VR-Szenario-Durchläufe" im Detailbereich von fs_07 / fs_08 / fs_12.
+function szenarioSectionHTML(stepId) {
+  const p = ablaufProband();
+  if (!p) return '';
+  const meta = SZENARIO_STEP_META[stepId];
+  const list = (p.szenarien && p.szenarien[stepId]) || [];
+  const rows = list.map(run => {
+    const done = SZENARIO_PHASES.filter(ph => run.phases && run.phases[ph.id]).length;
+    return `<button class="bew-list-item" data-sz-edit="${esc(run.id)}">
+      <span class="bew-list-label">${esc(run.label || 'Durchlauf')}</span>
+      <span class="bew-list-meta">${done}/${SZENARIO_PHASES.length} Phasen</span>
+    </button>`;
+  }).join('');
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLÄUFE · ${esc(meta.title)}</div>
+    <p class="meta-text" style="margin-bottom:8px">Je Durchlauf die Phasen abhaken — „Szenario starten" und „Szenario beendet" erfassen dabei einen Zeitstempel.</p>
+    <div class="bew-list">${rows || '<div class="meta-text">Noch kein Durchlauf angelegt.</div>'}</div>
+    <button class="btn btn-primary full-width" data-sz-add="${esc(stepId)}" style="margin-top:8px">＋ Durchlauf hinzufügen</button>
   </div>`;
 }
 
@@ -2411,6 +2460,128 @@ document.getElementById('ev-ov-type-ts').addEventListener('click', () => setEvOv
 document.getElementById('ev-ov-type-dur').addEventListener('click', () => setEvOvType('duration'));
 document.getElementById('ereignis-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('ereignis-overlay')) closeEreignisOverlay();
+});
+
+// ── VR-Szenario-Durchlauf-Overlay ──────────────────────────────────────────────
+let szOvStepId = '';
+let szOvId     = '';
+
+function szCurrentRun() {
+  const p = ablaufProband();
+  if (!p || !szOvStepId) return null;
+  return ((p.szenarien && p.szenarien[szOvStepId]) || []).find(r => r.id === szOvId) || null;
+}
+
+function addSzenarioRun(stepId) {
+  const p = ablaufProband();
+  const meta = SZENARIO_STEP_META[stepId];
+  if (!p || !meta) return;
+  if (!p.szenarien) p.szenarien = {};
+  if (!Array.isArray(p.szenarien[stepId])) p.szenarien[stepId] = [];
+  const n = p.szenarien[stepId].length + 1;
+  const label = stepId === 'fs_08' ? meta.defaultLabel + n
+              : (n > 1 ? meta.defaultLabel + ' ' + n : meta.defaultLabel);
+  const run = { id: uid(), label, phases: {} };
+  p.szenarien[stepId].push(run);
+  save();
+  renderAblauf();
+  openSzenarioOverlay(stepId, run.id);
+}
+
+function openSzenarioOverlay(stepId, runId) {
+  const p = ablaufProband();
+  if (!p || !SZENARIO_STEP_META[stepId]) return;
+  szOvStepId = stepId;
+  szOvId     = runId;
+  const run = szCurrentRun();
+  if (!run) return;
+  const step = FLOW_STEPS.find(s => s.id === stepId);
+  document.getElementById('sz-ov-context').textContent =
+    `${p.pseudo} · ${step ? (step.nr ? 'Schritt ' + step.nr + ' · ' : '') + step.label : ''}`;
+  document.getElementById('sz-ov-label').value = run.label || '';
+  renderSzOvPhases();
+  document.getElementById('szenario-run-overlay').classList.remove('hidden');
+}
+
+function renderSzOvPhases() {
+  const box = document.getElementById('sz-ov-phases');
+  const run = szCurrentRun();
+  if (!box || !run) return;
+  box.innerHTML = SZENARIO_PHASES.map(ph => {
+    const val  = run.phases[ph.id];
+    const done = !!val;
+    const sub  = ph.ts
+      ? (done ? localDatetimeStr(val) : 'Zeitstempel beim Abhaken')
+      : (done ? 'erledigt' : 'offen');
+    return `<button class="sensorik-item${done ? ' checked' : ''}" data-sz-phase="${esc(ph.id)}">
+      <span class="sensorik-check">${done ? '✓' : ''}</span>
+      <span class="sensorik-info">
+        <span class="sensorik-name">${esc(ph.label)}</span>
+        <span class="sensorik-time">${esc(sub)}</span>
+      </span>
+    </button>`;
+  }).join('');
+  box.querySelectorAll('[data-sz-phase]').forEach(btn =>
+    btn.addEventListener('click', () => toggleSzPhase(btn.dataset.szPhase))
+  );
+}
+
+function toggleSzPhase(phaseId) {
+  const p   = ablaufProband();
+  const run = szCurrentRun();
+  const ph  = SZENARIO_PHASES.find(x => x.id === phaseId);
+  if (!p || !run || !ph) return;
+  if (run.phases[phaseId]) {
+    const msg = ph.ts
+      ? `„${ph.label}" wurde um ${localTimeStr(run.phases[phaseId])} erfasst. Häkchen (und Zeitstempel) entfernen?`
+      : `Häkchen bei „${ph.label}" entfernen?`;
+    showConfirm('Phase zurücksetzen', msg, () => {
+      delete run.phases[phaseId]; save(); renderSzOvPhases(); renderAblauf();
+    });
+  } else {
+    run.phases[phaseId] = ph.ts ? new Date().toISOString() : true;
+    save();
+    renderSzOvPhases();
+    renderAblauf();
+    if (ph.ts) showToast('✓ ' + ph.label + '  ·  ' + localTimeStr(run.phases[phaseId]));
+  }
+}
+
+function closeSzenarioOverlay() {
+  const run = szCurrentRun();
+  if (run) {
+    const label = document.getElementById('sz-ov-label').value.trim();
+    if (label && label !== run.label) { run.label = label; save(); renderAblauf(); }
+  }
+  document.getElementById('szenario-run-overlay').classList.add('hidden');
+  szOvStepId = ''; szOvId = '';
+}
+
+function deleteSzenarioRun() {
+  const p = ablaufProband();
+  if (!p || !szOvStepId || !szOvId) return;
+  const arr = (p.szenarien && p.szenarien[szOvStepId]) || [];
+  const run = arr.find(r => r.id === szOvId);
+  showConfirm('Durchlauf löschen', `„${run ? run.label : 'Durchlauf'}" wirklich löschen?`, () => {
+    p.szenarien[szOvStepId] = arr.filter(r => r.id !== szOvId);
+    save();
+    document.getElementById('szenario-run-overlay').classList.add('hidden');
+    szOvStepId = ''; szOvId = '';
+    renderAblauf();
+    showToast('Durchlauf gelöscht');
+  });
+}
+
+document.getElementById('sz-ov-close').addEventListener('click', closeSzenarioOverlay);
+document.getElementById('sz-ov-cancel').addEventListener('click', closeSzenarioOverlay);
+document.getElementById('sz-ov-delete').addEventListener('click', deleteSzenarioRun);
+document.getElementById('sz-ov-label').addEventListener('change', () => {
+  const run = szCurrentRun();
+  const label = document.getElementById('sz-ov-label').value.trim();
+  if (run && label && label !== run.label) { run.label = label; save(); renderAblauf(); }
+});
+document.getElementById('szenario-run-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('szenario-run-overlay')) closeSzenarioOverlay();
 });
 
 // „Weiter": aktuellen Schritt sichern und den nächsten Schritt der Liste öffnen.

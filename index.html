@@ -495,6 +495,27 @@
     </div>
   </div>
 
+  <!-- VR-Szenario-Durchlauf (aus einem Ablauf-Schritt geöffnet) -->
+  <div id="szenario-run-overlay" class="overlay hidden">
+    <div class="dialog-box wide">
+      <div class="detail-header">
+        <div class="dialog-title">VR-Szenario-Durchlauf</div>
+        <button class="btn-icon-sm" id="sz-ov-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="edit-content">
+        <div class="meta-text" id="sz-ov-context"></div>
+        <label class="field-label" for="sz-ov-label">Bezeichnung</label>
+        <input type="text" id="sz-ov-label" placeholder="z.B. Szenario 1" autocorrect="off">
+        <label class="field-label">Phasen</label>
+        <div class="sensorik-list" id="sz-ov-phases"></div>
+      </div>
+      <div class="btn-col" style="margin-top:14px">
+        <button class="btn btn-danger full-width" id="sz-ov-delete">Durchlauf löschen</button>
+        <button class="btn btn-ghost full-width" id="sz-ov-cancel">Schließen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Trainerbewertungsbogen (aus einem Ablauf-Schritt geöffnet) -->
   <div id="bewertung-overlay" class="overlay hidden">
     <div class="dialog-box wide">
@@ -546,7 +567,7 @@
             <button class="btn btn-danger full-width" id="btn-clear-data">⚠ Alle Daten löschen</button>
           </div>
         </div>
-        <div class="meta-text" style="text-align:center">mextPro <span class="app-version">v2.17.0</span></div>
+        <div class="meta-text" style="text-align:center">mextPro <span class="app-version">v2.18.0</span></div>
       </div>
     </div>
   </div>

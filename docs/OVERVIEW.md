@@ -26,13 +26,15 @@ Leiste kann jederzeit frei gesprungen werden.
 Die frühere Tab-Navigation entfällt. Einstellungen liegen hinter dem ⚙-Icon oben rechts
 (Overlay). Teilnehmende anlegen/verwalten (＋ / ✎ neben der Personenauswahl) und der
 CSV/JSON-Export (in Schritt 18) öffnen jeweils einen Vollbild-Dialog aus dem Ablauf heraus.
-Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2),
+Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
+Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe**
+(Schritt 7/8/12 — feste Phasen je Durchlauf, „Szenario starten/beendet" mit Zeitstempel),
 **Trainerbewertungsbogen** (Schritt 10 je Hologate-Szenario, Schritt 14 für Rollercoaster —
 seit v2.16.0 reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items) und
-**Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum). **Noch nicht überführt
-(Screen ohne Aufruf, Daten in `localStorage` erhalten):** Szenario-Timer / VR-Szenario-
-Timestamps und die Protokoll-Liste; auch der CSV/JSON-Export basiert noch auf der alten
-Datenstruktur (`sl_sessions`/`sl_bewertungen`).
+**Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum). **Noch offen:** der
+CSV/JSON-Export basiert noch auf der alten Datenstruktur (`sl_sessions`/`sl_bewertungen`)
+und bezieht die neuen Ablauf-Daten nicht ein; die alte Protokoll-Liste hat keinen Aufruf
+mehr.
 
 ## Zielgruppe / Anwendungskontext
 
@@ -71,7 +73,7 @@ Datenstruktur (`sl_sessions`/`sl_bewertungen`).
 
 **Wichtiger Hinweis zu "Sensorik":** Die App liest keine Sensor-/Messdaten (z. B. Eyetracking,
 Bewegungsdaten) aus. "Sensoriknummer", die Felder "Sensorik angelegt/abgelegt" und die
-Checkliste im Tab **Sensorik** (Items Shimmer ECG / Shimmer GSR+ / Polar Brustgurt / Garmin
+Checkliste im Tab **Sensorik** (Items Shimmer / Brustgurt / Uhr
 mit jeweiligem Anlege-Zeitpunkt **je Teilnehmende:r**) sind **manuell durch die Studienleitung erfasste Metadaten**
 (welche nummerierte Sensor-Hardware-Einheit einer Person zugeordnet wurde, und wann welche
 Sensorik an-/abgelegt wurde) — nicht die Rohdaten des Sensors selbst. Details siehe

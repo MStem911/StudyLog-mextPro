@@ -48,10 +48,9 @@ Fremd-Vergleich), Schulnoten-Skala 1–6:
 3. Die richtigen Prioritäten wurden gesetzt.
 4. Gesamtleistung
 
-**Noch nicht umgestellt:** die VR-Szenario-Timestamps innerhalb von Schritt 8/12
-(Unterteilung eines Szenarios in einzelne, abhakbare Teilschritte). Der CSV/JSON-Export
-bezieht die im Ablauf erfassten Daten (Zeiten, Bewertungen, Ereignisse, Sensorik) noch
-nicht ein. Bereits erfasste Daten bleiben gespeichert.
+**Noch nicht umgestellt:** der CSV/JSON-Export bezieht die im Ablauf erfassten Daten
+(Zeiten, Bewertungen, Ereignisse, Sensorik, Szenario-Durchläufe) noch nicht ein — er
+basiert weiter auf der alten Datenstruktur. Bereits erfasste Daten bleiben gespeichert.
 
 ## Die Ablauf-Schrittliste nutzen
 
@@ -87,10 +86,15 @@ verantwortet — sie haben keine weitere Funktion.
    antippen zum Bearbeiten/Löschen.
 
 Einzelne Schritte haben zusätzliche Felder:
-- **Schritt 2 „Anlegen Sensorik"**: die **Sensorik-Checkliste** (Shimmer ECG, Shimmer GSR+,
-  Polar Brustgurt, Garmin). Ein Item antippen, sobald die Sensorik angelegt ist — der
-  Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)
-  rückgängig.
+- **Schritt 2 „Anlegen Sensorik"**: die **Sensorik-Checkliste** (Shimmer, Brustgurt, Uhr).
+  Ein Item antippen, sobald die Sensorik angelegt ist — der Zeitpunkt wird automatisch
+  erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage) rückgängig.
+- **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe** — pro Durchlauf über
+  **＋ Durchlauf hinzufügen** eine Bezeichnung vergeben und die festen Phasen abhaken:
+  *Szenario starten* (Zeitstempel), *Person kalibriert*, *Person durchläuft das Szenario*,
+  *Szenario beendet* (Zeitstempel), *Brille abgezogen*, *Selbstbewertung + Bewertungsbogen*.
+  „Starten" und „Beendet" erfassen beim Abhaken automatisch die Uhrzeit; die übrigen Phasen
+  sind reine Häkchen. Für Hologate (Schritt 8) je durchlaufenem Szenario einen Durchlauf.
 - **Schritt 10 / Schritt 14**: der **Trainerbewertungsbogen** (siehe unten).
 
 Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind
@@ -129,7 +133,7 @@ davon unabhängig.
 
 1. In den Bereich **🩹 Sensorik** wechseln. Oben im Dropdown **Teilnehmende:r** die Person
    wählen — standardmäßig ist die **zuletzt angelegte** Person vorausgewählt.
-2. Die Checkliste enthält feste Items: Shimmer ECG, Shimmer GSR+, Polar Brustgurt, Garmin —
+2. Die Checkliste enthält feste Items: Shimmer, Brustgurt, Uhr —
    die erfassten Zeitpunkte gelten jeweils **nur für die ausgewählte Person**.
 3. Sobald eine Sensorik-Einheit bei dieser Person angelegt ist, das entsprechende Item
    **antippen** — der aktuelle Zeitpunkt (Datum + Uhrzeit, Gerätezeit) wird automatisch
