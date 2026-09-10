@@ -1214,6 +1214,8 @@ input[type="time"] { color-scheme: dark; }
   background: var(--surface3); border: 1px solid var(--border2);
   border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text1);
 }
+/* Feste Durchlauf-Bezeichnung (Schritt 8) — nicht editierbar, nur Überschrift */
+.ablauf-sz-runname { font-weight: 700; color: var(--text1); font-size: var(--text-md); }
 .ablauf-detail-empty { font-size: var(--text-sm); color: var(--text3); line-height: 1.5; }
 
 /* Tablet/Desktop (ab 768px): Ablauf = linke Schritt-Leiste (eigene Scrollbar) +

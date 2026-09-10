@@ -103,17 +103,21 @@ Einzelne Schritte haben zusätzliche Felder:
   „Sensorik 3/3"). Eine Anmerkung (mit Uhrzeit) ist wie in jedem Schritt möglich.
 - **Schritt 6 „Anlegen VR-Equipment"**: reine **Anzeigeliste** des anzulegenden Equipments
   (Fußtracker, Handtracker, Weste, VR-Brille) — nichts zum Abhaken, nur als Erinnerung.
-- **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe** — pro Durchlauf über
-  **＋ Durchlauf hinzufügen** eine Bezeichnung vergeben und die festen Phasen abhaken.
-  „Starten" und „Beendet" erfassen beim Abhaken automatisch die Uhrzeit; die übrigen Phasen
-  sind reine Häkchen. Für Hologate (Schritt 8) je durchlaufenem Szenario einen Durchlauf.
-  - **Schritt 8 / 12 (Szenario):** Bezeichnung und Phasen werden in einem Overlay bearbeitet.
-    Szenario starten (Zeit) · Person kalibriert · Person durchläuft das Szenario · Szenario
-    beendet (Zeit) · Brille abgezogen · Selbstbewertung + Bewertungsbogen.
-  - **Schritt 7 (Tutorial):** Bezeichnung und Phasen werden **direkt im Schritt** bearbeitet
-    (kein Overlay). Kürzer — Tutorial starten (Zeit) · Person kalibriert · Person durchläuft
-    das Tutorial · Tutorial beendet (Zeit) · **Direkt ins VR-Szenario gewechselt** (keine
-    Bewertung, Brille bleibt auf).
+- **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe**. „Starten"/„Beendet"
+  erfassen beim Antippen automatisch die Uhrzeit; erneutes Antippen macht das nach Rückfrage
+  rückgängig.
+  - **Schritt 7 (Tutorial):** Durchläufe werden **direkt im Schritt** angelegt (**＋ Durchlauf
+    hinzufügen**, Bezeichnung frei) und dort mit ihren Phasen abgehakt (kein Overlay). Phasen:
+    Tutorial starten (Zeit) · Person kalibriert · Person durchläuft das Tutorial · Tutorial
+    beendet (Zeit) · **Direkt ins VR-Szenario gewechselt** (keine Bewertung, Brille bleibt auf).
+  - **Schritt 8 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
+    Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi. Nichts hinzufügen/löschen; je
+    Durchlauf nur **Szenario starten** und **Szenario beendet** antippen (je Zeitstempel).
+    Dieser Schritt hat **keine** eigene Start/Ende-Zeiterfassung — die Zeiten stecken in den
+    Durchläufen. Zeile wird grün bei 5/5 vollständigen Durchläufen (Anzeige „Durchläufe X/5").
+  - **Schritt 12 (Rollercoaster):** Durchlauf über **＋ Durchlauf hinzufügen**, Bezeichnung
+    und Phasen im Overlay: Szenario starten (Zeit) · Person kalibriert · Person durchläuft das
+    Szenario · Szenario beendet (Zeit) · Brille abgezogen · Selbstbewertung + Bewertungsbogen.
 - **Schritt 10 / Schritt 14**: der **Trainerbewertungsbogen** (siehe unten).
 
 Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind

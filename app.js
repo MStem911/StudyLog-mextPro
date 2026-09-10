@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.23.0';
+const APP_VERSION = '2.24.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -100,9 +100,16 @@ const BEW_OV_QUESTIONS = [
 // von Durchläufen in p.szenarien[stepId] = [ { id, label, phases: { [phaseId]: ISO | true } } ].
 const SZENARIO_STEP_META = {
   fs_07: { title: 'Tutorial-Durchlauf (Hologate)',      defaultLabel: 'Tutorial' },
-  fs_08: { title: 'Hologate-Szenario-Durchläufe (5)',   defaultLabel: 'Szenario ' },
+  fs_08: { title: 'Hologate',                           defaultLabel: 'Szenario ' },
   fs_12: { title: 'Rollercoaster-Durchlauf (Varjo)',    defaultLabel: 'Rollercoaster' },
 };
+// Schritt 8: feste Reihenfolge von 5 Hologate-Durchläufen, je nur mit Start + Stopp
+// (Zeitstempel). Reihenfolge und Bezeichnungen sind vorgegeben, nicht editierbar.
+const HOLOGATE_RUN_LABELS = ['Scheiben', 'Köpfe', 'Laufen', 'Drohnen', 'Kombi'];
+const SZENARIO_PHASES_HOLOGATE = [
+  { id: 'p_start', label: 'Szenario starten', ts: true },
+  { id: 'p_end',   label: 'Szenario beendet', ts: true },
+];
 // Feste Phasen je Durchlauf. `ts: true` → beim Abhaken wird ein Zeitstempel erfasst;
 // `ts: false` → reines Häkchen ohne Zeit. Tutorial (fs_07) hat eine eigene, kürzere Liste:
 // keine Bewertung, Brille wird nicht abgezogen — es geht direkt ins VR-Szenario.
@@ -122,7 +129,9 @@ const SZENARIO_PHASES_RUN = [
   { id: 'p_bew',    label: 'Selbstbewertung + Bewertungsbogen', ts: false },
 ];
 function szPhasesFor(stepId) {
-  return stepId === 'fs_07' ? SZENARIO_PHASES_TUTORIAL : SZENARIO_PHASES_RUN;
+  if (stepId === 'fs_07') return SZENARIO_PHASES_TUTORIAL;
+  if (stepId === 'fs_08') return SZENARIO_PHASES_HOLOGATE;
+  return SZENARIO_PHASES_RUN;
 }
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -1913,8 +1922,9 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
 });
 
 // Schritte ohne Start/Ende-Erfassung: 1 (nur Person anlegen), 2 (nur Sensorik-Checkliste),
-// 3 (Fragebogen 1). Hier gibt es nur Anmerkung + schrittabhängige Abschnitte.
-const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_03']);
+// 3 (Fragebogen 1), 8 (Zeiten stecken in den 5 Hologate-Durchläufen). Hier gibt es nur
+// Anmerkung + schrittabhängige Abschnitte.
+const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_03', 'fs_08']);
 
 // Eingabefelder eines Schritts (Start/Ende soweit vorhanden + Anmerkung + „…entfernen"/
 // „Schritt leeren"). **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
@@ -1993,6 +2003,16 @@ function flowStepStateFor(stepId, d) {
     if (done > 0 || hasNote) return 'teilweise';
     return 'offen';
   }
+  if (stepId === 'fs_08') {
+    const p = ablaufProband();
+    const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_08)) ? p.szenarien.fs_08 : [];
+    const full    = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
+    const started = runs.filter(r => r.phases && (r.phases.p_start || r.phases.p_end)).length;
+    const hasNote = !!(d && d.note && d.note.trim());
+    if (full === HOLOGATE_RUN_LABELS.length) return 'komplett';
+    if (started > 0 || hasNote) return 'teilweise';
+    return 'offen';
+  }
   return flowStepState(d);
 }
 
@@ -2048,6 +2068,11 @@ function renderAblauf() {
     if (s.id === 'fs_02') {
       const sDone = (p && p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
       summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
+    }
+    if (s.id === 'fs_08') {
+      const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_08)) ? p.szenarien.fs_08 : [];
+      const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
+      summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
     }
     const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
     return `
@@ -2307,11 +2332,14 @@ function vrEquipmentSectionHTML() {
 }
 
 // Abschnitt „VR-Szenario-Durchläufe" im Detailbereich von fs_07 / fs_08 / fs_12.
-// fs_07 (Tutorial): Phasen direkt im Schritt (kein Overlay). fs_08/fs_12: Liste + Overlay.
+// fs_07 (Tutorial): frei anlegbare Durchläufe mit Phasen, direkt im Schritt (kein Overlay).
+// fs_08 (Hologate): 5 feste Durchläufe, je nur Start + Stopp, direkt im Schritt.
+// fs_12 (Rollercoaster): Liste + Overlay.
 function szenarioSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
   if (stepId === 'fs_07') return szenarioInlineSectionHTML(stepId);
+  if (stepId === 'fs_08') return szenarioFixedSectionHTML(stepId);
   const meta = SZENARIO_STEP_META[stepId];
   const list = (p.szenarien && p.szenarien[stepId]) || [];
   const phases = szPhasesFor(stepId);
@@ -2366,6 +2394,52 @@ function szenarioInlineSectionHTML(stepId) {
     <p class="meta-text" style="margin-bottom:8px">Phasen abhaken — „Tutorial starten" und „Tutorial beendet" erfassen dabei einen Zeitstempel.</p>
     ${runsHTML || '<div class="meta-text" style="margin-bottom:8px">Noch kein Durchlauf angelegt.</div>'}
     <button class="btn btn-primary full-width" data-sz-add-inline="${esc(stepId)}" style="margin-top:8px">＋ Durchlauf hinzufügen</button>
+  </div>`;
+}
+
+// fs_08: stellt sicher, dass p.szenarien.fs_08 genau die 5 festen Hologate-Durchläufe in
+// vorgegebener Reihenfolge enthält (stabile IDs hg_0..hg_4). Bereits erfasste Zeitstempel
+// bleiben erhalten. Reine In-Memory-Normalisierung — persistiert wird beim nächsten save().
+function ensureHologateRuns(p) {
+  if (!p.szenarien || typeof p.szenarien !== 'object' || Array.isArray(p.szenarien)) p.szenarien = {};
+  const cur = Array.isArray(p.szenarien.fs_08) ? p.szenarien.fs_08 : [];
+  p.szenarien.fs_08 = HOLOGATE_RUN_LABELS.map((label, i) => {
+    const prev = cur.find(r => r && r.id === 'hg_' + i) || cur[i] || {};
+    const phases = (prev.phases && typeof prev.phases === 'object' && !Array.isArray(prev.phases)) ? prev.phases : {};
+    return { id: 'hg_' + i, label, phases };
+  });
+  return p.szenarien.fs_08;
+}
+
+// fs_08: 5 feste Durchläufe (Scheiben/Köpfe/Laufen/Drohnen/Kombi), je nur Start + Stopp
+// mit Zeitstempel — direkt im Schritt-Panel, ohne Overlay, ohne Hinzufügen/Löschen.
+function szenarioFixedSectionHTML(stepId) {
+  const p = ablaufProband();
+  if (!p) return '';
+  const runs   = ensureHologateRuns(p);
+  const phases = szPhasesFor(stepId);
+  const runsHTML = runs.map((run, i) => {
+    const rows = phases.map(ph => {
+      const val  = run.phases[ph.id];
+      const done = !!val;
+      const sub  = done ? localDatetimeStr(val) : 'Zeitstempel beim Antippen';
+      return `<button class="sensorik-item${done ? ' checked' : ''}" data-sz-phase-inline="${esc(ph.id)}" data-sz-run="${esc(run.id)}">
+        <span class="sensorik-check">${done ? '✓' : ''}</span>
+        <span class="sensorik-info">
+          <span class="sensorik-name">${esc(ph.label)}</span>
+          <span class="sensorik-time">${esc(sub)}</span>
+        </span>
+      </button>`;
+    }).join('');
+    return `<div class="ablauf-sz-run">
+      <div class="ablauf-sz-runname">${i + 1}. ${esc(run.label)}</div>
+      <div class="sensorik-list" style="margin-top:8px">${rows}</div>
+    </div>`;
+  }).join('');
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLÄUFE · HOLOGATE</div>
+    <p class="meta-text" style="margin-bottom:8px">Feste Reihenfolge — je Durchlauf „Szenario starten" und „Szenario beendet" antippen (Zeitstempel). Erneutes Antippen macht die Erfassung nach Rückfrage rückgängig.</p>
+    ${runsHTML}
   </div>`;
 }
 
@@ -2811,6 +2885,11 @@ function syncAblaufRows() {
       if (s.id === 'fs_02') {
         const sDone = (p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
         summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
+      }
+      if (s.id === 'fs_08') {
+        const runs = Array.isArray(p.szenarien && p.szenarien.fs_08) ? p.szenarien.fs_08 : [];
+        const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
+        summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
       }
       sub.textContent = `${s.tag}  ·  ${summary}`;
     }
