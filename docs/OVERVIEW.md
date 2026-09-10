@@ -31,10 +31,11 @@ Der CSV/JSON-Export (in Schritt 18) öffnet einen Vollbild-Dialog aus dem Ablauf
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
 Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), eine reine **Anzeigeliste des
 VR-Equipments** (Schritt 6 — Fußtracker / Handtracker / Weste / VR-Brille, ohne Abhaken),
-**VR-Szenario-Durchläufe** (Schritt 7/8/12, „Szenario starten/beendet" je mit Zeitstempel;
-Schritt 7 frei anlegbare Durchläufe mit Phasen direkt im Schritt, Schritt 8 fünf feste
-Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi — je nur Start + Stopp direkt im
-Schritt und ohne eigene Schritt-Zeiterfassung, Schritt 12 über ein Overlay),
+**VR-Szenario-Durchläufe** (Schritt 7/8/12, „starten/beendet" je mit Zeitstempel und ohne
+eigene Schritt-Zeiterfassung; Schritt 7 genau ein Tutorial-Durchlauf direkt im Schritt —
+nur Starten/Beenden erfassbar, die übrigen Punkte reine Ablauf-Erinnerung; Schritt 8 fünf
+feste Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi — je nur Start + Stopp direkt
+im Schritt; Schritt 12 über ein Overlay),
 **Trainerbewertungsbogen** (Schritt 10 je Hologate-Szenario, Schritt 14 für Rollercoaster —
 seit v2.16.0 reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items),
 **Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum) und eine Bestätigungs-Checkbox

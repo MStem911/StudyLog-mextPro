@@ -111,10 +111,13 @@ Einzelne Schritte haben zusätzliche Felder:
 - **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe**. „Starten"/„Beendet"
   erfassen beim Antippen automatisch die Uhrzeit; erneutes Antippen macht das nach Rückfrage
   rückgängig.
-  - **Schritt 7 (Tutorial):** Durchläufe werden **direkt im Schritt** angelegt (**＋ Durchlauf
-    hinzufügen**, Bezeichnung frei) und dort mit ihren Phasen abgehakt (kein Overlay). Phasen:
-    Tutorial starten (Zeit) · Person kalibriert · Person durchläuft das Tutorial · Tutorial
-    beendet (Zeit) · **Direkt ins VR-Szenario gewechselt** (keine Bewertung, Brille bleibt auf).
+  - **Schritt 7 (Tutorial):** genau **ein** Durchlauf (nichts hinzufügen/löschen), direkt im
+    Schritt. Nur **Tutorial starten** und **Tutorial beendet** werden angetippt (je
+    Zeitstempel) — das sind die einzigen erfassten Zeiten dieses Schritts, eine eigene
+    Start/Ende-Zeiterfassung des Schritts gibt es nicht. Die Punkte *Person kalibriert*,
+    *Person durchläuft das Tutorial* und *Direkt ins VR-Szenario gewechselt* sind **nicht
+    abhakbar**, sondern nur als Erinnerung an den Ablauf dargestellt. Zeile wird grün, sobald
+    Starten und Beenden erfasst sind.
   - **Schritt 8 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
     Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi. Nichts hinzufügen/löschen; je
     Durchlauf nur **Szenario starten** und **Szenario beendet** antippen (je Zeitstempel).

@@ -1216,6 +1216,12 @@ input[type="time"] { color-scheme: dark; }
 }
 /* Feste Durchlauf-Bezeichnung (Schritt 8) — nicht editierbar, nur Überschrift */
 .ablauf-sz-runname { font-weight: 700; color: var(--text1); font-size: var(--text-md); }
+/* Reminder-Zeile (Schritt 7) — nicht abhakbar, nur Ablauf-Hinweis */
+.ablauf-sz-reminder {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 8px 12px; font-size: var(--text-sm); color: var(--text3);
+}
+.ablauf-sz-reminder-mark { color: var(--text3); flex-shrink: 0; }
 .ablauf-detail-empty { font-size: var(--text-sm); color: var(--text3); line-height: 1.5; }
 
 /* Tablet/Desktop (ab 768px): Ablauf = linke Schritt-Leiste (eigene Scrollbar) +
