@@ -1,6 +1,6 @@
 {
-  "name": "StudyLog – Studiendurchführung",
-  "short_name": "StudyLog",
+  "name": "mextPro – Studiendurchführung",
+  "short_name": "mextPro",
   "description": "Protokollierungs-App für Studiendurchführung – UniBw München",
   "start_url": "./",
   "display": "standalone",

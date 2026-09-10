@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="StudyLog">
+  <meta name="apple-mobile-web-app-title" content="mextPro">
   <meta name="theme-color" content="#12121a">
-  <title>StudyLog</title>
+  <title>mextPro</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="style.css">
@@ -20,12 +20,16 @@
     <div class="sidebar-header">
       <div class="logo">SL</div>
       <div class="sidebar-titles">
-        <span class="sidebar-title">StudyLog mext</span>
+        <span class="sidebar-title">mextPro</span>
         <span class="sidebar-sub" id="sidebar-sub">UniBw München</span>
       </div>
     </div>
     <nav class="sidebar-nav">
-      <button class="nav-item active" data-screen="probanden">
+      <button class="nav-item active" data-screen="ablauf">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Ablauf</span>
+      </button>
+      <button class="nav-item" data-screen="probanden">
         <span class="nav-icon">👤</span>
         <span class="nav-label">Teilnehmende</span>
       </button>
@@ -59,7 +63,7 @@
       </button>
     </nav>
     <div class="sidebar-footer">
-      <span class="app-version">v2.12.0</span>
+      <span class="app-version">v2.13.0</span>
       <span class="lock-icon">🔒</span>
     </div>
   </aside>
@@ -72,12 +76,12 @@
       <div class="topbar-left">
         <div class="logo">SL</div>
         <div class="topbar-titles">
-          <span class="topbar-title">StudyLog mext</span>
+          <span class="topbar-title">mextPro</span>
           <span class="topbar-sub" id="topbar-sub">UniBw München</span>
         </div>
       </div>
       <div class="topbar-right">
-        <span class="app-version">v2.12.0</span>
+        <span class="app-version">v2.13.0</span>
         <span class="lock-icon">🔒</span>
       </div>
     </header>
@@ -90,8 +94,33 @@
 
     <main class="screen-container">
 
+      <!-- ── Ablauf (Studien-Zeitleiste) ── -->
+      <section class="screen active" id="screen-ablauf">
+        <div class="screen-inner">
+          <div class="card">
+            <div class="card-label">TEILNEHMENDE:R</div>
+            <select id="ablauf-proband-select" class="field-select"></select>
+            <div class="ablauf-progress" id="ablauf-progress"></div>
+          </div>
+          <p class="privacy-text" style="color:var(--text2); line-height:1.5; margin:0 2px">
+            Auf einen Schritt tippen, um Start- und Endzeit (Button „Jetzt" oder manuelle
+            Eingabe) sowie eine Anmerkung zu erfassen. Reihenfolge frei wählbar. Farbe zeigt
+            den Stand: grau = offen, gelb = angefangen, grün = Start und Ende erfasst.
+          </p>
+          <div class="ablauf-layout" id="ablauf-layout">
+            <div class="ablauf-timeline" id="ablauf-timeline"></div>
+            <aside class="ablauf-detail" id="ablauf-detail"></aside>
+          </div>
+          <div id="ablauf-empty" class="empty-state hidden">
+            <div class="empty-icon">🗺️</div>
+            <div class="empty-text">Noch keine Teilnehmenden angelegt</div>
+            <div class="empty-sub">Lege zuerst im Bereich „Teilnehmende" eine Person an</div>
+          </div>
+        </div>
+      </section>
+
       <!-- ── Teilnehmende ── -->
-      <section class="screen active" id="screen-probanden">
+      <section class="screen" id="screen-probanden">
         <div class="screen-inner">
           <div class="search-row">
             <input type="text" id="search-input" placeholder="🔍  Suchen…" autocomplete="off" autocorrect="off" autocapitalize="none">
@@ -467,7 +496,8 @@
 
     <!-- Bottom Nav (Mobile only) -->
     <nav class="bottom-nav">
-      <button class="nav-btn active" data-screen="probanden"><span class="nav-icon">👤</span><span class="nav-label">Teilnehmende</span></button>
+      <button class="nav-btn active" data-screen="ablauf"><span class="nav-icon">🗺️</span><span class="nav-label">Ablauf</span></button>
+      <button class="nav-btn" data-screen="probanden"><span class="nav-icon">👤</span><span class="nav-label">Teilnehmende</span></button>
       <button class="nav-btn" data-screen="sensorik"><span class="nav-icon">🩹</span><span class="nav-label">Sensorik</span></button>
       <button class="nav-btn" data-screen="session"><span class="nav-icon">⏺</span><span class="nav-label">Szenario</span></button>
       <button class="nav-btn" data-screen="log"><span class="nav-icon">☰</span><span class="nav-label">Protokoll</span></button>

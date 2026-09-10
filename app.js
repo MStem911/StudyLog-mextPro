@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.12.0';
+const APP_VERSION = '2.13.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -46,6 +46,32 @@ const DEFAULT_TAGS = [
 // Kategorien für den Tab "Ereignisse" — eigene, frei erweiterbare Liste (getrennt von
 // den Abweichungs-Tags der Sitzungsaufzeichnung, da inhaltlich andere Bedeutung).
 const DEFAULT_EVENT_TAGS = ['Sensorik', 'VR', 'Fragebogen', 'TMS', 'Sonstiges'];
+
+// Ablauf-Zeitleiste ("Ablauf"): der reale Studienablauf als feste, geordnete Schrittfolge.
+// Pro Teilnehmende:r wird zu jedem Schritt in p.ablauf[stepId] = { startISO, endISO, note }
+// gespeichert (fehlender Schlüssel = Schritt noch nicht angefasst). Die Labels (tag) sind
+// rein informativ — kein Filter-/Rollenverhalten. Reihenfolge = Anzeigereihenfolge.
+const FLOW_STEPS = [
+  { id: 'fs_ankommen', nr: '',   label: 'Ankommen, Begrüßung',                                tag: 'VR / SEN' },
+  { id: 'fs_01', nr: '1',  label: 'Aufklärung + Einverständniserklärung',                     tag: 'VR / SEN' },
+  { id: 'fs_02', nr: '2',  label: 'Anlegen Sensorik (Shimmer, Brustgurt, Uhr)',              tag: 'SEN' },
+  { id: 'fs_03', nr: '3',  label: 'Fragebogen 1',                                            tag: 'SEN / VR' },
+  { id: 'fs_04', nr: '4',  label: 'TMS (ca. 0,5 h)',                                         tag: 'TMS (extern)' },
+  { id: 'fs_05', nr: '5',  label: 'Fragebogen 2',                                            tag: 'SEN / VR' },
+  { id: 'fs_06', nr: '6',  label: 'Anlegen VR-Equipment (Hologate)',                         tag: 'VR' },
+  { id: 'fs_07', nr: '7',  label: 'Einweisung + Tutorial VR (Hologate)',                     tag: 'VR' },
+  { id: 'fs_08', nr: '8',  label: 'VR-Szenarien Hologate (5 Szenarien)',                     tag: 'VR' },
+  { id: 'fs_09', nr: '9',  label: 'Ablegen VR-Equipment (Hologate)',                         tag: 'VR' },
+  { id: 'fs_10', nr: '10', label: 'Fragebogen 3',                                            tag: 'SEN / VR' },
+  { id: 'fs_11', nr: '11', label: 'VR-Brille anlegen (Rollercoaster)',                       tag: 'VR' },
+  { id: 'fs_12', nr: '12', label: 'Rollercoaster (Varjo)',                                   tag: 'VR' },
+  { id: 'fs_13', nr: '13', label: 'VR-Brille ablegen (Rollercoaster)',                       tag: 'VR' },
+  { id: 'fs_14', nr: '14', label: 'Fragebogen 4',                                            tag: 'SEN / VR' },
+  { id: 'fs_15', nr: '15', label: 'Stop Sensorik (Aufzeichnung beenden)',                    tag: 'SEN' },
+  { id: 'fs_16', nr: '16', label: 'Sensorik ablegen',                                        tag: 'SEN' },
+  { id: 'fs_17', nr: '17', label: 'Verabschiedung',                                          tag: 'VR / SEN' },
+  { id: 'fs_18', nr: '18', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
+];
 
 // ── State ────────────────────────────────────────────────────────────────────
 let probanden        = [];
@@ -110,6 +136,8 @@ function load() {
     // Sensorik wird pro Person in p.sensorik geführt; für Alt-Daten sicherstellen, dass
     // das Objekt existiert. Der frühere globale Key sl_sensorik (v2.9.0) wird verworfen.
     probanden.forEach(pr => { if (!pr.sensorik || typeof pr.sensorik !== 'object') pr.sensorik = {}; });
+    // Ablauf-Zeitleiste wird pro Person in p.ablauf geführt; für Alt-Daten Objekt sicherstellen.
+    probanden.forEach(pr => { if (!pr.ablauf || typeof pr.ablauf !== 'object') pr.ablauf = {}; });
     localStorage.removeItem(KEY_SENSORIK);
     scenarios = sc ? JSON.parse(sc) : deepCopy(DEFAULT_SCENARIOS);
     if (!scenarios.length) scenarios = deepCopy(DEFAULT_SCENARIOS);
@@ -215,6 +243,7 @@ document.getElementById('confirm-cancel').addEventListener('click', () => {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 const PAGE_TITLES = {
+  ablauf:    'Ablauf',
   probanden: 'Teilnehmende',
   sensorik:  'Sensorik',
   session:   'Szenario aufzeichnen',
@@ -240,6 +269,7 @@ function showScreen(name) {
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = PAGE_TITLES[name] || 'StudyLog';
 
+  if (name === 'ablauf')    renderAblauf();
   if (name === 'sensorik')  renderSensorik();
   if (name === 'session')   renderSessionScreen();
   if (name === 'log')       renderLog();
@@ -333,7 +363,7 @@ function saveNewProband() {
   // Sensoriknummer wird beim Anlegen nicht mehr erfasst – ggf. nachträglich über "Person bearbeiten".
   // Sensorik-Zeiten ebenfalls nur im Bearbeiten-Dialog.
   const newId = uid();
-  probanden.push({ id: newId, pseudo, sensor: '', note, handedness, sensorik: {}, sensorAngelegtISO: null, sensorAbgelegtISO: null, createdAt: nowISO });
+  probanden.push({ id: newId, pseudo, sensor: '', note, handedness, sensorik: {}, ablauf: {}, sensorAngelegtISO: null, sensorAbgelegtISO: null, createdAt: nowISO });
   save();
   clearAddForm();
   document.getElementById('add-form').classList.add('hidden');
@@ -341,6 +371,8 @@ function saveNewProband() {
   showToast('✓ ' + pseudo + ' angelegt');
   // Direkt anbieten, die Sensorik für die neue Person zu erfassen
   selectedSensorikProbandId = newId;
+  selectedAblaufProbandId   = newId;
+  expandedFlowStepId        = '';
   document.getElementById('sensorik-prompt-msg').textContent =
     `„${pseudo}" wurde angelegt. Jetzt die Sensorik für diese Person erfassen?`;
   document.getElementById('sensorik-prompt-overlay').classList.remove('hidden');
@@ -430,11 +462,13 @@ document.getElementById('btn-delete-proband').addEventListener('click', () => {
     () => {
       probanden = probanden.filter(x => x.id !== idToDelete);
       if (selectedSensorikProbandId === idToDelete) selectedSensorikProbandId = '';
+      if (selectedAblaufProbandId === idToDelete) { selectedAblaufProbandId = ''; expandedFlowStepId = ''; }
       save();
       closeProbandEdit();
       renderProbanden(document.getElementById('search-input').value);
       buildProbandSelect();
       renderSensorik();
+      renderAblauf();
       showToast('Person gelöscht');
     }
   );
@@ -1292,7 +1326,8 @@ document.getElementById('btn-clear-data').addEventListener('click', () => {
       probanden = []; sessions = []; bewertungen = []; events = []; settings.lastExport = null;
       selectedProbandIds = []; selectedBewSessionIds = []; pendingBewertungSessionIds = [];
       selectedSensorikProbandId = '';
-      save(); renderProbanden(); renderLog(); renderExport(); renderSensorik(); renderEreignisse();
+      selectedAblaufProbandId = ''; expandedFlowStepId = '';
+      save(); renderProbanden(); renderLog(); renderExport(); renderSensorik(); renderEreignisse(); renderAblauf();
       showToast('Alle Daten gelöscht');
     });
 });
@@ -1797,10 +1832,285 @@ document.getElementById('btn-add-event-tag').addEventListener('click', () => {
   showToast('✓ Kategorie hinzugefügt');
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ABLAUF (Studien-Zeitleiste)
+// ══════════════════════════════════════════════════════════════════════════════
+// Zeigt den festen Studienablauf (FLOW_STEPS) als Zeitleiste für genau eine:n aktive:n
+// Teilnehmende:n. Jeder Schritt ist frei anwählbar (Reihenfolge egal); erfasst werden
+// Start-/Endzeit (Button "Jetzt" oder manuelle Eingabe) sowie eine Anmerkung.
+// Farbcodierung gibt Überblick:
+//   offen      – nichts erfasst
+//   teilweise  – nur Start ODER Ende ODER nur eine Anmerkung
+//   komplett   – Start UND Ende erfasst
+// Layout:
+//   schmal (Smartphone / Tablet hochkant): einspaltig, Schritt klappt inline auf.
+//   breit  (Tablet quer, ab 1024px): zweispaltig (Master-Detail) — links die Schrittliste,
+//          rechts ein fest sichtbares Detailfeld für den gewählten Schritt.
+let selectedAblaufProbandId = '';
+let expandedFlowStepId       = '';
+const ABLAUF_WIDE_MQ = window.matchMedia('(min-width: 1024px)');
+// Beim Wechsel Hoch-/Querformat neu aufbauen, damit Inline-Panel <-> Detailspalte umschaltet.
+ABLAUF_WIDE_MQ.addEventListener('change', () => {
+  if (document.getElementById('screen-ablauf')?.classList.contains('active')) renderAblauf();
+});
+
+// Eingabefelder (Start/Ende/Anmerkung + „Schritt leeren") für einen Schritt — identisch
+// im Inline-Panel (schmal) wie in der Detailspalte (breit); IDs bleiben eindeutig, da
+// immer nur eine der beiden Stellen gerendert wird.
+function flowStepFieldsHTML(d) {
+  return `
+    <div class="edit-row-2">
+      <div>
+        <label class="field-label" for="ablauf-edit-start">Start</label>
+        <div class="time-capture-row">
+          <input type="time" id="ablauf-edit-start" step="1" value="${esc(isoToTimeInput(d.startISO))}">
+          <button type="button" class="btn btn-ghost btn-time-now" data-target="ablauf-edit-start">🕐 Jetzt</button>
+        </div>
+      </div>
+      <div>
+        <label class="field-label" for="ablauf-edit-end">Ende</label>
+        <div class="time-capture-row">
+          <input type="time" id="ablauf-edit-end" step="1" value="${esc(isoToTimeInput(d.endISO))}">
+          <button type="button" class="btn btn-ghost btn-time-now" data-target="ablauf-edit-end">🕐 Jetzt</button>
+        </div>
+      </div>
+    </div>
+    <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung</label>
+    <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn btn-ghost flex-1" id="ablauf-edit-clear">Schritt leeren</button>
+    </div>`;
+}
+
+function flowStepState(d) {
+  if (!d) return 'offen';
+  const hasStart = !!d.startISO;
+  const hasEnd   = !!d.endISO;
+  const hasNote  = !!(d.note && d.note.trim());
+  if (hasStart && hasEnd) return 'komplett';
+  if (hasStart || hasEnd || hasNote) return 'teilweise';
+  return 'offen';
+}
+
+function ablaufProband() {
+  return probanden.find(p => p.id === selectedAblaufProbandId) || null;
+}
+
+function buildAblaufProbandSelect() {
+  const sel = document.getElementById('ablauf-proband-select');
+  if (!sel) return;
+  if (!probanden.some(p => p.id === selectedAblaufProbandId)) {
+    selectedAblaufProbandId = probanden.length ? probanden[probanden.length - 1].id : '';
+  }
+  sel.innerHTML = probanden.length
+    ? probanden.map(p => `<option value="${esc(p.id)}">${esc(p.pseudo)}${p.handedness ? '  ·  ' + esc(p.handedness) : ''}</option>`).join('')
+    : '<option value="">— keine Teilnehmenden —</option>';
+  sel.value = selectedAblaufProbandId;
+  sel.disabled = !probanden.length;
+}
+
+function renderAblauf() {
+  const timeline = document.getElementById('ablauf-timeline');
+  const layout   = document.getElementById('ablauf-layout');
+  const detail   = document.getElementById('ablauf-detail');
+  const empty    = document.getElementById('ablauf-empty');
+  const progress = document.getElementById('ablauf-progress');
+  if (!timeline) return;
+  buildAblaufProbandSelect();
+  const p = ablaufProband();
+  if (!p) {
+    timeline.innerHTML = '';
+    if (detail) detail.innerHTML = '';
+    if (layout) layout.classList.add('hidden');
+    progress.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  if (!p.ablauf) p.ablauf = {};
+  empty.classList.add('hidden');
+  if (layout) layout.classList.remove('hidden');
+  const wide = ABLAUF_WIDE_MQ.matches;
+
+  const c = ablaufCounts(p);
+  progress.innerHTML =
+    `<div class="ablauf-progress-bar"><span style="width:${c.pct}%"></span></div>` +
+    `<div class="ablauf-progress-text">${c.komplett} / ${FLOW_STEPS.length} komplett` +
+    `${c.teilweise ? '  ·  ' + c.teilweise + ' angefangen' : ''}</div>`;
+
+  timeline.innerHTML = FLOW_STEPS.map(s => {
+    const d       = p.ablauf[s.id] || {};
+    const state   = flowStepState(d);
+    const isOpen  = expandedFlowStepId === s.id;
+    const startTxt = d.startISO ? localTimeStr(d.startISO) : '–';
+    const endTxt   = d.endISO   ? localTimeStr(d.endISO)   : '–';
+    const summary  = (d.startISO || d.endISO) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
+    const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
+    return `
+    <div class="ablauf-step-wrap">
+      <button class="ablauf-step${isOpen ? ' selected' : ''}" data-state="${state}" data-id="${esc(s.id)}" aria-expanded="${isOpen}">
+        <span class="ablauf-step-nr">${s.nr ? esc(s.nr) : '•'}</span>
+        <span class="ablauf-step-body">
+          <span class="ablauf-step-label">${esc(s.label)}${noteBadge}</span>
+          <span class="ablauf-step-sub">${esc(s.tag)}  ·  ${esc(summary)}</span>
+        </span>
+        <span class="ablauf-step-chevron">${isOpen ? '▾' : '▸'}</span>
+      </button>
+      ${(!wide && isOpen) ? `<div class="ablauf-step-panel">${flowStepFieldsHTML(d)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Detailspalte (nur im Querformat / breiten Layout sichtbar)
+  if (detail) {
+    if (wide && expandedFlowStepId) {
+      const s = FLOW_STEPS.find(x => x.id === expandedFlowStepId);
+      const d = (s && p.ablauf[s.id]) || {};
+      detail.innerHTML = s
+        ? `<div class="ablauf-detail-head">${s.nr ? 'Schritt ' + esc(s.nr) + ' · ' : ''}${esc(s.label)}</div>` +
+          flowStepFieldsHTML(d)
+        : '';
+    } else if (wide) {
+      detail.innerHTML = '<div class="ablauf-detail-empty">Einen Schritt links auswählen, um Start-/Endzeit und eine Anmerkung zu erfassen.</div>';
+    } else {
+      detail.innerHTML = '';
+    }
+  }
+
+  timeline.querySelectorAll('.ablauf-step').forEach(btn =>
+    btn.addEventListener('click', () => {
+      // offenen Schritt zuerst sichern, falls der Feld-„change" noch nicht gefeuert hat
+      if (expandedFlowStepId && document.getElementById('ablauf-edit-note')) {
+        writeFlowStep(expandedFlowStepId);
+      }
+      expandedFlowStepId = (expandedFlowStepId === btn.dataset.id) ? '' : btn.dataset.id;
+      renderAblauf();
+    })
+  );
+  // Feld-Eingaben speichern OHNE die Zeitleiste komplett neu zu bauen (sonst „frisst" das
+  // Re-Render den Klick auf die Kopfzeile beim Zuklappen). Stattdessen nur die betroffene
+  // Zeile + Fortschritt aktualisieren; das offene Panel bleibt im DOM erhalten. Die Felder
+  // liegen je nach Layout im Inline-Panel (schmal) ODER in der Detailspalte (breit).
+  const fieldScope = wide && detail ? detail : timeline;
+  fieldScope.querySelectorAll('.btn-time-now').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const t = document.getElementById(btn.dataset.target);
+      if (!t) return;
+      t.value = isoToTimeInput(new Date().toISOString());
+      writeFlowStep(expandedFlowStepId);
+      syncAblaufRows();
+    })
+  );
+  ['ablauf-edit-start','ablauf-edit-end','ablauf-edit-note'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => { writeFlowStep(expandedFlowStepId); syncAblaufRows(); });
+  });
+  const clearBtn = document.getElementById('ablauf-edit-clear');
+  if (clearBtn) clearBtn.addEventListener('click', () => clearFlowStep(expandedFlowStepId));
+}
+
+// Zählt komplette/angefangene Schritte für die aktuell aktive Person.
+function ablaufCounts(p) {
+  let komplett = 0, teilweise = 0;
+  FLOW_STEPS.forEach(s => {
+    const st = flowStepState(p.ablauf && p.ablauf[s.id]);
+    if (st === 'komplett') komplett++;
+    else if (st === 'teilweise') teilweise++;
+  });
+  return { komplett, teilweise, pct: Math.round((komplett / FLOW_STEPS.length) * 100) };
+}
+
+// Aktualisiert Farbcodierung, Zeit-Zusammenfassung, Notiz-Badge je Schritt-Zeile und den
+// Fortschrittsbalken in-place, ohne #ablauf-timeline neu zu rendern.
+function syncAblaufRows() {
+  const p = ablaufProband();
+  if (!p) return;
+  if (!p.ablauf) p.ablauf = {};
+  FLOW_STEPS.forEach(s => {
+    const d   = p.ablauf[s.id];
+    const row = document.querySelector(`.ablauf-step[data-id="${s.id}"]`);
+    if (!row) return;
+    row.dataset.state = flowStepState(d);
+    const sub = row.querySelector('.ablauf-step-sub');
+    if (sub) {
+      const startTxt = d && d.startISO ? localTimeStr(d.startISO) : '–';
+      const endTxt   = d && d.endISO   ? localTimeStr(d.endISO)   : '–';
+      const summary  = (d && (d.startISO || d.endISO)) ? `${startTxt} → ${endTxt}` : 'noch nicht erfasst';
+      sub.textContent = `${s.tag}  ·  ${summary}`;
+    }
+    const label = row.querySelector('.ablauf-step-label');
+    if (label) {
+      const badge   = label.querySelector('.ablauf-note-badge');
+      const hasNote = !!(d && d.note && d.note.trim());
+      if (hasNote && !badge) {
+        label.insertAdjacentHTML('beforeend', ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>');
+      } else if (!hasNote && badge) {
+        badge.remove();
+      }
+    }
+  });
+  const c   = ablaufCounts(p);
+  const bar = document.querySelector('#ablauf-progress .ablauf-progress-bar span');
+  const txt = document.querySelector('#ablauf-progress .ablauf-progress-text');
+  if (bar) bar.style.width = c.pct + '%';
+  if (txt) txt.textContent = `${c.komplett} / ${FLOW_STEPS.length} komplett` +
+    (c.teilweise ? '  ·  ' + c.teilweise + ' angefangen' : '');
+}
+
+// Schreibt den aktuell geöffneten Schritt aus den Eingabefeldern in p.ablauf (ohne Re-Render).
+function writeFlowStep(stepId) {
+  const p = ablaufProband();
+  if (!p || !stepId) return;
+  if (!p.ablauf) p.ablauf = {};
+  const startEl = document.getElementById('ablauf-edit-start');
+  const endEl   = document.getElementById('ablauf-edit-end');
+  const noteEl  = document.getElementById('ablauf-edit-note');
+  if (!startEl && !endEl && !noteEl) return; // Panel nicht offen
+  const startT = startEl ? startEl.value : '';
+  const endT   = endEl   ? endEl.value   : '';
+  const note   = noteEl  ? noteEl.value.trim() : '';
+  const prev      = p.ablauf[stepId] || {};
+  const baseStart = prev.startISO || new Date().toISOString();
+  const baseEnd   = prev.endISO   || prev.startISO || new Date().toISOString();
+  const startISO  = startT ? rebuildISO(baseStart, startT) : null;
+  const endISO    = endT   ? rebuildISO(baseEnd,   endT)   : null;
+  if (startISO && endISO && new Date(endISO) < new Date(startISO)) {
+    showToast('⚠ Ende liegt vor Start — trotzdem gespeichert');
+  }
+  if (!startISO && !endISO && !note) {
+    delete p.ablauf[stepId];
+  } else {
+    p.ablauf[stepId] = { startISO, endISO, note };
+  }
+  save();
+}
+
+function clearFlowStep(stepId) {
+  const p = ablaufProband();
+  if (!p || !stepId) { expandedFlowStepId = ''; renderAblauf(); return; }
+  if (!p.ablauf || !p.ablauf[stepId]) { expandedFlowStepId = ''; renderAblauf(); return; }
+  const step = FLOW_STEPS.find(s => s.id === stepId);
+  showConfirm('Schritt leeren',
+    `Erfasste Zeiten und Anmerkung für „${step ? step.label : 'diesen Schritt'}" entfernen?`,
+    () => {
+      delete p.ablauf[stepId];
+      save();
+      expandedFlowStepId = '';
+      renderAblauf();
+      showToast('Schritt geleert');
+    });
+}
+
+const ablaufSelectEl = document.getElementById('ablauf-proband-select');
+if (ablaufSelectEl) ablaufSelectEl.addEventListener('change', e => {
+  selectedAblaufProbandId = e.target.value;
+  expandedFlowStepId = '';
+  renderAblauf();
+});
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 load();
 if (scenarios.length) selectedScenId = scenarios[0].id;
 renderProbanden();
+renderAblauf();
 renderSensorik();
 buildScenarioGrid();
 buildProbandSelect();
@@ -1808,7 +2118,7 @@ renderTagRow('deviation-tags');
 const dateStr = new Date().toLocaleDateString('de-DE', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
 ['topbar-sub','sidebar-sub'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = dateStr; });
 const pdEl = document.getElementById('page-date'); if(pdEl) pdEl.textContent = dateStr;
-const ptEl = document.getElementById('page-title'); if(ptEl) ptEl.textContent = PAGE_TITLES['probanden'];
+const ptEl = document.getElementById('page-title'); if(ptEl) ptEl.textContent = PAGE_TITLES['ablauf'];
 document.querySelectorAll('.app-version').forEach(el => el.textContent = 'v' + APP_VERSION);
 
 }); // end DOMContentLoaded

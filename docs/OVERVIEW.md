@@ -14,6 +14,14 @@ gestoppt, notiert und bewertet, wer wann welches Szenario durchlaufen hat — in
 eines strukturierten Bewertungsbogens für die durchführende Trainingsleitung. Alle Daten
 bleiben dabei ausschließlich auf dem jeweiligen Gerät.
 
+Seit **v2.13.0** ist der Einstiegs-Bereich **Ablauf**: eine chronologische Zeitleiste des
+gesamten Studienablaufs (feste Schrittfolge „Ankommen" + Schritte 1–18). Zu jedem Schritt
+werden pro Teilnehmende:r Start- und Endzeit (Button „Jetzt" oder manuelle Eingabe) sowie
+eine Anmerkung erfasst; eine Farbcodierung (grau = offen, gelb = angefangen, grün = Start
+und Ende erfasst) gibt den Überblick. Die bisherige Tab-Navigation (Teilnehmende, Sensorik,
+Szenario, Protokoll, Bewertung, Ereignisse, Export, Einstellungen) bleibt vollständig
+erhalten; das schrittweise Überführen dieser Funktionen in die Ablauf-Schritte ist geplant.
+
 ## Zielgruppe / Anwendungskontext
 
 - **Nutzende:** Studienleitungen / Trainer:innen, die vor Ort (z. B. an einer VR-Station)
@@ -63,7 +71,7 @@ Sensorik an-/abgelegt wurde) — nicht die Rohdaten des Sensors selbst. Details 
 flowchart TB
     subgraph Device["Gerät der Studienleitung (Smartphone/Tablet/Desktop)"]
         direction TB
-        UI["index.html + style.css<br/>(UI-Schicht: 8 Screens, Overlays/Dialoge)"]
+        UI["index.html + style.css<br/>(UI-Schicht: 9 Screens inkl. Ablauf, Overlays/Dialoge)"]
         Logic["app.js<br/>(Anwendungslogik, In-Memory-State,<br/>Rendering, Validierung)"]
         LS[("localStorage<br/>(persistenter Datenspeicher)")]
         SW["sw.js (Service Worker)<br/>Cache für App-Shell (HTML/CSS/JS/Icons)"]
@@ -90,7 +98,7 @@ einem Gerät wegzubekommen, ist der manuelle CSV/JSON-Export (siehe
 
 | Datei | Rolle |
 |---|---|
-| `index.html` | App-Shell: alle 8 Screens (Teilnehmende, Sensorik, Szenario [Screen-ID `session`], Protokoll, Bewertung, Ereignisse, Export, Einstellungen) sowie alle Overlays/Dialoge als statisches Markup, anfangs versteckt (`.hidden`) |
+| `index.html` | App-Shell: alle 9 Screens (Ablauf [Screen-ID `ablauf`, Standard-Einstieg], Teilnehmende, Sensorik, Szenario [Screen-ID `session`], Protokoll, Bewertung, Ereignisse, Export, Einstellungen) sowie alle Overlays/Dialoge als statisches Markup, anfangs versteckt (`.hidden`) |
 | `style.css` | Dark-Mode-Design, responsives Layout (Sidebar auf Desktop/Tablet, Bottom-Nav auf Mobile) |
 | `app.js` | Gesamte Anwendungslogik: State-Verwaltung, Persistenz (`localStorage`), Rendering aller Screens, Event-Handling, Export |
 | `sw.js` | Service Worker: cached die App-Shell-Dateien für Offline-Nutzung, Cache-Invalidierung über Versionsnummer |

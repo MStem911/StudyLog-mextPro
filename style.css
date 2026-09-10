@@ -127,9 +127,16 @@ body {
   border-top: 1px solid var(--border);
   padding-bottom: var(--safe-bot);
   flex-shrink: 0;
+  /* Bei vielen Einträgen (Ablauf + 8 weitere) reicht die Breite auf schmalen
+     Smartphones nicht — dann horizontal scrollen statt (durch overflow:hidden
+     des .main-wrapper) rechts abzuschneiden. */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.bottom-nav::-webkit-scrollbar { display: none; }
 .nav-btn {
-  flex: 1;
+  flex: 1 0 auto;
+  min-width: 60px;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 9px 4px 7px;
   background: none; border: none; color: var(--text3);
@@ -142,7 +149,7 @@ body {
 .nav-btn.active { color: var(--purple); border-top-color: var(--purple); }
 .nav-btn:hover:not(.active) { color: var(--text2); }
 .nav-icon  { font-size: var(--text-lg); line-height: 1; }
-.nav-label { font-size: var(--text-sm); font-weight: 500; }
+.nav-label { font-size: var(--text-sm); font-weight: 500; white-space: nowrap; }
 
 /* ══════════════════════════════════════════════════════
    TABLET (768px+)
@@ -1080,6 +1087,112 @@ input[type="time"] { color-scheme: dark; }
 .sensorik-name { font-size: var(--text-md); font-weight: 700; color: var(--text1); }
 .sensorik-time { font-size: var(--text-sm); color: var(--text2); }
 .sensorik-item.checked .sensorik-time { color: var(--teal-txt); }
+
+/* ══════════════════════════════════════════════════════
+   ABLAUF (Studien-Zeitleiste)
+══════════════════════════════════════════════════════ */
+.ablauf-progress { margin-top: 12px; }
+.ablauf-progress-bar {
+  height: 8px; border-radius: 999px;
+  background: var(--surface3); border: 1px solid var(--border);
+  overflow: hidden;
+}
+.ablauf-progress-bar span {
+  display: block; height: 100%;
+  background: var(--teal); border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.ablauf-progress-text { margin-top: 6px; font-size: var(--text-sm); color: var(--text2); }
+
+/* schmal (Smartphone / Tablet hochkant): einspaltig, Detailspalte ausgeblendet */
+.ablauf-layout { display: block; }
+.ablauf-detail { display: none; }
+
+.ablauf-timeline { display: flex; flex-direction: column; gap: 8px; }
+.ablauf-step-wrap { display: flex; flex-direction: column; }
+
+.ablauf-step {
+  width: 100%;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.12s, border-color 0.12s;
+  text-align: left; font-family: inherit; font-size: inherit; color: inherit;
+  user-select: none;
+}
+.ablauf-step:hover  { background: var(--surface2); border-color: var(--border2); }
+.ablauf-step:active { background: var(--surface2); }
+.ablauf-step[data-state="teilweise"] {
+  background: var(--amber-bg); border-color: var(--amber); border-left-color: var(--amber);
+}
+.ablauf-step[data-state="komplett"] {
+  background: var(--teal-bg); border-color: var(--teal); border-left-color: var(--teal);
+}
+
+.ablauf-step-nr {
+  width: 30px; min-width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border2);
+  font-size: var(--text-sm); font-weight: 700; color: var(--text2);
+}
+.ablauf-step[data-state="teilweise"] .ablauf-step-nr {
+  background: var(--amber); border-color: var(--amber); color: #2a1f04;
+}
+.ablauf-step[data-state="komplett"] .ablauf-step-nr {
+  background: var(--teal); border-color: var(--teal); color: #06231c;
+}
+
+.ablauf-step-body  { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ablauf-step-label { font-size: var(--text-md); font-weight: 700; color: var(--text1); }
+.ablauf-step-sub   { font-size: var(--text-sm); color: var(--text2); }
+.ablauf-step[data-state="teilweise"] .ablauf-step-sub { color: var(--amber-txt); }
+.ablauf-step[data-state="komplett"] .ablauf-step-sub  { color: var(--teal-txt); }
+.ablauf-note-badge { color: var(--purple-lt); font-size: var(--text-sm); }
+.ablauf-step-chevron { color: var(--text3); font-size: var(--text-md); flex-shrink: 0; }
+
+.ablauf-step-panel {
+  margin-top: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+}
+
+.ablauf-detail-head {
+  font-size: var(--text-md); font-weight: 700; color: var(--text1);
+  margin-bottom: 12px;
+}
+.ablauf-detail-empty { font-size: var(--text-sm); color: var(--text3); line-height: 1.5; }
+
+/* breit (Tablet quer / Desktop, ab 1024px): Master-Detail — Schrittliste links,
+   fest sichtbares Detailfeld rechts. Kein Inline-Aufklappen. */
+@media (min-width: 1024px) {
+  .ablauf-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+  }
+  .ablauf-detail {
+    display: block;
+    position: sticky;
+    top: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .ablauf-step-chevron { display: none; }
+  .ablauf-step.selected {
+    border-color: var(--purple);
+    box-shadow: inset 0 0 0 1px var(--purple);
+  }
+  /* schmale Detailspalte: Start/Ende untereinander statt nebeneinander */
+  .ablauf-detail .edit-row-2 { grid-template-columns: 1fr; }
+}
 
 /* Keyboard focus styles for accessibility */
 :focus-visible {

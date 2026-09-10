@@ -16,11 +16,13 @@
 
 ## Kernfunktionen im Überblick
 
-Die App hat acht Bereiche, erreichbar über die Navigation (unten auf dem Smartphone, links
-auf Tablet/Desktop):
+Die App hat neun Bereiche, erreichbar über die Navigation (unten auf dem Smartphone, links
+auf Tablet/Desktop). Beim Start öffnet sich der Bereich **Ablauf**. Auf schmalen Smartphones
+lässt sich die untere Navigationsleiste bei Bedarf seitwärts wischen.
 
 | Bereich | Zweck |
 |---|---|
+| 🗺️ **Ablauf** | Chronologische Zeitleiste des gesamten Studienablaufs für eine ausgewählte Person. Zu jedem Schritt Start-/Endzeit und eine Anmerkung erfassen; Farbe zeigt den Stand (grau = offen, gelb = angefangen, grün = Start und Ende erfasst) |
 | 👤 **Teilnehmende** | Personen mit Pseudonym + Händigkeit anlegen und verwalten (Sensoriknummer optional, nur im Bearbeiten-Dialog) |
 | 🩹 **Sensorik** | Checkliste der Sensorik-Hardware **pro Teilnehmende:r** (im Dropdown wählbar); pro Item wird beim Abhaken automatisch der Anlege-Zeitpunkt erfasst. Sind alle Items abgehakt, springt die App direkt in den Tab **Szenario** |
 | ⏺ **Szenario** | Timer starten/stoppen, Szenario wählen (Tutorial / Hologate / Rollercoaster), Abweichungen/Notizen erfassen. Speichert je Durchlauf eine „Sitzung" (siehe Protokoll) |
@@ -29,6 +31,40 @@ auf Tablet/Desktop):
 | ❗ **Ereignisse** | Freie Ereignis-/Problemliste (z. B. Sensorik verrutscht) mit Kategorie, Zeitpunkt oder Zeitraum — unabhängig von einer konkreten Sitzung |
 | ↓ **Export** | Daten als CSV/JSON exportieren, Statistiken einsehen |
 | ⚙ **Einstellungen** | App-Verhalten anpassen (z. B. Mehrfachauswahl von Teilnehmenden bei Sitzung **und** Bewertung), alle Daten löschen |
+
+## Die Ablauf-Zeitleiste nutzen
+
+Der Bereich **🗺️ Ablauf** bildet den kompletten Studienablauf als feste Schrittfolge ab
+(„Ankommen, Begrüßung" sowie die Schritte 1–18, z. B. „Aufklärung + Einverständniserklärung",
+„Anlegen Sensorik", „Fragebogen 1", „TMS", … bis „Datensicherung / Aufbereitung"). Die
+Kürzel VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt
+fachlich verantwortet — sie haben keine weitere Funktion.
+
+Auf einem **Tablet im Querformat** erscheint der Bereich zweispaltig: links die Schrittliste,
+rechts ein fest sichtbares Eingabefeld für den gerade gewählten Schritt. Auf dem Smartphone
+bzw. im Hochformat klappt der gewählte Schritt stattdessen direkt in der Liste auf. Die
+Bedienung ist ansonsten identisch.
+
+1. Oben im Dropdown die **Teilnehmende:r** wählen (standardmäßig die zuletzt angelegte
+   Person). Die Zeitleiste gilt jeweils nur für diese Person.
+2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
+   Der Schritt zeigt dann drei Felder (rechts in der Spalte bzw. aufgeklappt in der Liste):
+   - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
+     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren.
+   - **Hinweis / Anmerkung**: Freitext zu diesem Schritt (z. B. Besonderheiten, Abweichungen).
+   Eingaben werden sofort gespeichert; ein erneutes Antippen des Schritts hebt die Auswahl
+   wieder auf (im Hochformat klappt er dabei zu).
+3. Die **Farbe** jedes Schritts zeigt den Stand auf einen Blick:
+   - **grau** – noch nichts erfasst,
+   - **gelb** – angefangen (nur Start *oder* Ende *oder* nur eine Anmerkung),
+   - **grün** – Start *und* Ende erfasst.
+   Ein ✎ neben dem Schrittnamen zeigt an, dass eine Anmerkung hinterlegt ist. Oben läuft ein
+   Fortschrittsbalken („X / 19 komplett").
+4. **Schritt leeren** (im aufgeklappten Schritt) entfernt nach Rückfrage die erfassten Zeiten
+   und die Anmerkung dieses einen Schritts.
+
+Die Ablauf-Zeiten werden lokal bei der jeweiligen Person gespeichert. Sie sind aktuell
+**nicht** Teil des CSV-/JSON-Exports.
 
 ## Typischer Ablauf einer Nutzungssitzung
 
