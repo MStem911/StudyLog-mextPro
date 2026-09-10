@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.21.0';
+const APP_VERSION = '2.21.1';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1933,12 +1933,12 @@ function flowStepFieldsHTML(d, isLast, stepId) {
     <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung${noteTime}</label>
     <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>`;
 
-  // Schritt 2 „Anlegen Sensorik": keine Start/Ende-Felder — nur Anmerkung (mit Zeitstempel)
-  // + Weiter. Die Sensorik-Checkliste selbst kommt aus flowStepExtrasHTML().
+  // Schritt 2 „Anlegen Sensorik": keine Start/Ende-Felder, kein „Weiter" hier — nur die
+  // Anmerkung (mit Zeitstempel). Reihenfolge (Checkliste oben, „Weiter" ganz unten) baut
+  // stepPanelBodyHTML() zusammen.
   if (stepId === 'fs_02') {
     return `${noteBlock}
-    <div class="btn-col" style="margin-top:12px">
-      ${nextBtn}
+    <div class="btn-col" style="margin-top:10px">
       <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Anmerkung entfernen</button>
     </div>`;
   }
@@ -1965,6 +1965,20 @@ function flowStepFieldsHTML(d, isLast, stepId) {
       ${nextBtn}
       <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Schritt leeren</button>
     </div>`;
+}
+
+// Kompletter Inhalt eines geöffneten Schritts (Felder + schrittabhängige Zusatzabschnitte).
+// Sonderfall fs_02: Sensorik-Checkliste ganz oben, „✓ Weiter zum nächsten Schritt" ganz unten.
+function stepPanelBodyHTML(d, s) {
+  if (s.id === 'fs_02') {
+    return sensorikSectionHTML()
+      + flowStepFieldsHTML(d, false, 'fs_02')
+      + ereignisSectionHTML('fs_02')
+      + `<div class="btn-col" style="margin-top:14px">
+           <button class="btn btn-primary full-width" id="ablauf-edit-next">✓ Weiter zum nächsten Schritt</button>
+         </div>`;
+  }
+  return flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID, s.id) + flowStepExtrasHTML(s.id);
 }
 
 function flowStepState(d) {
@@ -2055,7 +2069,7 @@ function renderAblauf() {
         </span>
         <span class="ablauf-step-chevron">${isOpen ? '▾' : '▸'}</span>
       </button>
-      ${(!wide && isOpen) ? `<div class="ablauf-step-panel">${flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID, s.id)}${flowStepExtrasHTML(s.id)}</div>` : ''}
+      ${(!wide && isOpen) ? `<div class="ablauf-step-panel">${stepPanelBodyHTML(d, s)}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -2066,7 +2080,7 @@ function renderAblauf() {
       const d = (s && abl[s.id]) || {};
       detail.innerHTML = s
         ? `<div class="ablauf-detail-head">${s.nr ? 'Schritt ' + esc(s.nr) + ' · ' : ''}${esc(s.label)}</div>` +
-          flowStepFieldsHTML(d, s.id === LAST_FLOW_STEP_ID, s.id) + flowStepExtrasHTML(s.id)
+          stepPanelBodyHTML(d, s)
         : '';
     } else if (wide) {
       detail.innerHTML = '<div class="ablauf-detail-empty">Einen Schritt links auswählen, um Start-/Endzeit und eine Anmerkung zu erfassen.</div>';
