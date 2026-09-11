@@ -67,10 +67,14 @@ Item). Der letzte Schritt, **Datensicherung/Desinfektion (Schritt 15)**, besteht
 nur noch aus zwei Häkchen **ohne** Zeiterfassung — „Alle Daten gesichert" (LSL, App, Sensorik,
 Varjo Base) und „Alles desinfiziert/aufbereitet"; sind beide gesetzt, erscheint ein Button
 „↻ Nächsten Durchlauf starten", der den Ablauf wieder bei Schritt 1 öffnet, ohne die Daten der
-bisherigen Person zu verändern.
-**Noch offen:** der CSV/JSON-Export basiert noch auf der alten Datenstruktur
-(`sl_sessions`/`sl_bewertungen`) und bezieht die neuen Ablauf-Daten nicht ein; die alte
-Protokoll-Liste hat keinen Aufruf mehr.
+bisherigen Person zu verändern. Seit v2.33.0 zeigt derselbe Schritt zusätzlich die
+**Gesamtdauer** (inkl. Datum) vom Anlegen der Person bis zum Sensorik ablegen, und der Button
+**„⬇ Daten exportieren"** ist hervorgehoben sowie vor den beiden Häkchen platziert.
+Der CSV/JSON-Export **exportiert seit v2.33.0 alle im Ablauf erfassten Daten** jeder/jedes
+Teilnehmenden auf diesem Gerät (Zeiten je Schritt, Sensorik-Checklisten, VR-Szenario-
+Durchläufe, Trainerbewertungsbögen, Ereignisse/Probleme/Anmerkungen) statt wie zuvor auf der
+alten, in der Praxis leeren Datenstruktur (`sl_sessions`/`sl_bewertungen`) zu basieren; die
+alte Protokoll-Liste selbst hat weiterhin keinen Aufruf mehr.
 
 ## Zielgruppe / Anwendungskontext
 

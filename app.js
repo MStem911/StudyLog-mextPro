@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.32.2';
+const APP_VERSION = '2.33.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1462,35 +1462,58 @@ document.getElementById('btn-save-edit').addEventListener('click', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════════════════════════════════════════
-function buildExportFilters() {
-  const sel = document.getElementById('export-filter-station');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="all">Alle Szenarien</option>' +
-    scenarios.map(sc => `<option value="${esc(sc.id)}">${esc(sc.icon)} ${esc(sc.name)}</option>`).join('');
-  if (scenarios.find(s => s.id === cur)) sel.value = cur;
+// Exportiert die im Ablauf erfassten Daten JEDER/S Teilnehmenden auf diesem Gerät (Zeiten,
+// Sensorik-Checklisten, VR-Szenario-Durchläufe, Trainerbewertungsbögen, Ereignisse/Probleme/
+// Anmerkungen) — CSV als eine Zeile pro Teilnehmende:r (`ablaufExportHeaders`/
+// `ablaufExportRow`), JSON als volle, verschachtelte Struktur (`ablaufExportRecord`). Löst
+// seit v2.33.0 den früheren, `sessions`/`bewertungen`-basierten Export ab: Session-/
+// Bewertungsbogen-Screen haben seit v2.14.0 keinen Aufrufpfad mehr, `sessions`/`bewertungen`
+// (Alt-Keys `sl_sessions`/`sl_bewertungen`) sind auf einem regulär nur über den Ablauf
+// genutzten Gerät daher stets leer — der alte Export lieferte in der Praxis nie Daten.
+
+// Gesamtdauer vom Anlegen der/des Teilnehmenden (p.createdAt) bis zum letzten erfassten
+// Sensorik-Ablege-Zeitpunkt (spätester Wert in p.sensorikAblegen, Schritt 14) — Kennzahl für
+// den gesamten Durchlauf, angezeigt am letzten Schritt (siehe ablaufDurationSectionHTML)
+// und im Export. `complete` ist nur true, wenn alle SENSORIK_ITEMS abgelegt sind (vorher ist
+// die Dauer nur ein Zwischenstand).
+function ablaufDurationInfo(p) {
+  if (!p || !p.createdAt) return null;
+  const vals = SENSORIK_ITEMS.map(it => p.sensorikAblegen && p.sensorikAblegen[it.id]).filter(Boolean);
+  if (!vals.length) return null;
+  const endISO = vals.reduce((max, t) => (!max || new Date(t) > new Date(max)) ? t : max, null);
+  return {
+    startISO: p.createdAt,
+    endISO,
+    complete: vals.length === SENSORIK_ITEMS.length,
+    seconds: Math.max(0, Math.round((new Date(endISO) - new Date(p.createdAt)) / 1000)),
+  };
 }
-function getExportSessions() {
-  const v = document.getElementById('export-filter-station').value;
-  return v === 'all' ? sessions : sessions.filter(s => s.scenarioId === v);
+// Formatiert eine Dauer in Sekunden als "Xh Ymin" (bzw. nur "Ymin" unter einer Stunde) — für
+// mehrstündige Kennzahlen lesbarer als formatTime()'s mm:ss (für kurze Sitzungs-/Pausenzeiten).
+function formatDurationLong(sec) {
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h > 0 ? `${h} Std ${m} Min` : `${m} Min`;
 }
+
+function getExportProbanden() { return probanden; }
+
 function renderStats() {
-  const data  = getExportSessions();
-  const total = data.length;
-  const avg   = total > 0 ? Math.round(data.reduce((a,s) => a + (s.duration_s||0), 0) / total) : 0;
-  const devs  = data.filter(s => s.deviations?.length > 0).length;
+  const data = getExportProbanden();
+  const durations = data.map(ablaufDurationInfo).filter(d => d && d.complete);
+  const avgSec = durations.length ? Math.round(durations.reduce((a,d) => a + d.seconds, 0) / durations.length) : 0;
   document.getElementById('stats-grid').innerHTML = `
-    <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Sitzungen</div></div>
-    <div class="stat-card"><div class="stat-value">${formatTime(avg)}</div><div class="stat-label">⌀ Dauer</div></div>
-    <div class="stat-card"><div class="stat-value">${devs}</div><div class="stat-label">Abweich.</div></div>`;
+    <div class="stat-card"><div class="stat-value">${data.length}</div><div class="stat-label">Teilnehmende</div></div>
+    <div class="stat-card"><div class="stat-value">${durations.length}</div><div class="stat-label">Durchlauf komplett</div></div>
+    <div class="stat-card"><div class="stat-value">${durations.length ? formatDurationLong(avgSec) : '–'}</div><div class="stat-label">⌀ Gesamtdauer</div></div>`;
 }
 function renderExport() {
-  buildExportFilters();
   renderStats();
   document.getElementById('inp-device-label').value = settings.deviceLabel || '';
   document.getElementById('last-export-info').textContent =
     settings.lastExport ? localDatetimeStr(settings.lastExport) : 'Noch kein Export';
 }
-document.getElementById('export-filter-station').addEventListener('change', renderStats);
 document.getElementById('inp-device-label').addEventListener('change', e => {
   settings.deviceLabel = e.target.value.trim(); save();
 });
@@ -1499,53 +1522,103 @@ function escCsv(val) {
   const s = String(val ?? '');
   return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g,'""') + '"' : s;
 }
-document.getElementById('btn-export-csv').addEventListener('click', () => {
-  const data = getExportSessions();
-  if (!data.length) { showToast('⚠ Keine Daten'); return; }
-  const hdr = ['ID','Datum','Pseudonym','Sensoriknummer','Szenario','Szenario_Abkuerzung',
-                'Start_ISO','Ende_ISO','Start_Uhrzeit','Ende_Uhrzeit',
-                'Dauer_s','Dauer_mm_ss','Pausen_Anzahl','Pausen_Dauer_s','Pausen_Detail',
-                'Abweichungen','Anmerkungen','Geraet_Betreuung',
-                'Bew_A1','Bew_A2','Bew_A3','Bew_A4',
-                'Bew_B5','Bew_B6','Bew_B7','Bew_B8',
-                'Bew_C9','Bew_C10','Bew_D11','Bew_D12',
-                'Bew_E13','Bew_E15','Bew_E16',
-                'Bew_Z17','Bew_Z18','Bew_Z19','Bew_Z20',
-                'Bew_Anmerkungen'];
-  const rows = data.map(s => {
-    const bew = bewertungen.find(b => b.sessionId === s.id);
-    const sc = bew ? bew.scores : {};
-    return [
-      s.id, s.date, s.pseudo, s.sensor,
-      s.scenarioName||'?', s.scenarioAbbr||'?',
-      s.startISO, s.endISO,
-      localTimeStr(s.startISO), localTimeStr(s.endISO),
-      s.duration_s||0, formatTime(s.duration_s||0),
-      s.pauseCount||0, s.pauseDuration_s||0,
-      (s.pauses||[]).map(p => localTimeStr(p.startISO)+'-'+localTimeStr(p.endISO)+' ('+formatTime(p.duration_s||0)+')').join('; '),
-      (s.deviations||[]).join('; '), s.notes||'', s.deviceLabel||'',
-      sc.a1??'', sc.a2??'', sc.a3??'', sc.a4??'',
-      sc.b5??'', sc.b6??'', sc.b7??'', sc.b8??'',
-      sc.c9??'', sc.c10??'', sc.d11??'', sc.d12??'',
-      sc.e13??'', sc.e15??'', sc.e16??'',
-      sc.z17??'', sc.z18??'', sc.z19??'', sc.z20??'',
-      bew ? (bew.notes||'') : ''
-    ].map(escCsv).join(',');
+
+// CSV-Spaltenüberschriften — eine Zeile pro Teilnehmende:r, Reihenfolge folgt FLOW_STEPS.
+// Hologate-Spalten sind positionsbasiert benannt (Hologate_1…5), nicht nach den in den
+// Einstellungen editierbaren `hologateLabels`-Texten — sonst würden sich Spaltennamen bei
+// einer Umbenennung zwischen zwei Exporten verschieben.
+function ablaufExportHeaders() {
+  const hgCols = hologateLabels.flatMap((_, i) => [`Hologate_${i+1}_Start`, `Hologate_${i+1}_Ende`]);
+  return [
+    'Pseudonym', 'Handedness', 'Angelegt_am',
+    'Sensorik_Shimmer_angelegt', 'Sensorik_Brustgurt_angelegt', 'Sensorik_Uhr_angelegt',
+    'Fragebogen1_bestaetigt',
+    'TMS_Start', 'TMS_Ende',
+    'Fragebogen2_bestaetigt',
+    'Tutorial_Start', 'Tutorial_Ende',
+    ...hgCols,
+    'BewHologate_Z17', 'BewHologate_Z18', 'BewHologate_Z19', 'BewHologate_Z20', 'BewHologate_Anmerkungen', 'BewHologate_gespeichert_am',
+    'Fragebogen3_bestaetigt',
+    'Rollercoaster_Start', 'Rollercoaster_Ende',
+    'BewRollercoaster_Z17', 'BewRollercoaster_Z18', 'BewRollercoaster_Z19', 'BewRollercoaster_Z20', 'BewRollercoaster_Anmerkungen', 'BewRollercoaster_gespeichert_am',
+    'Fragebogen4_bestaetigt',
+    'StopSensorik_Zeitpunkt',
+    'SensorikAblegen_Shimmer', 'SensorikAblegen_Brustgurt', 'SensorikAblegen_Uhr',
+    'AlleDatenGesichert', 'AllesDesinfiziert',
+    'Gesamtdauer_Anlegen_bis_SensorikAblegen',
+    'Ereignisse_Probleme_Anmerkungen',
+  ];
+}
+function ablaufExportRow(p) {
+  const abl = p.ablauf || {};
+  const dt  = iso => iso ? localDatetimeStr(iso) : '';
+  const bewCols = stepId => {
+    const b  = (p.bewertungen && Array.isArray(p.bewertungen[stepId])) ? p.bewertungen[stepId][0] : null;
+    const sc = (b && b.scores) || {};
+    return [sc.z17 ?? '', sc.z18 ?? '', sc.z19 ?? '', sc.z20 ?? '', b ? (b.notes||'') : '', dt(b && b.savedAt)];
+  };
+  const hgRuns  = (p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07 : [];
+  const hgCols  = hologateLabels.flatMap((_, i) => {
+    const ph = (hgRuns[i] && hgRuns[i].phases) || {};
+    return [dt(ph.p_start), dt(ph.p_end)];
   });
-  downloadFile('\uFEFF' + [hdr.join(','),...rows].join('\r\n'), `studylog_${dateSlug()}.csv`, 'text/csv;charset=utf-8;');
-  recordExport(); showToast('✓ CSV: ' + data.length + ' Sitzungen');
-});
-document.getElementById('btn-export-json').addEventListener('click', () => {
-  const data = getExportSessions();
+  const rcRun   = (p.szenarien && Array.isArray(p.szenarien.fs_10)) ? p.szenarien.fs_10[0] : null;
+  const rcPh    = (rcRun && rcRun.phases) || {};
+  const last    = abl[LAST_FLOW_STEP_ID] || {};
+  const dur     = ablaufDurationInfo(p);
+  const ereignisse = (p.ereignisse || []).map(e => {
+    const step = FLOW_STEPS.find(s => s.id === e.stepId);
+    const t = e.type === 'duration' ? `${localTimeStr(e.startISO)}–${localTimeStr(e.endISO)}` : localTimeStr(e.timeISO);
+    return `${step && step.nr ? 'Schritt ' + step.nr : (e.stepId||'')} · ${e.tag}: ${e.note} (${t})`;
+  }).join(' | ');
+  return [
+    p.pseudo || '', p.handedness || '', dt(p.createdAt),
+    dt(p.sensorik && p.sensorik.se_shimmer), dt(p.sensorik && p.sensorik.se_brustgurt), dt(p.sensorik && p.sensorik.se_uhr),
+    dt(abl.fs_03 && abl.fs_03.done),
+    dt(abl.fs_04 && abl.fs_04.startISO), dt(abl.fs_04 && abl.fs_04.endISO),
+    dt(abl.fs_05 && abl.fs_05.done),
+    dt(abl.fs_06 && abl.fs_06.startISO), dt(abl.fs_06 && abl.fs_06.endISO),
+    ...hgCols,
+    ...bewCols('fs_08'),
+    dt(abl.fs_09 && abl.fs_09.done),
+    dt(rcPh.p_start), dt(rcPh.p_end),
+    ...bewCols('fs_11'),
+    dt(abl.fs_12 && abl.fs_12.done),
+    dt(abl.fs_13 && abl.fs_13.startISO),
+    dt(p.sensorikAblegen && p.sensorikAblegen.se_shimmer), dt(p.sensorikAblegen && p.sensorikAblegen.se_brustgurt), dt(p.sensorikAblegen && p.sensorikAblegen.se_uhr),
+    last.dataSecured ? 'Ja' : 'Nein', last.disinfected ? 'Ja' : 'Nein',
+    dur ? (dur.complete ? '' : '(unvollständig) ') + formatDurationLong(dur.seconds) : '',
+    ereignisse,
+  ].map(escCsv).join(',');
+}
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  const data = getExportProbanden();
   if (!data.length) { showToast('⚠ Keine Daten'); return; }
-  const enriched = data.map(s => ({
-    ...s,
-    start_local: localTimeStr(s.startISO),
-    end_local:   localTimeStr(s.endISO),
-    bewertung:   bewertungen.find(b => b.sessionId === s.id) || null
-  }));
-  downloadFile(JSON.stringify(enriched, null, 2), `studylog_${dateSlug()}.json`, 'application/json');
-  recordExport(); showToast('✓ JSON: ' + data.length + ' Sitzungen');
+  const rows = data.map(ablaufExportRow);
+  downloadFile('\uFEFF' + [ablaufExportHeaders().join(','), ...rows].join('\r\n'), `studylog_${dateSlug()}.csv`, 'text/csv;charset=utf-8;');
+  recordExport(); showToast('✓ CSV: ' + data.length + ' Teilnehmende');
+});
+
+// JSON-Export: volle, verschachtelte Ablauf-Struktur je Teilnehmende:r (verlustfrei inkl.
+// aller ISO-Zeitstempel) statt der flachen CSV-Zeile.
+function ablaufExportRecord(p) {
+  const dur = ablaufDurationInfo(p);
+  return {
+    id: p.id, pseudo: p.pseudo, handedness: p.handedness || null, createdAt: p.createdAt,
+    ablauf:          deepCopy(p.ablauf || {}),
+    szenarien:       deepCopy(p.szenarien || {}),
+    bewertungen:     deepCopy(p.bewertungen || {}),
+    ereignisse:      deepCopy(p.ereignisse || []),
+    sensorik:        deepCopy(p.sensorik || {}),
+    sensorikAblegen: deepCopy(p.sensorikAblegen || {}),
+    gesamtdauer: dur ? { startISO: dur.startISO, endISO: dur.endISO, sekunden: dur.seconds, vollstaendig: dur.complete } : null,
+  };
+}
+document.getElementById('btn-export-json').addEventListener('click', () => {
+  const data = getExportProbanden();
+  if (!data.length) { showToast('⚠ Keine Daten'); return; }
+  downloadFile(JSON.stringify(data.map(ablaufExportRecord), null, 2), `studylog_${dateSlug()}.json`, 'application/json');
+  recordExport(); showToast('✓ JSON: ' + data.length + ' Teilnehmende');
 });
 function dateSlug() { return new Date().toISOString().slice(0,10).replace(/-/g,''); }
 function downloadFile(content, filename, type) {
@@ -2552,10 +2625,11 @@ function flowStepExtrasHTML(stepId) {
   if (BEW_STEP_META[stepId])          html += bewSectionHTML(stepId);
   if (!BEW_STEP_META[stepId])         html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt außer den Bewertungsbogen-Schritten
   if (stepId === LAST_FLOW_STEP_ID) {
-    html += datensicherungSectionHTML();
+    html += ablaufDurationSectionHTML();
     html += `<div class="btn-col" style="margin-top:12px">
-      <button class="btn btn-ghost full-width" id="ablauf-open-export">⬇ Daten exportieren (CSV / JSON)</button>
+      <button class="btn btn-primary full-width" id="ablauf-open-export">⬇ Daten exportieren (CSV / JSON)</button>
     </div>`;
+    html += datensicherungSectionHTML();
   }
   return html;
 }
@@ -2699,6 +2773,23 @@ function resetAblaufSensorikAblegen() {
   showConfirm('Checkliste zurücksetzen',
     `Alle erfassten Ablege-Zeitpunkte für „${p.pseudo}" werden entfernt.`,
     () => { p.sensorikAblegen = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
+}
+
+// Abschnitt „Gesamtdauer" am letzten Ablauf-Schritt: Zeitspanne vom Anlegen der/des
+// Teilnehmenden (Schritt 1, `p.createdAt`) bis zum letzten erfassten Sensorik-Ablege-
+// Zeitpunkt (Schritt 14) — mit Datum, siehe ablaufDurationInfo() (EXPORT-Abschnitt, dort
+// auch für die CSV-/JSON-Exportspalte „Gesamtdauer" genutzt). Ohne mindestens einen
+// erfassten Ablege-Zeitpunkt gibt es noch keine sinnvolle Endzeit — dann wird nichts
+// angezeigt.
+function ablaufDurationSectionHTML() {
+  const dur = ablaufDurationInfo(ablaufProband());
+  if (!dur) return '';
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">GESAMTDAUER (ANLEGEN → SENSORIK ABLEGEN)</div>
+    <p class="meta-text" style="margin-bottom:4px">Angelegt: ${esc(localDatetimeStr(dur.startISO))}</p>
+    <p class="meta-text" style="margin-bottom:8px">Sensorik ablegen: ${esc(localDatetimeStr(dur.endISO))}${dur.complete ? '' : ' (noch nicht vollständig)'}</p>
+    <p class="meta-text" style="margin:0"><strong>Dauer: ${esc(formatDurationLong(dur.seconds))}</strong></p>
+  </div>`;
 }
 
 // Abschnitt „Datensicherung & Desinfektion" am letzten Ablauf-Schritt: zwei reine Häkchen

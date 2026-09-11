@@ -68,9 +68,10 @@ Fremd-Vergleich), Schulnoten-Skala 1–6:
 3. Die richtigen Prioritäten wurden gesetzt.
 4. Gesamtleistung
 
-**Noch nicht umgestellt:** der CSV/JSON-Export bezieht die im Ablauf erfassten Daten
-(Zeiten, Bewertungen, Ereignisse, Sensorik, Szenario-Durchläufe) noch nicht ein — er
-basiert weiter auf der alten Datenstruktur. Bereits erfasste Daten bleiben gespeichert.
+Der CSV/JSON-Export (Button am letzten Ablauf-Schritt, siehe unten) bezieht seit v2.33.0
+**alle** im Ablauf erfassten Daten **aller** Teilnehmenden auf diesem Gerät ein — Zeiten je
+Schritt, Sensorik-Checklisten, VR-Szenario-Durchläufe, Trainerbewertungsbögen sowie
+Ereignisse/Probleme/Anmerkungen.
 
 ## Die Ablauf-Schrittliste nutzen
 
@@ -178,13 +179,18 @@ Einzelne Schritte haben zusätzliche Felder:
   abgelegt sind (Anzeige „Sensorik X/3"); **„Checkliste zurücksetzen"** setzt alle Items auf
   einmal zurück.
 - **Letzter Schritt (15) „Datensicherung / Desinfektion & Aufbereitung Sensorik /
-  StudyLog-Daten sichern"**: seit v2.32.0 **keine Zeiterfassung mehr**, stattdessen genau
-  zwei Häkchen ohne Zeitstempel: **„Alle Daten gesichert"** (LSL, App, Sensorik, Varjo Base)
-  und **„Alles desinfiziert / aufbereitet"**. Sobald **beide** angetippt sind, erscheint
-  zusätzlich der Button **„↻ Nächsten Durchlauf starten"** — er öffnet direkt wieder Schritt 1,
-  damit die nächste teilnehmende Person angelegt werden kann (die Daten der gerade
-  abgeschlossenen Person bleiben dabei vollständig erhalten). Darunter weiterhin der Export-
-  Button (siehe „Aufbau der App" oben).
+  StudyLog-Daten sichern"**: zeigt seit v2.33.0 zuerst die **Gesamtdauer** — Zeitspanne
+  inkl. Datum vom Anlegen der Person (Schritt 1) bis zum letzten erfassten Sensorik-Ablege-
+  Zeitpunkt (Schritt 14); erscheint erst, sobald mindestens ein Sensorik-Item abgelegt wurde
+  (steht dort „noch nicht vollständig", wenn Schritt 14 noch nicht ganz abgeschlossen ist).
+  Darunter der **hervorgehobene** Button **„⬇ Daten exportieren (CSV / JSON)"** (öffnet den
+  Export, siehe unten) — er sitzt bewusst **vor** den beiden Häkchen. Seit v2.32.0 **keine
+  Zeiterfassung** an den Häkchen selbst, stattdessen genau zwei ohne Zeitstempel: **„Alle
+  Daten gesichert"** (LSL, App, Sensorik, Varjo Base) und **„Alles desinfiziert /
+  aufbereitet"**. Sobald **beide** angetippt sind, erscheint zusätzlich der Button
+  **„↻ Nächsten Durchlauf starten"** — er öffnet direkt wieder Schritt 1, damit die nächste
+  teilnehmende Person angelegt werden kann (die Daten der gerade abgeschlossenen Person
+  bleiben dabei vollständig erhalten).
 - Die früheren Schritte „VR-Equipment/VR-Brille an-/ablegen" (Hologate und Rollercoaster)
   entfallen seit v2.27.0 ersatzlos, der Schritt „Verabschiedung" seit v2.32.0 ebenfalls
   ersatzlos.
@@ -327,12 +333,12 @@ lassen sich nur innerhalb der App im Tab **Ereignisse** einsehen.
 
 1. Im Bereich **Export** optional ein **Geräte-/Betreuungslabel** eintragen (hilfreich, wenn
    mehrere Geräte parallel genutzt wurden).
-2. Optional nach Szenario filtern.
-3. **⬇ CSV exportieren** oder **⬇ JSON exportieren** antippen — die Datei wird auf dem Gerät
-   gespeichert (z. B. im Download-Ordner).
-4. Die exportierte Datei anschließend gemäß den Vorgaben der Studienleitung sicher
+2. **⬇ CSV exportieren** oder **⬇ JSON exportieren** antippen — die Datei wird auf dem Gerät
+   gespeichert (z. B. im Download-Ordner). Seit v2.33.0 enthält sie **alle** Teilnehmenden
+   auf diesem Gerät mit allen im Ablauf erfassten Daten (kein Filter mehr nötig/vorhanden).
+3. Die exportierte Datei anschließend gemäß den Vorgaben der Studienleitung sicher
    weitergeben bzw. ablegen (dies erfolgt außerhalb der App).
-5. **Erst nach erfolgreichem Export und Sicherung der Daten:** Falls gewünscht, im Bereich
+4. **Erst nach erfolgreichem Export und Sicherung der Daten:** Falls gewünscht, im Bereich
    **⚙ Einstellungen** über **⚠ Alle Daten löschen** sämtliche Teilnehmenden-, Sitzungs-,
    Bewertungs- und Ereignisdaten auf diesem Gerät unwiderruflich entfernen. Die App warnt vor
    dieser Aktion — sie kann nicht rückgängig gemacht werden.
