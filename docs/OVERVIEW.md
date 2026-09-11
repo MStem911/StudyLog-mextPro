@@ -29,12 +29,14 @@ keine Zeitfelder — dort wird die Person angelegt („＋ Teilnehmende:n anlege
 es automatisch zu Schritt 2 (Sensorik). Weitere Personen über ＋ oben; bearbeiten über ✎.
 Der CSV/JSON-Export (in Schritt 16) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
-Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe**
-(Schritt 6/7/10, „starten/beendet" je mit Zeitstempel und ohne eigene Schritt-Zeiterfassung;
-Schritt 6 genau ein Tutorial-Durchlauf direkt im Schritt — nur Starten/Beenden erfassbar, die
-übrigen Punkte reine Ablauf-Erinnerung; Schritt 7 fünf feste Hologate-Durchläufe —
-Scheiben/Köpfe/Laufen/Drohnen/Kombi — je nur Start + Stopp direkt im Schritt; Schritt 10 über
-ein Overlay), **Trainerbewertungsbogen** (seit v2.27.0 **eigener Schritt** direkt nach dem
+Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe** an Schritt 7
+(fünf feste Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi — je nur Start + Stopp
+direkt im Schritt, ohne eigene Schritt-Zeiterfassung) und Schritt 10 (Rollercoaster, frei
+anlegbare Durchläufe über ein Overlay). **Schritt 6 (Tutorial)** hat seit v2.28.0 **wieder**
+normale Start-/Ende-Felder wie Schritt 4 „TMS" (Button „Jetzt" oder manuelle Eingabe); die drei
+Zwischenschritte „Person kalibriert" / „Person durchläuft das Tutorial" / „Direkt ins
+VR-Szenario gewechselt" werden als reine, nicht abhakbare Ablauf-Erinnerung angezeigt.
+**Trainerbewertungsbogen** (seit v2.27.0 **eigener Schritt** direkt nach dem
 jeweiligen VR-Durchlauf statt eingebettet an einem Fragebogen-Schritt: Schritt 8 bewertet alle
 Hologate-Szenarien aus Schritt 7 gemeinsam, ohne das Tutorial; Schritt 11 bewertet nur den
 Rollercoaster-Durchlauf inkl. des in der Szene enthaltenen Schießens — seit v2.16.0 inhaltlich

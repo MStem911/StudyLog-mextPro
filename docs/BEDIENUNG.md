@@ -75,13 +75,13 @@ verantwortet — sie haben keine weitere Funktion.
 2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
    Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
-     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. Mehrere Schritte haben
-     **keine** eigenen Start/Ende-Felder, weil die relevante Zeit anders erfasst wird oder
-     entfällt: Schritt 1 (Person anlegen), Schritt 2 (nur die Sensorik-Checkliste), Schritt 6
-     (Zeit steckt im Tutorial-Durchlauf), Schritt 7 (Zeiten stecken in den 5
-     Hologate-Durchläufen), Schritt 8 und 11 (Trainerbewertungsbogen — kein Timer, die Bögen
-     tragen ihre eigene Speicherzeit) sowie die Fragebogen-Schritte 3, 5, 9, 12 (nur die
-     Checkbox „Fragebogen ausgefüllt", siehe unten).
+     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. Das gilt auch für
+     **Schritt 6 „Einweisung + Tutorial VR"** — genau wie bei Schritt 4 „TMS". Mehrere andere
+     Schritte haben **keine** eigenen Start/Ende-Felder, weil die relevante Zeit anders erfasst
+     wird oder entfällt: Schritt 1 (Person anlegen), Schritt 2 (nur die Sensorik-Checkliste),
+     Schritt 7 (Zeiten stecken in den 5 Hologate-Durchläufen), Schritt 8 und 11
+     (Trainerbewertungsbogen — kein Timer, die Bögen tragen ihre eigene Speicherzeit) sowie die
+     Fragebogen-Schritte 3, 5, 9, 12 (nur die Checkbox „Fragebogen ausgefüllt", siehe unten).
    - **Hinweis / Anmerkung**: Freitext zu diesem Schritt (z. B. Besonderheiten, Abweichungen).
      Sobald etwas eingetragen ist, wird die **Uhrzeit der Notiz** festgehalten und neben dem
      Feld angezeigt („· notiert 14:51"). Gilt in **jedem** Schritt.
@@ -114,16 +114,13 @@ Einzelne Schritte haben zusätzliche Felder:
   Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)
   rückgängig. Der Schritt wird grün, sobald alle drei Items angelegt sind (Anzeige
   „Sensorik 3/3"). Eine Anmerkung (mit Uhrzeit) ist wie in jedem Schritt möglich.
-- **Schritt 6 / Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**. „Starten"/„Beendet"
-  erfassen beim Antippen automatisch die Uhrzeit; erneutes Antippen macht das nach Rückfrage
-  rückgängig.
-  - **Schritt 6 (Tutorial):** genau **ein** Durchlauf (nichts hinzufügen/löschen), direkt im
-    Schritt. Nur **Tutorial starten** und **Tutorial beendet** werden angetippt (je
-    Zeitstempel) — das sind die einzigen erfassten Zeiten dieses Schritts, eine eigene
-    Start/Ende-Zeiterfassung des Schritts gibt es nicht. Die Punkte *Person kalibriert*,
-    *Person durchläuft das Tutorial* und *Direkt ins VR-Szenario gewechselt* sind **nicht
-    abhakbar**, sondern nur als Erinnerung an den Ablauf dargestellt. Zeile wird grün, sobald
-    Starten und Beenden erfasst sind.
+- **Schritt 6 „Einweisung + Tutorial VR"**: normale Start-/Ende-Zeiterfassung wie bei jedem
+  Standardschritt (siehe oben, wie Schritt 4 „TMS"). Zusätzlich als reine, nicht abhakbare
+  Erinnerung an den Ablauf angezeigt (Abschnitt „Tutorial-Ablauf"): *Person kalibriert*,
+  *Person durchläuft das Tutorial*, *Direkt ins VR-Szenario gewechselt* — diese drei Punkte
+  tragen keinen eigenen Zeitstempel.
+- **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**. „Starten"/„Beendet" erfassen beim
+  Antippen automatisch die Uhrzeit; erneutes Antippen macht das nach Rückfrage rückgängig.
   - **Schritt 7 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
     Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi. Nichts hinzufügen/löschen; je
     Durchlauf nur **Szenario starten** und **Szenario beendet** antippen (je Zeitstempel).
