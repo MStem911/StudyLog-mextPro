@@ -26,7 +26,11 @@ gibt es seit v2.30.0 nicht mehr — freie Anmerkungen gehören in den Bereich �
 Probleme / Anmerkungen" (an jedem Schritt außer Schritt 8/11), das war sonst doppelt.
 
 Die frühere Tab-Navigation entfällt. Einstellungen liegen hinter dem ⚙-Icon oben rechts
-(Overlay). **Schritt 1 (Aufklärung + Einverständnis)** ist beim Start direkt geöffnet und hat
+(Overlay) — seit v2.31.0: Bezeichnungen der 5 Hologate-Durchläufe (Schritt 7) anpassen,
+Ereignis-Kategorien verwalten (Bearbeiten/Hinzufügen/Löschen), „Alle Daten löschen"; die
+frühere Option „Mehrere Teilnehmende gleichzeitig" entfiel (ohne Wirkung auf den heutigen
+Ablauf, da sie nur die inzwischen unerreichbaren Sitzungsaufzeichnungs-/Bewertungs-Screens
+betraf). **Schritt 1 (Aufklärung + Einverständnis)** ist beim Start direkt geöffnet und hat
 keine Zeitfelder — dort wird die Person angelegt („＋ Teilnehmende:n anlegen"), danach geht
 es automatisch zu Schritt 2 (Sensorik). Weitere Personen über ＋ oben; bearbeiten über ✎.
 Der CSV/JSON-Export (in Schritt 16) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.

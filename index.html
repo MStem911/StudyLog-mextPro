@@ -532,17 +532,17 @@
       </div>
       <div class="edit-content">
         <div class="card" style="background:var(--surface3)">
-          <div class="card-label">SITZUNGSAUFZEICHNUNG</div>
-          <div class="settings-row">
-            <div class="settings-row-text">
-              <div class="settings-row-title">Mehrere Teilnehmende gleichzeitig</div>
-              <div class="settings-row-desc">Erlaubt die Auswahl mehrerer Teilnehmender für eine gemeinsame Sitzungsaufzeichnung sowie einen gemeinsamen Trainerbewertungsbogen.</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-multi-proband">
-              <span class="switch-slider"></span>
-            </label>
+          <div class="card-label">VR-SZENARIEN HOLOGATE</div>
+          <p class="privacy-text" style="color:var(--text2)">Bezeichnungen der 5 festen Hologate-Durchläufe (Schritt 7). Reihenfolge und Anzahl sind fest, nur der Text ist änderbar.</p>
+          <div id="settings-hologate-labels"></div>
+          <div class="btn-col" style="margin-top:6px">
+            <button class="btn btn-ghost full-width" id="btn-reset-hologate-labels">Auf Standard zurücksetzen</button>
           </div>
+        </div>
+        <div class="card" style="background:var(--surface3)">
+          <div class="card-label">EREIGNIS-KATEGORIEN</div>
+          <p class="privacy-text" style="color:var(--text2)">Kategorien für „Ereignisse / Probleme / Anmerkungen" im Ablauf (z. B. Sensorik, VR, Sonstiges) bearbeiten, hinzufügen oder löschen.</p>
+          <button class="btn btn-ghost full-width" id="btn-settings-manage-event-tags">⚙ Kategorien verwalten</button>
         </div>
         <div class="card" style="background:var(--surface3)">
           <div class="card-label" style="color:var(--coral-txt)">⚠ GEFAHRENZONE</div>
@@ -551,7 +551,7 @@
             <button class="btn btn-danger full-width" id="btn-clear-data">⚠ Alle Daten löschen</button>
           </div>
         </div>
-        <div class="meta-text" style="text-align:center">mextPro <span class="app-version">v2.30.0</span></div>
+        <div class="meta-text" style="text-align:center">mextPro <span class="app-version">v2.31.0</span></div>
       </div>
     </div>
   </div>

@@ -87,9 +87,9 @@ organisatorisch (nicht technisch) geregelt und für die DSFA dokumentiert werden
 
 ## Datentypen im Detail
 
-Gespeichert wird in acht getrennten `localStorage`-Einträgen (Keys `sl_probanden`,
+Gespeichert wird in neun getrennten `localStorage`-Einträgen (Keys `sl_probanden`,
 `sl_sessions`, `sl_settings`, `sl_scenarios`, `sl_tags`, `sl_bewertungen`, `sl_events`,
-`sl_event_tags`).
+`sl_event_tags`, `sl_hologate_labels`).
 
 | Datentyp | Felder (Auszug) | Zweck | Rechtsgrundlage | Speicherort | Aufbewahrungsdauer | Verantwortlichkeit |
 |---|---|---|---|---|---|---|
@@ -102,8 +102,9 @@ Gespeichert wird in acht getrennten `localStorage`-Einträgen (Keys `sl_probande
 | **Trainerbewertungsbogen** (`sl_bewertungen`) | Verweis auf Sitzung, 19 Skalenwerte (Schulnoten-Skala 1–6) zu Leistungsdimensionen (u. a. Lageerkundung, Entscheidungsqualität, Führung/Kommunikation, MANV-Erkennung), Freitextanmerkungen | Strukturierte Leistungsbewertung der Teilnehmenden im Szenario | TODO: Datenschutz prüfen — Bewertungsdaten zu einer identifizierbaren (wenn auch pseudonymisierten) Person können besonders schutzwürdig sein | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung | Jeweilige Studienleitung / Gerätebesitzer:in |
 | **Sensorik-Zeiten & -Checkliste** (Teil von `sl_probanden`) | Uhrzeit "Sensorik angelegt" / "Sensorik abgelegt" sowie die Sensorik-Checkliste (`p.sensorik`: pro Item Shimmer / Brustgurt / Uhr ein Zeitstempel „angelegt am"). Alles manuell erfasst, **keine** Rohsensordaten. Personenbezug über die Zuordnung zum pseudonymisierten Datensatz | Dokumentation des Sensorhandlings im Studienablauf je Person | TODO: Datenschutz prüfen | `localStorage`, lokal | Unbegrenzt, bis manuelle Löschung (Item-Reset im Tab, Person löschen oder "Alle Daten löschen") | Jeweilige Studienleitung / Gerätebesitzer:in |
 | **Ereignisse** (`sl_events`) | Kategorie (Tag), Freitext-Beschreibung, optionaler Verweis auf Teilnehmende:n (Pseudonym als Kopie, oder ohne Personenbezug), entweder ein Zeitpunkt (`timeISO`) oder ein Zeitraum (`startISO`/`endISO`/`duration_s`), Erstellungszeitpunkt | Dokumentation von Ereignissen/Problemen während der Studiendurchführung (z. B. Sensorik verrutscht), unabhängig von einer konkreten Sitzung | TODO: Datenschutz prüfen | `localStorage`, lokal auf dem jeweiligen Gerät | Unbegrenzt, bis manuelle Löschung (einzeln oder "Alle Daten löschen") | Jeweilige Studienleitung / Gerätebesitzer:in |
-| **Szenario-, Tag- & Ereigniskategorie-Konfiguration** (`sl_scenarios`, `sl_tags`, `sl_event_tags`) | Name/Abkürzung/Icon der Szenarien, Liste möglicher Abweichungs-Tags, Liste möglicher Ereignis-Kategorien (Default: Sensorik, VR, Fragebogen, TMS, Sonstiges) | App-Konfiguration, keine Personenbezug | Nicht personenbezogen | `localStorage`, lokal | Unbegrenzt (wird von "Alle Daten löschen" **nicht** erfasst) | Jeweilige Studienleitung / Gerätebesitzer:in |
-| **Einstellungen** (`sl_settings`) | Geräte-/Betreuungslabel (Freitext), Zeitpunkt letzter Export, Ein/Aus-Schalter "Mehrere Teilnehmende gleichzeitig" (`multiProband`) | App-Konfiguration und Exportnachweis | Nicht personenbezogen (kann ggf. Namen enthalten, falls Studienleitung sich selbst dort einträgt) | `localStorage`, lokal | Unbegrenzt (wird von "Alle Daten löschen" **nicht** erfasst) | Jeweilige Studienleitung / Gerätebesitzer:in |
+| **Szenario-, Tag- & Ereigniskategorie-Konfiguration** (`sl_scenarios`, `sl_tags`, `sl_event_tags`) | Name/Abkürzung/Icon der Szenarien, Liste möglicher Abweichungs-Tags, Liste möglicher Ereignis-Kategorien (Default: Sensorik, VR, Fragebogen, TMS, Sonstiges) — Ereignis-Kategorien seit v2.31.0 auch aus den **Einstellungen** heraus bearbeitbar/erweiterbar (⚙-Icon → „Kategorien verwalten") | App-Konfiguration, keine Personenbezug | Nicht personenbezogen | `localStorage`, lokal | Unbegrenzt (wird von "Alle Daten löschen" **nicht** erfasst) | Jeweilige Studienleitung / Gerätebesitzer:in |
+| **Bezeichnungen der Hologate-Durchläufe** (`sl_hologate_labels`) | Genau 5 Freitext-Bezeichnungen (Default: Scheiben, Köpfe, Laufen, Drohnen, Kombi) für die festen Durchläufe an Ablauf-Schritt 7 — in den **Einstellungen** editierbar (Reihenfolge/Anzahl fest, nur der Text je Position änderbar), mit „Auf Standard zurücksetzen" | App-Konfiguration, kein Personenbezug | Nicht personenbezogen | `localStorage`, lokal | Unbegrenzt (wird von "Alle Daten löschen" **nicht** erfasst) | Jeweilige Studienleitung / Gerätebesitzer:in |
+| **Einstellungen** (`sl_settings`) | Geräte-/Betreuungslabel (Freitext), Zeitpunkt letzter Export; `multiProband` (Alt-Feld, seit v2.31.0 ohne UI-Zugriff, bleibt dauerhaft `false` — betraf nur die inzwischen unerreichbaren Sitzungsaufzeichnungs-/Bewertungs-Screens) | App-Konfiguration und Exportnachweis | Nicht personenbezogen (kann ggf. Namen enthalten, falls Studienleitung sich selbst dort einträgt) | `localStorage`, lokal | Unbegrenzt (wird von "Alle Daten löschen" **nicht** erfasst) | Jeweilige Studienleitung / Gerätebesitzer:in |
 | **Export-Dateien** (CSV/JSON) | Kombination aller obigen personenbezogenen Felder inkl. Bewertungswerte. **Ereignisse (`sl_events`) sind aktuell nicht Teil des Exports** — sie verbleiben ausschließlich in `localStorage` | Zusammenführung/Auswertung mehrerer Geräte nach Studienabschluss | TODO: Datenschutz prüfen | Dateisystem des Geräts (Download-Ordner), danach außerhalb der App-Kontrolle | Unbestimmt — liegt außerhalb der App | TODO: Datenschutz prüfen — vermutlich Studienleitung/Institution |
 
 ## Löschverhalten im Detail (technisch verifiziert im Code)
@@ -122,10 +123,9 @@ Gespeichert wird in acht getrennten `localStorage`-Einträgen (Keys `sl_probande
   `p.ablauf`, `p.bewertungen`, `p.ereignisse`, `p.szenarien`), `sl_sessions`,
   `sl_bewertungen` und `sl_events` sowie den Zeitstempel des letzten Exports vollständig. **Nicht** betroffen
   sind die Szenario-Konfiguration (`sl_scenarios`), die Tag-Liste (`sl_tags`), die
-  Ereignis-Kategorien (`sl_event_tags`) und das
-  Geräte-/Betreuungslabel sowie der Schalter "Mehrere Teilnehmende gleichzeitig"
-  (`sl_settings.deviceLabel`/`sl_settings.multiProband`) — diese gelten als reine
-  App-Konfiguration ohne Personenbezug.
+  Ereignis-Kategorien (`sl_event_tags`), die Hologate-Durchlauf-Bezeichnungen
+  (`sl_hologate_labels`) und das Geräte-/Betreuungslabel
+  (`sl_settings.deviceLabel`) — diese gelten als reine App-Konfiguration ohne Personenbezug.
 - **Einzelnes Ereignis löschen (Tab „Ereignisse"):** Entfernt genau diesen Eintrag aus
   `sl_events`, nach Sicherheitsabfrage. Es gibt keine Detail-/Bearbeiten-Ansicht für
   Ereignisse — Korrekturen erfolgen durch Löschen + Neuanlage.

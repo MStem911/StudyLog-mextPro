@@ -24,14 +24,26 @@ Ab **v2.14.0** hat die App **keine Tab-Leiste** mehr. Die gesamte Bedienung läu
 - **Smartphone:** die Schritt-Leiste füllt den Bildschirm; ein angetippter Schritt klappt in
   der Liste auf.
 
-Oben rechts neben dem App-Namen öffnet das **⚙-Icon** die **Einstellungen** (Mehrfachauswahl
-von Teilnehmenden, „Alle Daten löschen"). Alles Weitere wird aus dem Ablauf heraus geöffnet:
+Oben rechts neben dem App-Namen öffnet das **⚙-Icon** die **Einstellungen**: Bezeichnungen der
+5 Hologate-Durchläufe (Schritt 7) anpassen, Ereignis-Kategorien verwalten, „Alle Daten
+löschen" (siehe eigener Abschnitt unten). Alles Weitere wird aus dem Ablauf heraus geöffnet:
 
 | Aufruf | Öffnet |
 |---|---|
 | **＋** neben der Personen-Auswahl (oder „＋ Teilnehmende:n anlegen" in Schritt 1) | Overlay „Teilnehmende:n anlegen": Pseudonym + Händigkeit + optionale Notiz |
 | **✎** neben der Personen-Auswahl | Bearbeiten-Dialog der aktuell gewählten Person |
 | Button in **Schritt 16** („Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
+
+**Einstellungen (⚙-Icon):** seit v2.31.0 zwei anpassbare Bereiche statt der früheren
+„Mehrere Teilnehmende gleichzeitig"-Option (entfallen, da ohne Wirkung auf den heutigen
+Ablauf):
+- **VR-Szenarien Hologate:** die Bezeichnungen der 5 festen Durchläufe aus Schritt 7
+  (Standard: Scheiben, Köpfe, Laufen, Drohnen, Kombi) — Reihenfolge und Anzahl sind fest, nur
+  der Text je Position ist änderbar. Eine Änderung wirkt sich sofort auf Schritt 7 aus.
+  **„Auf Standard zurücksetzen"** stellt nach Rückfrage alle 5 Standardbezeichnungen wieder her.
+- **Ereignis-Kategorien:** über **„⚙ Kategorien verwalten"** die Kategorien für „Ereignisse /
+  Probleme / Anmerkungen" (Standard: Sensorik, VR, Fragebogen, TMS, Sonstiges) bearbeiten,
+  hinzufügen oder löschen (mindestens eine Kategorie muss bestehen bleiben).
 
 **Trainerbewertungsbogen (Schritt 8 / 11):** eigene Schritte direkt nach dem jeweiligen
 VR-Durchlauf — **Schritt 8** nach den Hologate-Szenarien (Schritt 7), **Schritt 11** nach dem
@@ -108,9 +120,10 @@ verantwortet — sie haben keine weitere Funktion.
 5. **Ereignisse / Probleme / Anmerkungen** (an jedem Schritt **außer** Schritt 8/11, siehe
    unten) — deckt seit v2.30.0 auch freie Anmerkungen ab; einen separaten Anmerkung-Punkt je
    Schritt gibt es nicht mehr, das wäre inhaltlich doppelt gewesen. Über
-   **＋ Ereignis erfassen** eine Kategorie wählen (Sensorik / VR / Fragebogen / TMS /
-   Sonstiges — **Sonstiges** eignet sich für eine reine Anmerkung ohne Problembezug), eine
-   kurze Beschreibung eintragen und entweder einen **Zeitpunkt** oder einen **Zeitraum**
+   **＋ Ereignis erfassen** eine Kategorie wählen (Standard: Sensorik / VR / Fragebogen / TMS /
+   Sonstiges — **Sonstiges** eignet sich für eine reine Anmerkung ohne Problembezug; die
+   Kategorien selbst lassen sich in den **Einstellungen** bearbeiten/ergänzen, siehe oben),
+   eine kurze Beschreibung eintragen und entweder einen **Zeitpunkt** oder einen **Zeitraum**
    festhalten (Button „Jetzt" oder manuell). Erfasste Einträge stehen als Liste am jeweiligen
    Schritt und lassen sich antippen zum Bearbeiten/Löschen.
 
@@ -138,8 +151,9 @@ Einzelne Schritte haben zusätzliche Felder:
   Die übrigen Phasen (z. B. „Person kalibriert", „Brille abgezogen") bleiben reine Häkchen
   ohne Zeit — antippen, erneutes Antippen macht das nach Rückfrage rückgängig.
   - **Schritt 7 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
-    Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi — direkt im Schritt, nichts
-    hinzufügen/löschen; je Durchlauf nur die Felder **Szenario starten** und
+    Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi (Standardbezeichnungen, in den
+    Einstellungen änderbar, siehe oben) — direkt im Schritt, nichts hinzufügen/löschen; je
+    Durchlauf nur die Felder **Szenario starten** und
     **Szenario beendet**. Dieser Schritt hat **keine** eigene Start/Ende-Zeiterfassung — die
     Zeiten stecken in den Durchläufen. Zeile wird grün bei 5/5 vollständigen Durchläufen
     (Anzeige „Durchläufe X/5").
@@ -204,12 +218,12 @@ davon unabhängig.
 ### 3. Szenario durchführen
 
 1. Im Bereich **Szenario**: die Person im Dropdown ist bereits vorausgewählt (dieselbe wie
-   zuletzt im Sensorik-Tab bzw. die zuletzt angelegte Person) — bei Bedarf umstellen. Ist unter
-   **⚙ Einstellungen** die Option "Mehrere Teilnehmende gleichzeitig" aktiviert, erscheint
-   stattdessen eine Liste zum Antippen mehrerer Personen (z. B. wenn ein Szenario von
-   mehreren Teilnehmenden gemeinsam durchlaufen wird). Beim Speichern entsteht dann für
-   jede ausgewählte Person eine eigene, unabhängige Sitzungsaufzeichnung mit identischer
-   Start-/Endzeit.
+   zuletzt im Sensorik-Tab bzw. die zuletzt angelegte Person) — bei Bedarf umstellen. War die
+   Option "Mehrere Teilnehmende gleichzeitig" aktiviert, erschien stattdessen eine Liste zum
+   Antippen mehrerer Personen (z. B. wenn ein Szenario von mehreren Teilnehmenden gemeinsam
+   durchlaufen wird) und beim Speichern entstand für jede ausgewählte Person eine eigene,
+   unabhängige Sitzungsaufzeichnung mit identischer Start-/Endzeit — **diese Option gibt es
+   seit v2.31.0 nicht mehr** (sie wirkte ohnehin nur auf diesen längst unerreichbaren Tab).
 2. Passendes **Szenario** antippen (im Auslieferungszustand: Tutorial, Hologate,
    Rollercoaster — über **⚙ Verwalten** änderbar).
 3. **▶ Start** drücken, sobald das Szenario beginnt — der Timer läuft.

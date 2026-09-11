@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.30.0';
+const APP_VERSION = '2.31.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -17,6 +17,7 @@ const KEY_BEWERTUNGEN = 'sl_bewertungen';
 const KEY_SENSORIK   = 'sl_sensorik';
 const KEY_EVENTS      = 'sl_events';
 const KEY_EVENT_TAGS  = 'sl_event_tags';
+const KEY_HOLOGATE_LABELS = 'sl_hologate_labels';
 
 const DEFAULT_SCENARIOS = [
   { id: 'sc_tut',  name: 'Tutorial',     abbr: 'TUT', icon: '🎓' },
@@ -107,8 +108,9 @@ const SZENARIO_STEP_META = {
   fs_10: { title: 'Rollercoaster-Durchlauf (Varjo)',    defaultLabel: 'Rollercoaster' },
 };
 // Schritt 7: feste Reihenfolge von 5 Hologate-Durchläufen, je nur mit Start + Stopp
-// (Zeitstempel). Reihenfolge und Bezeichnungen sind vorgegeben, nicht editierbar.
-const HOLOGATE_RUN_LABELS = ['Scheiben', 'Köpfe', 'Laufen', 'Drohnen', 'Kombi'];
+// (Zeitstempel). Die Anzahl (5) ist fest, die Bezeichnungen sind seit v2.31.0 in den
+// Einstellungen editierbar (siehe `hologateLabels` im State-Abschnitt / KEY_HOLOGATE_LABELS).
+const DEFAULT_HOLOGATE_LABELS = ['Scheiben', 'Köpfe', 'Laufen', 'Drohnen', 'Kombi'];
 const SZENARIO_PHASES_HOLOGATE = [
   { id: 'p_start', label: 'Szenario starten', ts: true },
   { id: 'p_end',   label: 'Szenario beendet', ts: true },
@@ -153,6 +155,7 @@ let tags             = [];
 let bewertungen      = [];
 let events            = [];
 let eventTags         = [];
+let hologateLabels    = [];
 let selectedEventType = 'timestamp';
 let selectedSensorikProbandId = '';
 let selectedScenId   = '';
@@ -184,6 +187,7 @@ function save() {
     localStorage.setItem(KEY_BEWERTUNGEN, JSON.stringify(bewertungen));
     localStorage.setItem(KEY_EVENTS,      JSON.stringify(events));
     localStorage.setItem(KEY_EVENT_TAGS,  JSON.stringify(eventTags));
+    localStorage.setItem(KEY_HOLOGATE_LABELS, JSON.stringify(hologateLabels));
   } catch(e) { showToast('⚠ Speicherfehler'); }
 }
 
@@ -282,6 +286,7 @@ function load() {
     const bw = localStorage.getItem(KEY_BEWERTUNGEN);
     const ev = localStorage.getItem(KEY_EVENTS);
     const evt = localStorage.getItem(KEY_EVENT_TAGS);
+    const hl = localStorage.getItem(KEY_HOLOGATE_LABELS);
     if (p)  probanden   = JSON.parse(p);
     if (s)  sessions    = JSON.parse(s);
     if (st) settings    = { ...settings, ...JSON.parse(st) };
@@ -305,6 +310,12 @@ function load() {
     if (!scenarios.length) scenarios = deepCopy(DEFAULT_SCENARIOS);
     tags = tg ? JSON.parse(tg) : [...DEFAULT_TAGS];
     if (!tags.length) tags = [...DEFAULT_TAGS];
+    // Bezeichnungen der 5 festen Hologate-Durchläufe (Schritt 7) — Anzahl ist fest, daher bei
+    // abweichender Länge (z.B. beschädigte Daten) auf den Standard zurückfallen.
+    hologateLabels = hl ? JSON.parse(hl) : [...DEFAULT_HOLOGATE_LABELS];
+    if (!Array.isArray(hologateLabels) || hologateLabels.length !== DEFAULT_HOLOGATE_LABELS.length) {
+      hologateLabels = [...DEFAULT_HOLOGATE_LABELS];
+    }
     // v2.27.0/v2.28.0: VR-Equipment-Schritte entfallen, Trainerbewertungsbogen wird eigener
     // Schritt, Tutorial-Zeit wandert vom Szenario-Durchlauf in normale Start-/Ende-Felder —
     // Alt-Daten auf die neuen Schritt-IDs/Felder ummappen. Erst hier (nach scenarios/tags),
@@ -319,6 +330,7 @@ function load() {
     scenarios = deepCopy(DEFAULT_SCENARIOS);
     tags = [...DEFAULT_TAGS];
     eventTags = [...DEFAULT_EVENT_TAGS];
+    hologateLabels = [...DEFAULT_HOLOGATE_LABELS];
   }
 }
 
@@ -1507,14 +1519,53 @@ document.getElementById('btn-clear-data').addEventListener('click', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 // EINSTELLUNGEN
 // ══════════════════════════════════════════════════════════════════════════════
+// Seit v2.31.0: „Mehrere Teilnehmende gleichzeitig" (Alt-Feature der inzwischen
+// unerreichbaren Sitzungsaufzeichnungs-/Bewertungs-Screens) entfällt aus den Einstellungen.
+// Stattdessen editierbar: Bezeichnungen der 5 Hologate-Durchläufe + Ereignis-Kategorien.
 function renderSettingsScreen() {
-  document.getElementById('chk-multi-proband').checked = !!settings.multiProband;
+  renderHologateLabelSettings();
 }
-document.getElementById('chk-multi-proband').addEventListener('change', e => {
-  settings.multiProband = e.target.checked;
-  if (!settings.multiProband) { selectedProbandIds = []; selectedBewSessionIds = []; }
-  save();
+
+// Bezeichnungen der 5 festen Hologate-Durchläufe (Schritt 7) — Reihenfolge/Anzahl fest,
+// nur der Text je Position ist editierbar. Wirkt sich sofort auf Schritt 7 aus, da
+// ensureHologateRuns() bei jedem Render aus `hologateLabels` neu beschriftet.
+function renderHologateLabelSettings() {
+  const box = document.getElementById('settings-hologate-labels');
+  if (!box) return;
+  box.innerHTML = hologateLabels.map((label, i) => `
+    <div style="margin-bottom:8px">
+      <label class="field-label" for="hologate-label-${i}">Durchlauf ${i + 1}</label>
+      <input type="text" id="hologate-label-${i}" class="hologate-label-input" data-idx="${i}" value="${esc(label)}" autocorrect="off">
+    </div>`).join('');
+  box.querySelectorAll('.hologate-label-input').forEach(inp =>
+    inp.addEventListener('change', () => {
+      const idx = parseInt(inp.dataset.idx, 10);
+      const val = inp.value.trim();
+      if (!val) { inp.value = hologateLabels[idx]; showToast('⚠ Bezeichnung darf nicht leer sein'); return; }
+      hologateLabels[idx] = val;
+      save();
+      renderAblauf();
+      showToast('✓ Gespeichert');
+    })
+  );
+}
+document.getElementById('btn-reset-hologate-labels').addEventListener('click', () => {
+  showConfirm('Auf Standard zurücksetzen', 'Alle 5 Bezeichnungen auf die Standardwerte zurücksetzen?', () => {
+    hologateLabels = [...DEFAULT_HOLOGATE_LABELS];
+    save();
+    renderHologateLabelSettings();
+    renderAblauf();
+    showToast('✓ Zurückgesetzt');
+  });
 });
+
+// Ereignis-Kategorien-Manager (Overlay + renderEventTagManager() existieren bereits für den
+// früheren Tab „Ereignisse"; hier nur ein zusätzlicher Aufrufpfad aus den Einstellungen).
+function openEventTagManager() {
+  renderEventTagManager();
+  document.getElementById('event-tag-overlay').classList.remove('hidden');
+}
+document.getElementById('btn-settings-manage-event-tags').addEventListener('click', openEventTagManager);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // BEWERTUNGSBOGEN
@@ -2146,7 +2197,7 @@ function flowStepStateFor(stepId, d) {
     const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07 : [];
     const full    = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
     const started = runs.filter(r => r.phases && (r.phases.p_start || r.phases.p_end)).length;
-    if (full === HOLOGATE_RUN_LABELS.length) return 'komplett';
+    if (full === hologateLabels.length) return 'komplett';
     if (started > 0) return 'teilweise';
     return 'offen';
   }
@@ -2218,7 +2269,7 @@ function renderAblauf() {
     if (s.id === 'fs_07') {
       const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07 : [];
       const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
-      summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
+      summary = rDone ? `Durchläufe ${rDone}/${hologateLabels.length}` : 'noch nicht erfasst';
     }
     if (BEW_STEP_META[s.id]) {
       const b = (p && p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
@@ -2577,7 +2628,7 @@ function szenarioSectionHTML(stepId) {
 function ensureHologateRuns(p) {
   if (!p.szenarien || typeof p.szenarien !== 'object' || Array.isArray(p.szenarien)) p.szenarien = {};
   const cur = Array.isArray(p.szenarien.fs_07) ? p.szenarien.fs_07 : [];
-  p.szenarien.fs_07 = HOLOGATE_RUN_LABELS.map((label, i) => {
+  p.szenarien.fs_07 = hologateLabels.map((label, i) => {
     const prev = cur.find(r => r && r.id === 'hg_' + i) || cur[i] || {};
     const phases = (prev.phases && typeof prev.phases === 'object' && !Array.isArray(prev.phases)) ? prev.phases : {};
     return { id: 'hg_' + i, label, phases };
@@ -2943,7 +2994,7 @@ function syncAblaufRows() {
       if (s.id === 'fs_07') {
         const runs = Array.isArray(p.szenarien && p.szenarien.fs_07) ? p.szenarien.fs_07 : [];
         const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
-        summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
+        summary = rDone ? `Durchläufe ${rDone}/${hologateLabels.length}` : 'noch nicht erfasst';
       }
       if (BEW_STEP_META[s.id]) {
         const b = (p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
