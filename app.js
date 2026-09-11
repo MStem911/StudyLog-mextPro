@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.28.0';
+const APP_VERSION = '2.29.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -2140,10 +2140,11 @@ function flowStepStateFor(stepId, d) {
   }
   if (BEW_STEP_META[stepId]) {
     const p = ablaufProband();
-    const list = (p && p.bewertungen && p.bewertungen[stepId]) || [];
+    const b = (p && p.bewertungen && Array.isArray(p.bewertungen[stepId])) ? p.bewertungen[stepId][0] : null;
+    const filled = (b && b.scores) ? BEW_OV_ITEMS.filter(k => b.scores[k] != null).length : 0;
     const hasNote = !!(d && d.note && d.note.trim());
-    if (list.length) return 'komplett';
-    if (hasNote) return 'teilweise';
+    if (filled === BEW_OV_ITEMS.length) return 'komplett';
+    if (filled > 0 || hasNote) return 'teilweise';
     return 'offen';
   }
   if (FRAGEBOGEN_STEPS.has(stepId) && d && d.done) return 'komplett';
@@ -2209,8 +2210,9 @@ function renderAblauf() {
       summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
     }
     if (BEW_STEP_META[s.id]) {
-      const list = (p && p.bewertungen && p.bewertungen[s.id]) || [];
-      summary = list.length ? `${list.length} Bogen erfasst` : 'noch nicht erfasst';
+      const b = (p && p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
+      const filled = (b && b.scores) ? BEW_OV_ITEMS.filter(k => b.scores[k] != null).length : 0;
+      summary = filled ? `${filled}/${BEW_OV_ITEMS.length} bewertet` : 'noch nicht erfasst';
     }
     if (FRAGEBOGEN_STEPS.has(s.id) && d.done) summary = 'Fragebogen ausgefüllt';
     const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
@@ -2286,11 +2288,17 @@ function renderAblauf() {
   extrasScope.querySelectorAll('[data-proband-add]').forEach(btn =>
     btn.addEventListener('click', openProbandAddOverlay)
   );
-  extrasScope.querySelectorAll('[data-bew-add]').forEach(btn =>
-    btn.addEventListener('click', () => openBewOverlay(btn.dataset.bewAdd, null))
+  // Trainerbewertungsbogen — inline (fs_08 / fs_11), kein Overlay mehr
+  extrasScope.querySelectorAll('.bew-pip-btn').forEach(btn => {
+    const scaleEl = btn.closest('[data-bew-scale]');
+    if (!scaleEl) return;
+    btn.addEventListener('click', () => setBewInlineScore(scaleEl.dataset.szStep, scaleEl.dataset.bewScale, parseInt(btn.dataset.val, 10)));
+  });
+  extrasScope.querySelectorAll('.bew-inline-notes').forEach(el =>
+    el.addEventListener('change', () => { writeBewInlineNotes(el.dataset.szStep); syncAblaufRows(); })
   );
-  extrasScope.querySelectorAll('[data-bew-edit]').forEach(btn =>
-    btn.addEventListener('click', () => openBewOverlay(expandedFlowStepId, btn.dataset.bewEdit))
+  extrasScope.querySelectorAll('[data-bew-reset]').forEach(btn =>
+    btn.addEventListener('click', () => resetBewInline(btn.dataset.bewReset))
   );
   // Sensorik-Checkliste (nur an fs_02)
   extrasScope.querySelectorAll('[data-sensorik-toggle]').forEach(btn =>
@@ -2314,7 +2322,19 @@ function renderAblauf() {
   );
   // VR-Szenario-Phasen — Inline-Darstellung (fs_07 Hologate)
   extrasScope.querySelectorAll('[data-sz-phase-inline]').forEach(btn =>
-    btn.addEventListener('click', () => toggleRunPhase(expandedFlowStepId, btn.dataset.szRun, btn.dataset.szPhaseInline))
+    btn.addEventListener('click', () => toggleRunPhase(btn.dataset.szStep, btn.dataset.szRun, btn.dataset.szPhaseInline))
+  );
+  extrasScope.querySelectorAll('.ablauf-sz-time-input').forEach(inp =>
+    inp.addEventListener('change', () => { writeSzRunTime(inp.dataset.szStep, inp.dataset.szRun, inp.dataset.szTimePhase); syncAblaufRows(); })
+  );
+  extrasScope.querySelectorAll('.btn-sz-time-now').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const inp = document.getElementById(btn.dataset.target);
+      if (!inp) return;
+      inp.value = isoToTimeInput(new Date().toISOString());
+      writeSzRunTime(inp.dataset.szStep, inp.dataset.szRun, inp.dataset.szTimePhase);
+      syncAblaufRows();
+    })
   );
 
   // gewählten Schritt in der linken Leiste sichtbar scrollen
@@ -2331,7 +2351,7 @@ function flowStepExtrasHTML(stepId) {
   if (stepId === 'fs_06')          html += tutorialReminderSectionHTML();
   if (SZENARIO_STEP_META[stepId])  html += szenarioSectionHTML(stepId);
   if (BEW_STEP_META[stepId])       html += bewSectionHTML(stepId);
-  html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt
+  if (!BEW_STEP_META[stepId])      html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt außer den Bewertungsbogen-Schritten
   if (stepId === LAST_FLOW_STEP_ID) {
     html += `<div class="btn-col" style="margin-top:12px">
       <button class="btn btn-ghost full-width" id="ablauf-open-export">⬇ Daten exportieren (CSV / JSON)</button>
@@ -2426,26 +2446,92 @@ function resetAblaufSensorik() {
     () => { p.sensorik = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
 }
 
-// Trainerbewertungsbogen als eigener Ablauf-Schritt (fs_08 Hologate / fs_11 Rollercoaster,
-// seit v2.27.0 kein eingebetteter Abschnitt mehr an den Fragebogen-Schritten).
+// Trainerbewertungsbogen als eigener Ablauf-Schritt (fs_08 Hologate / fs_11 Rollercoaster —
+// strukturell identisch, nur Hinweistext/Bezeichnung unterscheiden sich). Seit v2.29.0 direkt
+// im Schritt dargestellt und ausfüllbar (kein „anlegen"-Button/Overlay mehr): genau ein Bogen
+// pro Schritt, jede Antwort speichert sofort beim Antippen.
+function ensureSingleBewertung(p, stepId) {
+  if (!p.bewertungen || typeof p.bewertungen !== 'object' || Array.isArray(p.bewertungen)) p.bewertungen = {};
+  if (!Array.isArray(p.bewertungen[stepId])) p.bewertungen[stepId] = [];
+  if (!p.bewertungen[stepId].length) {
+    const meta = BEW_STEP_META[stepId];
+    p.bewertungen[stepId].push({ id: uid(), label: meta ? meta.defaultLabel : '', scores: {}, notes: '', savedAt: null });
+  }
+  return p.bewertungen[stepId][0];
+}
+
+function bewScalePipsHTML(val) {
+  return `<span class="bew-scale-endlabel bew-scale-endlabel-left">${BEW_SCALE_LABELS[0]}</span>` +
+    `<div class="bew-scale-btns">` +
+    [1,2,3,4,5,6].map(n =>
+      `<div class="bew-scale-btn-cell"><button type="button" class="bew-pip-btn bew-pip-${n}${val === n ? ' selected' : ''}" data-val="${n}" aria-label="Note ${n}: ${BEW_SCALE_LABELS[n-1]}">${n}</button></div>`
+    ).join('') +
+    `</div>` +
+    `<span class="bew-scale-endlabel bew-scale-endlabel-right">${BEW_SCALE_LABELS[5]}</span>`;
+}
+
 function bewSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
-  const meta  = BEW_STEP_META[stepId];
-  const list  = (p.bewertungen && p.bewertungen[stepId]) || [];
-  const rows  = list.map(b => {
-    const filled = BEW_OV_ITEMS.filter(k => b.scores && b.scores[k] != null).length;
-    return `<button class="bew-list-item" data-bew-edit="${esc(b.id)}">
-      <span class="bew-list-label">${esc(b.label || 'Bewertungsbogen')}</span>
-      <span class="bew-list-meta">${filled}/${BEW_OV_ITEMS.length} ausgefüllt</span>
-    </button>`;
-  }).join('');
+  const meta = BEW_STEP_META[stepId];
+  const b    = ensureSingleBewertung(p, stepId);
+  const legend =
+    `<div class="bew-legend card"><div class="card-label" style="margin-bottom:8px">SKALA</div><div class="bew-legend-row">` +
+    BEW_SCALE_LABELS.map((lab, i) => `<span class="bew-legend-item"><span class="bew-pip bew-pip-${i+1}">${i+1}</span> ${esc(lab)}</span>`).join('') +
+    `</div></div>`;
+  const items = BEW_OV_QUESTIONS.map(([key, text]) => `
+    <div class="bew-item">
+      <span class="bew-item-label">${esc(text)}</span>
+      <div class="bew-scale-wrap"><div class="bew-scale" data-bew-scale="${esc(key)}" data-sz-step="${esc(stepId)}">${bewScalePipsHTML(b.scores ? b.scores[key] : null)}</div></div>
+    </div>`).join('');
   return `<div class="bew-section">
     <div class="card-label" style="margin-bottom:6px">TRAINERBEWERTUNGSBOGEN · ${esc(meta.scenarioLabel)}</div>
     <p class="meta-text" style="margin-bottom:8px">${esc(meta.hint)}</p>
-    <div class="bew-list">${rows || '<div class="meta-text">Noch kein Bogen angelegt.</div>'}</div>
-    <button class="btn btn-primary full-width" data-bew-add="${esc(stepId)}" style="margin-top:8px">＋ Bewertungsbogen anlegen</button>
+    ${legend}
+    <div class="card">
+      <div class="card-label bew-dim-label">${esc(BEW_OV_TITLE)}</div>
+      <p class="privacy-text" style="color:var(--text2);line-height:1.5;margin:0 0 12px">${esc(BEW_OV_INTRO)}</p>
+      <div class="bew-items">${items}</div>
+      <label class="field-label" for="bew-inline-notes-${esc(stepId)}" style="margin-top:12px;display:block">Anmerkungen</label>
+      <textarea id="bew-inline-notes-${esc(stepId)}" class="bew-inline-notes" data-sz-step="${esc(stepId)}" rows="2" placeholder="Ergänzende Beobachtungen…" autocorrect="off">${esc(b.notes || '')}</textarea>
+    </div>
+    <div class="btn-col" style="margin-top:12px">
+      <button class="btn btn-ghost full-width" data-bew-reset="${esc(stepId)}">Bewertung zurücksetzen</button>
+    </div>
   </div>`;
+}
+
+function setBewInlineScore(stepId, key, val) {
+  const p = ablaufProband();
+  if (!p) return;
+  const b = ensureSingleBewertung(p, stepId);
+  if (!b.scores) b.scores = {};
+  b.scores[key] = val;
+  b.savedAt = new Date().toISOString();
+  save();
+  renderAblauf();
+}
+
+function writeBewInlineNotes(stepId) {
+  const p = ablaufProband();
+  if (!p) return;
+  const b = ensureSingleBewertung(p, stepId);
+  const el = document.getElementById(`bew-inline-notes-${stepId}`);
+  b.notes = el ? el.value.trim() : '';
+  save();
+}
+
+function resetBewInline(stepId) {
+  const p = ablaufProband();
+  if (!p) return;
+  const meta = BEW_STEP_META[stepId];
+  showConfirm('Bewertung zurücksetzen', `Alle Antworten für „${meta.scenarioLabel}" werden entfernt.`, () => {
+    if (!p.bewertungen) p.bewertungen = {};
+    p.bewertungen[stepId] = [{ id: uid(), label: meta.defaultLabel, scores: {}, notes: '', savedAt: null }];
+    save();
+    renderAblauf();
+    showToast('Bewertung zurückgesetzt');
+  });
 }
 
 // Abschnitt „VR-Szenario-Durchläufe" im Detailbereich von fs_07 / fs_10.
@@ -2467,7 +2553,7 @@ function szenarioSectionHTML(stepId) {
   }).join('');
   return `<div class="bew-section">
     <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLÄUFE · ${esc(meta.title)}</div>
-    <p class="meta-text" style="margin-bottom:8px">Je Durchlauf die Phasen abhaken — „Szenario starten" und „Szenario beendet" erfassen dabei einen Zeitstempel.</p>
+    <p class="meta-text" style="margin-bottom:8px">Je Durchlauf öffnen — „Szenario starten"/„Szenario beendet" über Button „Jetzt" oder manuelle Eingabe, die übrigen Phasen abhaken.</p>
     <div class="bew-list">${rows || '<div class="meta-text">Noch kein Durchlauf angelegt.</div>'}</div>
     <button class="btn btn-primary full-width" data-sz-add="${esc(stepId)}" style="margin-top:8px">＋ Durchlauf hinzufügen</button>
   </div>`;
@@ -2487,169 +2573,81 @@ function ensureHologateRuns(p) {
   return p.szenarien.fs_07;
 }
 
-// fs_07: 5 feste Durchläufe (Scheiben/Köpfe/Laufen/Drohnen/Kombi), je nur Start + Stopp
-// mit Zeitstempel — direkt im Schritt-Panel, ohne Overlay, ohne Hinzufügen/Löschen.
+// Rendert eine Szenario-Phase eines Durchlaufs: `ts:true` (Start/Ende) als Zeit-Eingabefeld
+// — Button „Jetzt" oder manuelle Eingabe/Korrektur, wie bei den normalen Schritt-Zeitfeldern
+// — `ts:false` weiterhin als antippbares Häkchen (kein Zeitwert). Gemeinsam genutzt von der
+// Hologate-Inline-Darstellung (fs_07) und dem Rollercoaster-Overlay (fs_10).
+function szPhaseFieldHTML(stepId, run, ph) {
+  if (ph.ts) {
+    const inputId = `sz-time-${run.id}-${ph.id}`;
+    const val = (run.phases && run.phases[ph.id]) || null;
+    return `<div>
+      <label class="field-label" for="${esc(inputId)}">${esc(ph.label)}</label>
+      <div class="time-capture-row">
+        <input type="time" step="1" id="${esc(inputId)}" class="ablauf-sz-time-input" data-sz-step="${esc(stepId)}" data-sz-run="${esc(run.id)}" data-sz-time-phase="${esc(ph.id)}" value="${esc(isoToTimeInput(val))}">
+        <button type="button" class="btn btn-ghost btn-sz-time-now" data-target="${esc(inputId)}">🕐 Jetzt</button>
+      </div>
+    </div>`;
+  }
+  const done = !!(run.phases && run.phases[ph.id]);
+  return `<button class="sensorik-item${done ? ' checked' : ''}" data-sz-phase-inline="${esc(ph.id)}" data-sz-run="${esc(run.id)}" data-sz-step="${esc(stepId)}">
+    <span class="sensorik-check">${done ? '✓' : ''}</span>
+    <span class="sensorik-info">
+      <span class="sensorik-name">${esc(ph.label)}</span>
+      <span class="sensorik-time">${done ? 'erledigt' : 'offen'}</span>
+    </span>
+  </button>`;
+}
+
+// Alle Phasen eines Durchlaufs: die Zeit-Phasen (ts:true, i.d.R. Start/Ende) nebeneinander
+// wie die normalen Schritt-Zeitfelder, darunter die reinen Häkchen-Phasen (falls vorhanden).
+function szRunPhasesHTML(stepId, run, phases) {
+  const timePhases = phases.filter(ph => ph.ts);
+  const boolPhases = phases.filter(ph => !ph.ts);
+  const timeHTML = timePhases.length
+    ? `<div class="edit-row-2">${timePhases.map(ph => szPhaseFieldHTML(stepId, run, ph)).join('')}</div>` : '';
+  const boolHTML = boolPhases.length
+    ? `<div class="sensorik-list" style="margin-top:8px">${boolPhases.map(ph => szPhaseFieldHTML(stepId, run, ph)).join('')}</div>` : '';
+  return timeHTML + boolHTML;
+}
+
+// Schreibt den Wert eines Szenario-Zeitfelds (Start/Ende) aus dem zugehörigen
+// <input type=time> — Pendant zu writeFlowStep() für VR-Szenario-Durchläufe.
+function writeSzRunTime(stepId, runId, phaseId) {
+  const p = ablaufProband();
+  if (!p) return;
+  const run = ((p.szenarien && p.szenarien[stepId]) || []).find(r => r.id === runId);
+  if (!run) return;
+  if (!run.phases) run.phases = {};
+  const input = document.getElementById(`sz-time-${runId}-${phaseId}`);
+  const t = input ? input.value : '';
+  if (!t) {
+    delete run.phases[phaseId];
+  } else {
+    const prevISO = (typeof run.phases[phaseId] === 'string') ? run.phases[phaseId] : new Date().toISOString();
+    run.phases[phaseId] = rebuildISO(prevISO, t);
+  }
+  save();
+}
+
+// fs_07: 5 feste Durchläufe (Scheiben/Köpfe/Laufen/Drohnen/Kombi) — direkt im Schritt-Panel,
+// ohne Overlay, ohne Hinzufügen/Löschen. Start/Ende je über Button „Jetzt" oder manuelle
+// Eingabe.
 function szenarioFixedSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
   const runs   = ensureHologateRuns(p);
   const phases = szPhasesFor(stepId);
-  const runsHTML = runs.map((run, i) => {
-    const rows = phases.map(ph => {
-      const val  = run.phases[ph.id];
-      const done = !!val;
-      const sub  = done ? localDatetimeStr(val) : 'Zeitstempel beim Antippen';
-      return `<button class="sensorik-item${done ? ' checked' : ''}" data-sz-phase-inline="${esc(ph.id)}" data-sz-run="${esc(run.id)}">
-        <span class="sensorik-check">${done ? '✓' : ''}</span>
-        <span class="sensorik-info">
-          <span class="sensorik-name">${esc(ph.label)}</span>
-          <span class="sensorik-time">${esc(sub)}</span>
-        </span>
-      </button>`;
-    }).join('');
-    return `<div class="ablauf-sz-run">
+  const runsHTML = runs.map((run, i) => `<div class="ablauf-sz-run">
       <div class="ablauf-sz-runname">${i + 1}. ${esc(run.label)}</div>
-      <div class="sensorik-list" style="margin-top:8px">${rows}</div>
-    </div>`;
-  }).join('');
+      ${szRunPhasesHTML(stepId, run, phases)}
+    </div>`).join('');
   return `<div class="bew-section">
     <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLÄUFE · HOLOGATE</div>
-    <p class="meta-text" style="margin-bottom:8px">Feste Reihenfolge — je Durchlauf „Szenario starten" und „Szenario beendet" antippen (Zeitstempel). Erneutes Antippen macht die Erfassung nach Rückfrage rückgängig.</p>
+    <p class="meta-text" style="margin-bottom:8px">Feste Reihenfolge — Start/Ende je über Button „Jetzt" oder manuelle Eingabe erfassen.</p>
     ${runsHTML}
   </div>`;
 }
-
-// ── Trainerbewertungsbogen-Overlay ──────────────────────────────────────────────
-let bewOvStepId = '';
-let bewOvId     = '';
-
-function bewFormHTML() {
-  const legend =
-    `<div class="bew-legend card"><div class="card-label" style="margin-bottom:8px">SKALA</div><div class="bew-legend-row">` +
-    BEW_SCALE_LABELS.map((lab, i) => `<span class="bew-legend-item"><span class="bew-pip bew-pip-${i+1}">${i+1}</span> ${esc(lab)}</span>`).join('') +
-    `</div></div>`;
-  const block = `
-    <div class="card">
-      <div class="card-label bew-dim-label">${esc(BEW_OV_TITLE)}</div>
-      <p class="privacy-text" style="color:var(--text2);line-height:1.5;margin:0 0 12px">${esc(BEW_OV_INTRO)}</p>
-      <div class="bew-items">
-        ${BEW_OV_QUESTIONS.map(([key, text]) => `
-          <div class="bew-item">
-            <span class="bew-item-label">${esc(text)}</span>
-            <div class="bew-scale-wrap"><div class="bew-scale bew-ov-scale" data-item="${esc(key)}"></div></div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  return legend + block;
-}
-
-function renderBewOvScale(key, val) {
-  const container = document.querySelector(`#bew-ov-form .bew-ov-scale[data-item="${key}"]`);
-  if (!container) return;
-  container.innerHTML =
-    `<span class="bew-scale-endlabel bew-scale-endlabel-left">${BEW_SCALE_LABELS[0]}</span>` +
-    `<div class="bew-scale-btns">` +
-    [1,2,3,4,5,6].map(n =>
-      `<div class="bew-scale-btn-cell"><button type="button" class="bew-pip-btn bew-pip-${n}${val === n ? ' selected' : ''}" data-val="${n}" aria-label="Note ${n}: ${BEW_SCALE_LABELS[n-1]}">${n}</button></div>`
-    ).join('') +
-    `</div>` +
-    `<span class="bew-scale-endlabel bew-scale-endlabel-right">${BEW_SCALE_LABELS[5]}</span>`;
-  container.querySelectorAll('.bew-pip-btn').forEach(btn =>
-    btn.addEventListener('click', () => {
-      container.querySelectorAll('.bew-pip-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    })
-  );
-}
-
-function readBewOvScores() {
-  const scores = {};
-  BEW_OV_ITEMS.forEach(key => {
-    const sel = document.querySelector(`#bew-ov-form .bew-ov-scale[data-item="${key}"] .bew-pip-btn.selected`);
-    scores[key] = sel ? parseInt(sel.dataset.val, 10) : null;
-  });
-  return scores;
-}
-
-function openBewOverlay(stepId, bid) {
-  const p = ablaufProband();
-  const meta = BEW_STEP_META[stepId];
-  if (!p || !meta) return;
-  bewOvStepId = stepId;
-  bewOvId     = bid || '';
-  const list  = (p.bewertungen && p.bewertungen[stepId]) || [];
-  const existing = bid ? list.find(b => b.id === bid) : null;
-
-  document.getElementById('bew-ov-title').textContent = existing ? 'Bewertungsbogen bearbeiten' : 'Neuer Bewertungsbogen';
-  document.getElementById('bew-ov-context').textContent = `${p.pseudo} · ${meta.scenarioLabel}`;
-  document.getElementById('bew-ov-label').value = existing ? (existing.label || '') : meta.defaultLabel;
-  document.getElementById('bew-ov-notes').value = existing ? (existing.notes || '') : '';
-  document.getElementById('bew-ov-form').innerHTML = bewFormHTML();
-  BEW_OV_ITEMS.forEach(key => renderBewOvScale(key, existing && existing.scores ? existing.scores[key] : null));
-  document.getElementById('bew-ov-delete').classList.toggle('hidden', !existing);
-  document.getElementById('bewertung-overlay').classList.remove('hidden');
-  document.getElementById('bewertung-overlay').scrollTop = 0;
-}
-
-function closeBewOverlay() {
-  document.getElementById('bewertung-overlay').classList.add('hidden');
-  bewOvStepId = ''; bewOvId = '';
-}
-
-function saveBewOverlay() {
-  const p = ablaufProband();
-  if (!p || !bewOvStepId) return;
-  if (!p.bewertungen) p.bewertungen = {};
-  if (!Array.isArray(p.bewertungen[bewOvStepId])) p.bewertungen[bewOvStepId] = [];
-  const label  = document.getElementById('bew-ov-label').value.trim();
-  const notes  = document.getElementById('bew-ov-notes').value.trim();
-  const scores = readBewOvScores();
-  const filled = BEW_OV_ITEMS.filter(k => scores[k] != null).length;
-  if (!label)       { showToast('⚠ Bezeichnung eingeben'); return; }
-  if (filled === 0) { showToast('⚠ Mindestens eine Bewertung eingeben'); return; }
-
-  const commit = () => {
-    const arr = p.bewertungen[bewOvStepId];
-    const idx = bewOvId ? arr.findIndex(b => b.id === bewOvId) : -1;
-    const entry = {
-      id: idx >= 0 ? arr[idx].id : uid(),
-      label, scores, notes, savedAt: new Date().toISOString()
-    };
-    if (idx >= 0) arr[idx] = entry; else arr.push(entry);
-    save();
-    closeBewOverlay();
-    renderAblauf();
-    showToast(idx >= 0 ? '✓ Bewertung aktualisiert' : '✓ Bewertung gespeichert');
-  };
-  if (filled < BEW_OV_ITEMS.length) {
-    showConfirm('Nicht vollständig ausgefüllt',
-      `Es sind erst ${filled} von ${BEW_OV_ITEMS.length} Bewertungen eingetragen. Trotzdem speichern?`, commit);
-  } else {
-    commit();
-  }
-}
-
-function deleteBewCurrent() {
-  const p = ablaufProband();
-  if (!p || !bewOvStepId || !bewOvId) return;
-  const arr = (p.bewertungen && p.bewertungen[bewOvStepId]) || [];
-  const b = arr.find(x => x.id === bewOvId);
-  showConfirm('Bogen löschen', `„${b ? b.label : 'Bewertungsbogen'}" wirklich löschen?`, () => {
-    p.bewertungen[bewOvStepId] = arr.filter(x => x.id !== bewOvId);
-    save();
-    closeBewOverlay();
-    renderAblauf();
-    showToast('Bogen gelöscht');
-  });
-}
-
-document.getElementById('bew-ov-close').addEventListener('click', closeBewOverlay);
-document.getElementById('bew-ov-cancel').addEventListener('click', closeBewOverlay);
-document.getElementById('bew-ov-save').addEventListener('click', saveBewOverlay);
-document.getElementById('bew-ov-delete').addEventListener('click', deleteBewCurrent);
-document.getElementById('bewertung-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('bewertung-overlay')) closeBewOverlay();
-});
 
 // ── Ereignis-Overlay ───────────────────────────────────────────────────────────
 let evOvStepId = '';
@@ -2807,47 +2805,45 @@ function renderSzOvPhases() {
   const box = document.getElementById('sz-ov-phases');
   const run = szCurrentRun();
   if (!box || !run) return;
-  box.innerHTML = szPhasesFor(szOvStepId).map(ph => {
-    const val  = run.phases[ph.id];
-    const done = !!val;
-    const sub  = ph.ts
-      ? (done ? localDatetimeStr(val) : 'Zeitstempel beim Abhaken')
-      : (done ? 'erledigt' : 'offen');
-    return `<button class="sensorik-item${done ? ' checked' : ''}" data-sz-phase="${esc(ph.id)}">
-      <span class="sensorik-check">${done ? '✓' : ''}</span>
-      <span class="sensorik-info">
-        <span class="sensorik-name">${esc(ph.label)}</span>
-        <span class="sensorik-time">${esc(sub)}</span>
-      </span>
-    </button>`;
-  }).join('');
-  box.querySelectorAll('[data-sz-phase]').forEach(btn =>
-    btn.addEventListener('click', () => toggleSzPhase(btn.dataset.szPhase))
+  if (!run.phases) run.phases = {};
+  box.innerHTML = szRunPhasesHTML(szOvStepId, run, szPhasesFor(szOvStepId));
+  box.querySelectorAll('[data-sz-phase-inline]').forEach(btn =>
+    btn.addEventListener('click', () => toggleRunPhase(szOvStepId, run.id, btn.dataset.szPhaseInline, renderSzOvPhases))
+  );
+  box.querySelectorAll('.ablauf-sz-time-input').forEach(inp =>
+    inp.addEventListener('change', () => {
+      writeSzRunTime(inp.dataset.szStep, inp.dataset.szRun, inp.dataset.szTimePhase);
+      renderSzOvPhases();
+    })
+  );
+  box.querySelectorAll('.btn-sz-time-now').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const inp = document.getElementById(btn.dataset.target);
+      if (!inp) return;
+      inp.value = isoToTimeInput(new Date().toISOString());
+      writeSzRunTime(inp.dataset.szStep, inp.dataset.szRun, inp.dataset.szTimePhase);
+      renderSzOvPhases();
+    })
   );
 }
 
-// Gemeinsame Phasen-Logik für Overlay (fs_10) und Inline-Darstellung (fs_07 Hologate).
+// Gemeinsame Häkchen-Logik (ts:false-Phasen ohne Zeitwert, z.B. „Person kalibriert") für
+// Overlay (fs_10) und Inline-Darstellung (fs_07 Hologate). Zeit-Phasen (ts:true, Start/Ende)
+// laufen seit v2.29.0 über eigene Zeit-Eingabefelder (siehe writeSzRunTime), nicht mehr hier.
 function toggleRunPhase(stepId, runId, phaseId, afterFn) {
   const p = ablaufProband();
   if (!p) return;
   const run = ((p.szenarien && p.szenarien[stepId]) || []).find(r => r.id === runId);
   const ph  = szPhasesFor(stepId).find(x => x.id === phaseId);
-  if (!run || !ph || ph.reminder) return;
+  if (!run || !ph || ph.ts) return;
   if (!run.phases) run.phases = {};
   const commit = () => { save(); if (afterFn) afterFn(); renderAblauf(); };
   if (run.phases[phaseId]) {
-    const msg = ph.ts
-      ? `„${ph.label}" wurde um ${localTimeStr(run.phases[phaseId])} erfasst. Häkchen (und Zeitstempel) entfernen?`
-      : `Häkchen bei „${ph.label}" entfernen?`;
-    showConfirm('Phase zurücksetzen', msg, () => { delete run.phases[phaseId]; commit(); });
+    showConfirm('Phase zurücksetzen', `Häkchen bei „${ph.label}" entfernen?`, () => { delete run.phases[phaseId]; commit(); });
   } else {
-    run.phases[phaseId] = ph.ts ? new Date().toISOString() : true;
-    if (ph.ts) showToast('✓ ' + ph.label + '  ·  ' + localTimeStr(run.phases[phaseId]));
+    run.phases[phaseId] = true;
     commit();
   }
-}
-function toggleSzPhase(phaseId) {
-  toggleRunPhase(szOvStepId, szOvId, phaseId, renderSzOvPhases);
 }
 
 function closeSzenarioOverlay() {
@@ -2938,8 +2934,9 @@ function syncAblaufRows() {
         summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
       }
       if (BEW_STEP_META[s.id]) {
-        const list = (p.bewertungen && p.bewertungen[s.id]) || [];
-        summary = list.length ? `${list.length} Bogen erfasst` : 'noch nicht erfasst';
+        const b = (p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
+        const filled = (b && b.scores) ? BEW_OV_ITEMS.filter(k => b.scores[k] != null).length : 0;
+        summary = filled ? `${filled}/${BEW_OV_ITEMS.length} bewertet` : 'noch nicht erfasst';
       }
       if (FRAGEBOGEN_STEPS.has(s.id) && d && d.done) summary = 'Fragebogen ausgefüllt';
       sub.textContent = `${s.tag}  ·  ${summary}`;

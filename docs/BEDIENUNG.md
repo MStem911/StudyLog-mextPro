@@ -35,14 +35,18 @@ von Teilnehmenden, „Alle Daten löschen"). Alles Weitere wird aus dem Ablauf h
 
 **Trainerbewertungsbogen (Schritt 8 / 11):** eigene Schritte direkt nach dem jeweiligen
 VR-Durchlauf — **Schritt 8** nach den Hologate-Szenarien (Schritt 7), **Schritt 11** nach dem
-Rollercoaster (Schritt 10). Dort → **＋ Bewertungsbogen anlegen** → Bezeichnung eintragen
-(Vorschlag: „Hologate (gesamt)" bzw. „Rollercoaster"), bewerten, optional Anmerkungen,
-**💾 speichern**; bestehende Bögen sind in der Liste antippbar (bearbeiten/löschen). Gedacht
-für VR, während die Teilnehmenden den anschließenden Fragebogen (Schritt 9 bzw. 12)
-bearbeiten. **Schritt 8 bewertet alle Hologate-Szenarien aus Schritt 7 gemeinsam** (ohne das
-Tutorial aus Schritt 6); **Schritt 11 bewertet nur den Rollercoaster-Durchlauf** (inkl. des in
-der Szene enthaltenen Schießens) — der jeweilige Hinweistext im Schritt macht das noch einmal
-deutlich.
+Rollercoaster (Schritt 10). Beide Schritte sind **strukturell genau gleich aufgebaut** (nur
+Hinweistext und Bezeichnung unterscheiden sich inhaltlich) und zeigen den Bogen seit v2.29.0
+**direkt im Schritt** — kein „anlegen"-Button, kein Overlay, keine Liste: Skala-Legende, die
+4 Fragen mit Notenskala 1–6 sowie ein Anmerkungsfeld sind sofort sichtbar. Jede Antwort
+speichert **sofort** beim Antippen einer Note, das Anmerkungsfeld beim Verlassen. Genau ein
+Bogen pro Schritt (kein „mehrere Bögen anlegen" mehr); **„Bewertung zurücksetzen"** leert nach
+Rückfrage alle Antworten und die Anmerkung dieses Bogens. Weder Schritt 8 noch Schritt 11
+haben einen **„+ Ereignis erfassen"**-Button (anders als alle übrigen Schritte). Gedacht für
+VR, während die Teilnehmenden den anschließenden Fragebogen (Schritt 9 bzw. 12) bearbeiten.
+**Schritt 8 bewertet alle Hologate-Szenarien aus Schritt 7 gemeinsam** (ohne das Tutorial aus
+Schritt 6); **Schritt 11 bewertet nur den Rollercoaster-Durchlauf** (inkl. des in der Szene
+enthaltenen Schießens) — der jeweilige Hinweistext im Schritt macht das noch einmal deutlich.
 
 Der Bogen ist ab v2.16.0 **reduziert** auf den Block **„Vergleich zur Selbsteinschätzung"** —
 diese vier Fragen entsprechen inhaltlich den Fragen des Teilnehmerfragebogens (Selbst-/
@@ -97,11 +101,11 @@ verantwortet — sie haben keine weitere Funktion.
    Fortschrittsbalken („X / 16 komplett").
 4. **Schritt leeren** (im aufgeklappten Schritt) entfernt nach Rückfrage die erfassten Zeiten
    und die Anmerkung dieses einen Schritts.
-5. **Ereignisse / Probleme** (an jedem Schritt): über **＋ Ereignis erfassen** eine Kategorie
-   wählen (Sensorik / VR / Fragebogen / TMS / Sonstiges), eine kurze Beschreibung eintragen
-   und entweder einen **Zeitpunkt** oder einen **Zeitraum** festhalten (Button „Jetzt" oder
-   manuell). Erfasste Ereignisse stehen als Liste am jeweiligen Schritt und lassen sich
-   antippen zum Bearbeiten/Löschen.
+5. **Ereignisse / Probleme** (an jedem Schritt **außer** Schritt 8/11, siehe unten): über
+   **＋ Ereignis erfassen** eine Kategorie wählen (Sensorik / VR / Fragebogen / TMS /
+   Sonstiges), eine kurze Beschreibung eintragen und entweder einen **Zeitpunkt** oder einen
+   **Zeitraum** festhalten (Button „Jetzt" oder manuell). Erfasste Ereignisse stehen als Liste
+   am jeweiligen Schritt und lassen sich antippen zum Bearbeiten/Löschen.
 
 Einzelne Schritte haben zusätzliche Felder:
 - **Fragebogen-Schritte (3, 5, 9, 12)**: alle vier sind gleich aufgebaut — **keine**
@@ -119,18 +123,24 @@ Einzelne Schritte haben zusätzliche Felder:
   Erinnerung an den Ablauf angezeigt (Abschnitt „Tutorial-Ablauf"): *Person kalibriert*,
   *Person durchläuft das Tutorial*, *Direkt ins VR-Szenario gewechselt* — diese drei Punkte
   tragen keinen eigenen Zeitstempel.
-- **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**. „Starten"/„Beendet" erfassen beim
-  Antippen automatisch die Uhrzeit; erneutes Antippen macht das nach Rückfrage rückgängig.
+- **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**. Seit v2.29.0 werden „Szenario
+  starten"/„Szenario beendet" **wie normale Zeitfelder** erfasst — Button „Jetzt" oder
+  manuelle Eingabe/Korrektur (nicht mehr per einfachem Antippen mit Rückfrage zum Entfernen).
+  Die übrigen Phasen (z. B. „Person kalibriert", „Brille abgezogen") bleiben reine Häkchen
+  ohne Zeit — antippen, erneutes Antippen macht das nach Rückfrage rückgängig.
   - **Schritt 7 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
-    Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi. Nichts hinzufügen/löschen; je
-    Durchlauf nur **Szenario starten** und **Szenario beendet** antippen (je Zeitstempel).
-    Dieser Schritt hat **keine** eigene Start/Ende-Zeiterfassung — die Zeiten stecken in den
-    Durchläufen. Zeile wird grün bei 5/5 vollständigen Durchläufen (Anzeige „Durchläufe X/5").
+    Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi — direkt im Schritt, nichts
+    hinzufügen/löschen; je Durchlauf nur die Felder **Szenario starten** und
+    **Szenario beendet**. Dieser Schritt hat **keine** eigene Start/Ende-Zeiterfassung — die
+    Zeiten stecken in den Durchläufen. Zeile wird grün bei 5/5 vollständigen Durchläufen
+    (Anzeige „Durchläufe X/5").
   - **Schritt 10 (Rollercoaster):** Durchlauf über **＋ Durchlauf hinzufügen**, Bezeichnung
-    und Phasen im Overlay: Szenario starten (Zeit) · Person kalibriert · Person durchläuft das
-    Szenario · Szenario beendet (Zeit) · Brille abgezogen · Selbstbewertung + Bewertungsbogen.
-- **Schritt 8 / Schritt 11**: der **Trainerbewertungsbogen** (siehe oben) — ebenfalls ohne
-  eigene Start/Ende-Zeiterfassung, Zeile wird grün, sobald mindestens ein Bogen angelegt ist.
+    und Phasen im Overlay: Szenario starten (Zeitfeld) · Person kalibriert (Häkchen) · Person
+    durchläuft das Szenario (Häkchen) · Szenario beendet (Zeitfeld) · Brille abgezogen
+    (Häkchen) · Selbstbewertung + Bewertungsbogen (Häkchen).
+- **Schritt 8 / Schritt 11**: der **Trainerbewertungsbogen**, direkt im Schritt (siehe oben)
+  — ebenfalls ohne eigene Start/Ende-Zeiterfassung; Zeile wird grün, sobald alle 4 Fragen
+  beantwortet sind (Anzeige „X/4 bewertet").
 - Die früheren Schritte „VR-Equipment/VR-Brille an-/ablegen" (Hologate und Rollercoaster)
   entfallen seit v2.27.0 ersatzlos.
 

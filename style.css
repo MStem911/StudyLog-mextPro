@@ -1196,7 +1196,6 @@ input[type="time"] { color-scheme: dark; }
 .bew-list-item:hover { background: var(--surface2); border-color: var(--border2); }
 .bew-list-label { font-weight: 700; color: var(--text1); }
 .bew-list-meta  { font-size: var(--text-sm); color: var(--text2); white-space: nowrap; }
-.bew-ov-context { margin-bottom: 8px; }
 
 /* Inline-Durchlauf (Schritt 6 Tutorial / Schritt 7 Hologate) */
 .ablauf-sz-run { margin-bottom: 12px; }
