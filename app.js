@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.31.0';
+const APP_VERSION = '2.32.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -55,6 +55,11 @@ const DEFAULT_EVENT_TAGS = ['Sensorik', 'VR', 'Fragebogen', 'TMS', 'Sonstiges'];
 // entfallen; der Trainerbewertungsbogen ist kein eingebetteter Abschnitt mehr, sondern ein
 // eigener Schritt direkt nach dem jeweiligen VR-Durchlauf. Migration alter Ablauf-Daten:
 // siehe FLOW_STEP_ID_REMAP_V227 / BEW_STEP_ID_REMAP_V227 in load().
+// v2.32.0: „Verabschiedung" entfällt ersatzlos, der bisher letzte Schritt „Datensicherung"
+// rückt auf (siehe FLOW_STEP_ID_REMAP_V232 in load()). Rollercoaster (fs_10) hat wie Hologate
+// nur noch einen festen Durchlauf ohne Hinzufügen/Löschen. Stop Sensorik (fs_13) erfasst nur
+// noch einen einzelnen Zeitpunkt statt Start/Ende (siehe SINGLE_TIME_STEPS). Datensicherung
+// (letzter Schritt) besteht nur noch aus zwei Häkchen ohne Zeiterfassung.
 const FLOW_STEPS = [
   { id: 'fs_01', nr: '1',  label: 'Aufklärung + Einverständniserklärung',                     tag: 'VR / SEN' },
   { id: 'fs_02', nr: '2',  label: 'Anlegen Sensorik (Shimmer, Brustgurt, Uhr)',              tag: 'SEN' },
@@ -70,8 +75,7 @@ const FLOW_STEPS = [
   { id: 'fs_12', nr: '12', label: 'Fragebogen 4',                                            tag: 'SEN / VR' },
   { id: 'fs_13', nr: '13', label: 'Stop Sensorik (Aufzeichnung beenden)',                    tag: 'SEN' },
   { id: 'fs_14', nr: '14', label: 'Sensorik ablegen',                                        tag: 'SEN' },
-  { id: 'fs_15', nr: '15', label: 'Verabschiedung',                                          tag: 'VR / SEN' },
-  { id: 'fs_16', nr: '16', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
+  { id: 'fs_15', nr: '15', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
 ];
 const LAST_FLOW_STEP_ID = FLOW_STEPS[FLOW_STEPS.length - 1].id;
 
@@ -100,13 +104,13 @@ const BEW_OV_QUESTIONS = [
   ['z20', '4. Gesamtleistung'],
 ];
 
-// VR-Szenario-Durchläufe: Schritte, die in einzelne, abhakbare Teilschritte („Phasen")
-// zerlegt werden (Anforderung „VR-Szenario-Ablauf mit Timestamps"). Pro Schritt eine Liste
-// von Durchläufen in p.szenarien[stepId] = [ { id, label, phases: { [phaseId]: ISO | true } } ].
-const SZENARIO_STEP_META = {
-  fs_07: { title: 'Hologate',                           defaultLabel: 'Szenario ' },
-  fs_10: { title: 'Rollercoaster-Durchlauf (Varjo)',    defaultLabel: 'Rollercoaster' },
-};
+// VR-Szenario-Durchläufe: Schritte, deren Ablauf in einzelne, teils abhakbare Teilschritte
+// („Phasen") zerlegt wird (Anforderung „VR-Szenario-Ablauf mit Timestamps"). Pro Schritt ein
+// oder mehrere feste Durchläufe in p.szenarien[stepId] = [ { id, label, phases: { [phaseId]:
+// ISO | true } } ]. Seit v2.32.0 sind BEIDE Schritte feste Durchläufe ohne Hinzufügen/Löschen/
+// Umbenennen (Hologate: 5 feste Durchläufe, Rollercoaster: genau 1) — siehe
+// ensureHologateRuns() / ensureRollercoasterRun().
+const SZENARIO_FIXED_STEPS = new Set(['fs_07', 'fs_10']);
 // Schritt 7: feste Reihenfolge von 5 Hologate-Durchläufen, je nur mit Start + Stopp
 // (Zeitstempel). Die Anzahl (5) ist fest, die Bezeichnungen sind seit v2.31.0 in den
 // Einstellungen editierbar (siehe `hologateLabels` im State-Abschnitt / KEY_HOLOGATE_LABELS).
@@ -276,6 +280,57 @@ function migrateTutorialTimeV228(pr) {
   return true;
 }
 
+// ── Migration v2.32.0a: „Verabschiedung" entfällt ersatzlos, der bisher letzte Schritt
+// „Datensicherung" rückt von fs_16 auf fs_15 nach (fs_15 „Verabschiedung" selbst entfällt) ──
+const FLOW_STEP_ID_REMAP_V232 = { fs_15: null, fs_16: 'fs_15' };
+
+function migrateVerabschiedungRemovalV232(pr) {
+  if (pr._verabschiedungRemovedV232) return false;
+  pr.ablauf      = remapStepKeyedObject(pr.ablauf, FLOW_STEP_ID_REMAP_V232);
+  pr.szenarien   = remapStepKeyedObject(pr.szenarien, FLOW_STEP_ID_REMAP_V232);
+  pr.bewertungen = remapStepKeyedObject(pr.bewertungen, FLOW_STEP_ID_REMAP_V232);
+  if (Array.isArray(pr.ereignisse)) {
+    pr.ereignisse = pr.ereignisse
+      .filter(ev => !ev.stepId || !(ev.stepId in FLOW_STEP_ID_REMAP_V232) || FLOW_STEP_ID_REMAP_V232[ev.stepId])
+      .map(ev => {
+        const target = ev.stepId && FLOW_STEP_ID_REMAP_V232[ev.stepId];
+        return target ? { ...ev, stepId: target } : ev;
+      });
+  }
+  pr._verabschiedungRemovedV232 = true;
+  return true;
+}
+
+// ── Migration v2.32.0b: Rollercoaster (fs_10) wird — wie Hologate — ein fester Einzel-
+// Durchlauf; die bisherige allgemeine Start-/Endzeit AM SCHRITT (p.ablauf.fs_10) meinte schon
+// vorher inhaltlich den VR-Szenario-Durchlauf selbst und zieht daher in dessen Durchlauf-Phasen
+// (p_start/p_end) um, sofern dort noch nichts erfasst ist — die Schritt-Zeitfelder entfallen
+// (fs_10 hat seit v2.32.0 keine eigene Start-/Endzeit mehr, siehe NO_TIME_STEPS). Ein evtl.
+// vorhandenes `note`/`noteISO` bleibt erhalten.
+function migrateRollercoasterTimeV232(pr) {
+  if (pr._rcTimeMigratedV232) return false;
+  const stepData = pr.ablauf && pr.ablauf.fs_10;
+  if (stepData && (stepData.startISO || stepData.endISO)) {
+    if (!pr.szenarien || typeof pr.szenarien !== 'object') pr.szenarien = {};
+    if (!Array.isArray(pr.szenarien.fs_10) || !pr.szenarien.fs_10.length) {
+      pr.szenarien.fs_10 = [{ id: 'rc_0', label: 'Rollercoaster', phases: {} }];
+    }
+    const run = pr.szenarien.fs_10[0];
+    if (!run.phases || typeof run.phases !== 'object') run.phases = {};
+    if (stepData.startISO && !run.phases.p_start) run.phases.p_start = stepData.startISO;
+    if (stepData.endISO   && !run.phases.p_end)   run.phases.p_end   = stepData.endISO;
+  }
+  if (stepData) {
+    if (stepData.note && stepData.note.trim()) {
+      pr.ablauf.fs_10 = { note: stepData.note, noteISO: stepData.noteISO || null };
+    } else {
+      delete pr.ablauf.fs_10;
+    }
+  }
+  pr._rcTimeMigratedV232 = true;
+  return true;
+}
+
 function load() {
   try {
     const p  = localStorage.getItem(KEY_PROBANDEN);
@@ -305,6 +360,8 @@ function load() {
     probanden.forEach(pr => { if (!Array.isArray(pr.ereignisse)) pr.ereignisse = []; });
     // VR-Szenario-Durchläufe: p.szenarien = { [stepId]: [ {id, label, phases:{[phaseId]: ISO|true}} ] }
     probanden.forEach(pr => { if (!pr.szenarien || typeof pr.szenarien !== 'object' || Array.isArray(pr.szenarien)) pr.szenarien = {}; });
+    // Sensorik-ablegen-Checkliste (Schritt „Sensorik ablegen"): p.sensorikAblegen = { [itemId]: ISO }
+    probanden.forEach(pr => { if (!pr.sensorikAblegen || typeof pr.sensorikAblegen !== 'object') pr.sensorikAblegen = {}; });
     localStorage.removeItem(KEY_SENSORIK);
     scenarios = sc ? JSON.parse(sc) : deepCopy(DEFAULT_SCENARIOS);
     if (!scenarios.length) scenarios = deepCopy(DEFAULT_SCENARIOS);
@@ -316,16 +373,21 @@ function load() {
     if (!Array.isArray(hologateLabels) || hologateLabels.length !== DEFAULT_HOLOGATE_LABELS.length) {
       hologateLabels = [...DEFAULT_HOLOGATE_LABELS];
     }
-    // v2.27.0/v2.28.0: VR-Equipment-Schritte entfallen, Trainerbewertungsbogen wird eigener
-    // Schritt, Tutorial-Zeit wandert vom Szenario-Durchlauf in normale Start-/Ende-Felder —
-    // Alt-Daten auf die neuen Schritt-IDs/Felder ummappen. Erst hier (nach scenarios/tags),
-    // damit ein sofortiges save() diese nicht mit ihren Modul-Startwerten überschreibt; beide
-    // Migrationsfunktionen geben zurück, ob sich etwas geändert hat, damit direkt persistiert
-    // wird statt auf den nächsten ohnehin fälligen save() zu warten. migrateTutorialTimeV228
-    // muss NACH migrateFlowStepIdsV227 laufen (siehe dortiger Kommentar).
+    // v2.27.0/v2.28.0/v2.32.0: VR-Equipment-Schritte entfallen, Trainerbewertungsbogen wird
+    // eigener Schritt, Tutorial-Zeit wandert vom Szenario-Durchlauf in normale Start-/Ende-
+    // Felder, „Verabschiedung" entfällt (Datensicherung rückt auf), Rollercoaster-Schrittzeit
+    // wandert in dessen Durchlauf-Phase — Alt-Daten auf die neuen Schritt-IDs/Felder ummappen.
+    // Erst hier (nach scenarios/tags), damit ein sofortiges save() diese nicht mit ihren Modul-
+    // Startwerten überschreibt; alle Migrationsfunktionen geben zurück, ob sich etwas geändert
+    // hat, damit direkt persistiert wird statt auf den nächsten ohnehin fälligen save() zu
+    // warten. migrateTutorialTimeV228 muss NACH migrateFlowStepIdsV227 laufen (siehe dortiger
+    // Kommentar); migrateVerabschiedungRemovalV232 muss ebenfalls NACH migrateFlowStepIdsV227
+    // laufen (setzt dessen fs_15/fs_16-IDs voraus).
     const migratedIds = probanden.map(migrateFlowStepIdsV227).some(Boolean);
     const migratedTut = probanden.map(migrateTutorialTimeV228).some(Boolean);
-    if (migratedIds || migratedTut) save();
+    const migratedVer = probanden.map(migrateVerabschiedungRemovalV232).some(Boolean);
+    const migratedRc  = probanden.map(migrateRollercoasterTimeV232).some(Boolean);
+    if (migratedIds || migratedTut || migratedVer || migratedRc) save();
   } catch(e) {
     scenarios = deepCopy(DEFAULT_SCENARIOS);
     tags = [...DEFAULT_TAGS];
@@ -2083,22 +2145,32 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
 const FRAGEBOGEN_STEPS = new Set(['fs_03', 'fs_05', 'fs_09', 'fs_12']);
 
 // Schritte ohne Start/Ende-Erfassung: 1 (nur Person anlegen), 2 (nur Sensorik-Checkliste),
-// die Fragebogen-Schritte 3/5/9/12, 7 (Zeiten stecken in den 5 Hologate-Durchläufen), die
-// Trainerbewertungsbogen-Schritte 8/11 (keine eigene Zeiterfassung — die Bögen tragen ihr
-// eigenes `savedAt`). Schritt 6 (Tutorial) hat seit v2.28.0 **wieder** normale Start/Ende-
-// Felder (wie Schritt 4 „TMS") und steht daher bewusst **nicht** in dieser Liste. Hier gibt
-// es nur Anmerkung + schrittabhängige Abschnitte.
-const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_07', ...Object.keys(BEW_STEP_META), ...FRAGEBOGEN_STEPS]);
+// die Fragebogen-Schritte 3/5/9/12, 7 + 10 (Zeiten stecken in den jeweiligen Durchlauf-Phasen),
+// die Trainerbewertungsbogen-Schritte 8/11 (keine eigene Zeiterfassung — die Bögen tragen ihr
+// eigenes `savedAt`), 14 (nur Sensorik-Ablege-Checkliste) und der letzte Schritt (nur zwei
+// Häkchen ohne Zeiterfassung, siehe datensicherungSectionHTML). Schritt 6 (Tutorial) hat seit
+// v2.28.0 **wieder** normale Start/Ende-Felder (wie Schritt 4 „TMS") und steht daher bewusst
+// **nicht** in dieser Liste. Hier gibt es nur Anmerkung + schrittabhängige Abschnitte.
+const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_07', 'fs_10', 'fs_14', LAST_FLOW_STEP_ID, ...Object.keys(BEW_STEP_META), ...FRAGEBOGEN_STEPS]);
 
-// Abweichende Beschriftung der Start-/Ende-Felder für einzelne Schritte, wenn „Start"/„Ende"
-// allein missverständlich wäre. Schritt 6 „Einweisung + Tutorial VR" besteht aus zwei Teilen
-// (Einweisung + eigentliches VR-Tutorial) — die Felder erfassen ausdrücklich nur Start/Ende
-// des VR-Szenario-Tutorials, nicht der gesamten Einweisung.
+// Schritte mit genau EINEM erfassten Zeitpunkt statt Start+Ende (Stop Sensorik, Schritt 13 —
+// hier gibt es nur den einen Zeitpunkt „Aufzeichnung beendet", kein Zeitraum).
+const SINGLE_TIME_STEPS = new Set(['fs_13']);
+
+// Abweichende Beschriftung der Zeitfelder für einzelne Schritte, wenn „Start"/„Ende" allein
+// missverständlich wäre bzw. bei SINGLE_TIME_STEPS als Label für das einzelne Zeitfeld.
+// Schritt 6 „Einweisung + Tutorial VR" besteht aus zwei Teilen (Einweisung + eigentliches
+// VR-Tutorial) — die Felder erfassen ausdrücklich nur Start/Ende des VR-Szenario-Tutorials,
+// nicht der gesamten Einweisung.
 const TIME_FIELD_LABELS = {
   fs_06: {
     start: 'Start (VR-Tutorial)',
     end:   'Ende (VR-Tutorial)',
     hint:  'Start/Ende erfassen ausschließlich das VR-Szenario-Tutorial selbst — nicht die vorangehende Einweisung bzw. den gesamten Schritt.',
+  },
+  fs_13: {
+    start: 'Zeitpunkt',
+    hint:  'Hier wird nur ein Zeitpunkt erfasst (Aufzeichnung beendet) — kein Start/Ende.',
   },
 };
 
@@ -2109,7 +2181,8 @@ const TIME_FIELD_LABELS = {
 // stepPanelBodyHTML() nach den Zusatzabschnitten angehängt. fs_01 hat gar keine Felder.
 function flowStepFieldsHTML(d, stepId) {
   if (stepId === 'fs_01') return '';
-  const noTime = NO_TIME_STEPS.has(stepId);
+  const noTime     = NO_TIME_STEPS.has(stepId);
+  const singleTime = SINGLE_TIME_STEPS.has(stepId);
   // Schritt 6 „Einweisung + Tutorial VR" umfasst zwei Teile — Start/Ende meinen hier
   // ausdrücklich nur das VR-Szenario-Tutorial selbst, nicht die vorangehende Einweisung.
   const cfg = TIME_FIELD_LABELS[stepId];
@@ -2129,8 +2202,25 @@ function flowStepFieldsHTML(d, stepId) {
     </button>`;
   }
   // Kein Zeitfeld an diesem Schritt → nichts mehr generisch zu leeren (Checkliste/Fragebogen-
-  // Häkchen/Bewertungsbogen haben je ihre eigene Rückgängig-/Reset-Funktion).
+  // Häkchen/Bewertungsbogen/Datensicherung-Häkchen haben je ihre eigene Rückgängig-/Reset-
+  // Funktion).
   if (noTime) return `${fragebogenToggle}`;
+  // Nur EIN Zeitpunkt statt Start+Ende (Schritt 13 „Stop Sensorik") — dasselbe Eingabefeld-Id
+  // „ablauf-edit-start" wie sonst der Start, damit writeFlowStep()/clearFlowStep() unverändert
+  // greifen (ein fehlendes Ende-Feld wird dort bereits generisch berücksichtigt).
+  if (singleTime) {
+    return `${fragebogenToggle}${fieldHint}
+      <div>
+        <label class="field-label" for="ablauf-edit-start">${esc(startLabel)}</label>
+        <div class="time-capture-row">
+          <input type="time" id="ablauf-edit-start" step="1" value="${esc(isoToTimeInput(d.startISO))}">
+          <button type="button" class="btn btn-ghost btn-time-now" data-target="ablauf-edit-start">🕐 Jetzt</button>
+        </div>
+      </div>
+      <div class="btn-col" style="margin-top:10px">
+        <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Schritt leeren</button>
+      </div>`;
+  }
   return `${fragebogenToggle}${fieldHint}
     <div class="edit-row-2">
       <div>
@@ -2154,7 +2244,7 @@ function flowStepFieldsHTML(d, stepId) {
 }
 
 // Kompletter Inhalt eines geöffneten Schritts. Reihenfolge überall gleich:
-//   [Sensorik-Checkliste nur fs_02] → Felder → Zusatzabschnitte → „✓ Weiter" ganz unten.
+//   [Sensorik-Checkliste nur fs_02/fs_14] → Felder → Zusatzabschnitte → „✓ Weiter" ganz unten.
 function stepPanelBodyHTML(d, s) {
   const isLast = s.id === LAST_FLOW_STEP_ID;
   const weiterLabel = s.id === 'fs_01' ? '✓ Weiter zur Sensorik' : '✓ Weiter zum nächsten Schritt';
@@ -2167,6 +2257,7 @@ function stepPanelBodyHTML(d, s) {
   }
   let body = '';
   if (s.id === 'fs_02') body += sensorikSectionHTML();
+  if (s.id === 'fs_14') body += sensorikAblegenSectionHTML();
   body += flowStepFieldsHTML(d, s.id);
   body += flowStepExtrasHTML(s.id);
   body += weiter;
@@ -2201,6 +2292,21 @@ function flowStepStateFor(stepId, d) {
     if (started > 0) return 'teilweise';
     return 'offen';
   }
+  if (stepId === 'fs_10') {
+    const p = ablaufProband();
+    const run = (p && p.szenarien && Array.isArray(p.szenarien.fs_10)) ? p.szenarien.fs_10[0] : null;
+    const ph  = (run && run.phases) || {};
+    if (ph.p_start && ph.p_end) return 'komplett';
+    if (Object.keys(ph).length > 0) return 'teilweise';
+    return 'offen';
+  }
+  if (stepId === 'fs_14') {
+    const p = ablaufProband();
+    const done = (p && p.sensorikAblegen) ? SENSORIK_ITEMS.filter(it => p.sensorikAblegen[it.id]).length : 0;
+    if (done === SENSORIK_ITEMS.length) return 'komplett';
+    if (done > 0) return 'teilweise';
+    return 'offen';
+  }
   if (BEW_STEP_META[stepId]) {
     const p = ablaufProband();
     const b = (p && p.bewertungen && Array.isArray(p.bewertungen[stepId])) ? p.bewertungen[stepId][0] : null;
@@ -2210,6 +2316,14 @@ function flowStepStateFor(stepId, d) {
     return 'offen';
   }
   if (FRAGEBOGEN_STEPS.has(stepId) && d && d.done) return 'komplett';
+  if (SINGLE_TIME_STEPS.has(stepId)) return (d && d.startISO) ? 'komplett' : 'offen';
+  if (stepId === LAST_FLOW_STEP_ID) {
+    const secured = !!(d && d.dataSecured);
+    const disinfected = !!(d && d.disinfected);
+    if (secured && disinfected) return 'komplett';
+    if (secured || disinfected) return 'teilweise';
+    return 'offen';
+  }
   return flowStepState(d);
 }
 
@@ -2271,12 +2385,29 @@ function renderAblauf() {
       const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
       summary = rDone ? `Durchläufe ${rDone}/${hologateLabels.length}` : 'noch nicht erfasst';
     }
+    if (s.id === 'fs_10') {
+      const run = (p && p.szenarien && Array.isArray(p.szenarien.fs_10)) ? p.szenarien.fs_10[0] : null;
+      const ph  = (run && run.phases) || {};
+      summary = (ph.p_start || ph.p_end)
+        ? `${ph.p_start ? localTimeStr(ph.p_start) : '–'} → ${ph.p_end ? localTimeStr(ph.p_end) : '–'}`
+        : 'noch nicht erfasst';
+    }
+    if (s.id === 'fs_14') {
+      const sDone = (p && p.sensorikAblegen) ? SENSORIK_ITEMS.filter(it => p.sensorikAblegen[it.id]).length : 0;
+      summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
+    }
     if (BEW_STEP_META[s.id]) {
       const b = (p && p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
       const filled = (b && b.scores) ? BEW_OV_ITEMS.filter(k => b.scores[k] != null).length : 0;
       summary = filled ? `${filled}/${BEW_OV_ITEMS.length} bewertet` : 'noch nicht erfasst';
     }
     if (FRAGEBOGEN_STEPS.has(s.id) && d.done) summary = 'Fragebogen ausgefüllt';
+    if (SINGLE_TIME_STEPS.has(s.id)) summary = d.startISO ? `erfasst ${startTxt}` : 'noch nicht erfasst';
+    if (s.id === LAST_FLOW_STEP_ID) {
+      const secured = !!d.dataSecured, disinfected = !!d.disinfected;
+      summary = (secured && disinfected) ? 'gesichert & desinfiziert'
+        : (secured || disinfected) ? 'teilweise abgehakt' : 'noch nicht erfasst';
+    }
     return `
     <div class="ablauf-step-wrap">
       <button class="ablauf-step${isOpen ? ' selected' : ''}" data-state="${state}" data-id="${esc(s.id)}" aria-expanded="${isOpen}">
@@ -2367,6 +2498,18 @@ function renderAblauf() {
   );
   const sensResetBtn = document.getElementById('ablauf-sensorik-reset');
   if (sensResetBtn) sensResetBtn.addEventListener('click', resetAblaufSensorik);
+  // Sensorik-Checkliste Ablegen (nur an fs_14)
+  extrasScope.querySelectorAll('[data-sensorik-ablegen-toggle]').forEach(btn =>
+    btn.addEventListener('click', () => toggleAblaufSensorikAblegen(btn.dataset.sensorikAblegenToggle))
+  );
+  const sensAblegenResetBtn = document.getElementById('ablauf-sensorik-ablegen-reset');
+  if (sensAblegenResetBtn) sensAblegenResetBtn.addEventListener('click', resetAblaufSensorikAblegen);
+  // Datensicherung & Desinfektion / „Nächsten Durchlauf starten" (nur am letzten Schritt)
+  extrasScope.querySelectorAll('[data-datensicherung-toggle]').forEach(btn =>
+    btn.addEventListener('click', () => toggleDatensicherung(btn.dataset.datensicherungToggle))
+  );
+  const nextDurchlaufBtn = document.getElementById('ablauf-next-durchlauf');
+  if (nextDurchlaufBtn) nextDurchlaufBtn.addEventListener('click', startNextDurchlauf);
   // Ereignis-Buttons (jeder Schritt)
   extrasScope.querySelectorAll('[data-ev-add]').forEach(btn =>
     btn.addEventListener('click', () => openEreignisOverlay(btn.dataset.evAdd, null))
@@ -2374,14 +2517,7 @@ function renderAblauf() {
   extrasScope.querySelectorAll('[data-ev-edit]').forEach(btn =>
     btn.addEventListener('click', () => openEreignisOverlay(expandedFlowStepId, btn.dataset.evEdit))
   );
-  // VR-Szenario-Durchläufe — Overlay-Variante (fs_10 Rollercoaster)
-  extrasScope.querySelectorAll('[data-sz-add]').forEach(btn =>
-    btn.addEventListener('click', () => addSzenarioRun(btn.dataset.szAdd))
-  );
-  extrasScope.querySelectorAll('[data-sz-edit]').forEach(btn =>
-    btn.addEventListener('click', () => openSzenarioOverlay(expandedFlowStepId, btn.dataset.szEdit))
-  );
-  // VR-Szenario-Phasen — Inline-Darstellung (fs_07 Hologate)
+  // VR-Szenario-Phasen — Inline-Darstellung (fs_07 Hologate / fs_10 Rollercoaster)
   extrasScope.querySelectorAll('[data-sz-phase-inline]').forEach(btn =>
     btn.addEventListener('click', () => toggleRunPhase(btn.dataset.szStep, btn.dataset.szRun, btn.dataset.szPhaseInline))
   );
@@ -2409,11 +2545,12 @@ function renderAblauf() {
 // fs_02 „Sensorik-Checkliste" werden direkt in stepPanelBodyHTML() platziert.)
 function flowStepExtrasHTML(stepId) {
   let html = '';
-  if (stepId === 'fs_06')          html += tutorialReminderSectionHTML();
-  if (SZENARIO_STEP_META[stepId])  html += szenarioSectionHTML(stepId);
-  if (BEW_STEP_META[stepId])       html += bewSectionHTML(stepId);
-  if (!BEW_STEP_META[stepId])      html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt außer den Bewertungsbogen-Schritten
+  if (stepId === 'fs_06')             html += tutorialReminderSectionHTML();
+  if (SZENARIO_FIXED_STEPS.has(stepId)) html += szenarioSectionHTML(stepId);
+  if (BEW_STEP_META[stepId])          html += bewSectionHTML(stepId);
+  if (!BEW_STEP_META[stepId])         html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt außer den Bewertungsbogen-Schritten
   if (stepId === LAST_FLOW_STEP_ID) {
+    html += datensicherungSectionHTML();
     html += `<div class="btn-col" style="margin-top:12px">
       <button class="btn btn-ghost full-width" id="ablauf-open-export">⬇ Daten exportieren (CSV / JSON)</button>
     </div>`;
@@ -2509,6 +2646,110 @@ function resetAblaufSensorik() {
     () => { p.sensorik = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
 }
 
+// Abschnitt „Sensorik-Checkliste (Ablegen)" im Detailbereich von Schritt 14 (Sensorik
+// ablegen) — dieselbe Item-Liste wie beim Anlegen (Schritt 2), aber eigener Datenspeicher
+// p.sensorikAblegen[itemId] (ISO), damit Anlege- und Ablege-Zeitpunkt unabhängig erfasst sind.
+function sensorikAblegenSectionHTML() {
+  const p = ablaufProband();
+  if (!p) return '';
+  if (!p.sensorikAblegen) p.sensorikAblegen = {};
+  const anyDone = SENSORIK_ITEMS.some(it => p.sensorikAblegen[it.id]);
+  const items = SENSORIK_ITEMS.map(item => {
+    const at   = p.sensorikAblegen[item.id] || null;
+    const done = !!at;
+    return `<button class="sensorik-item${done ? ' checked' : ''}" data-sensorik-ablegen-toggle="${esc(item.id)}">
+      <span class="sensorik-check">${done ? '✓' : ''}</span>
+      <span class="sensorik-info">
+        <span class="sensorik-name">${esc(item.label)}</span>
+        <span class="sensorik-time">${done ? esc(localDatetimeStr(at)) : 'noch nicht abgelegt'}</span>
+      </span>
+    </button>`;
+  }).join('');
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">SENSORIK-CHECKLISTE (ABLEGEN)</div>
+    <p class="meta-text" style="margin-bottom:8px">Auf ein Item tippen, sobald die Sensorik bei dieser Person abgelegt wurde — der Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung rückgängig.</p>
+    <div class="sensorik-list">${items}</div>
+    ${anyDone ? '<button class="btn btn-ghost full-width" id="ablauf-sensorik-ablegen-reset" style="margin-top:8px">↺ Checkliste zurücksetzen</button>' : ''}
+  </div>`;
+}
+
+function toggleAblaufSensorikAblegen(id) {
+  const p = ablaufProband();
+  if (!p) return;
+  if (!p.sensorikAblegen) p.sensorikAblegen = {};
+  const item = SENSORIK_ITEMS.find(x => x.id === id);
+  if (!item) return;
+  if (p.sensorikAblegen[id]) {
+    showConfirm('Erfassung rückgängig machen',
+      `„${item.label}" wurde für ${p.pseudo} um ${localTimeStr(p.sensorikAblegen[id])} als abgelegt erfasst. Erfassung wirklich entfernen?`,
+      () => { delete p.sensorikAblegen[id]; save(); renderAblauf(); showToast('Erfassung entfernt'); });
+  } else {
+    p.sensorikAblegen[id] = new Date().toISOString();
+    save();
+    renderAblauf();
+    showToast('✓ ' + item.label + '  ·  ' + localTimeStr(p.sensorikAblegen[id]));
+  }
+}
+
+function resetAblaufSensorikAblegen() {
+  const p = ablaufProband();
+  if (!p || !p.sensorikAblegen || !Object.keys(p.sensorikAblegen).length) return;
+  showConfirm('Checkliste zurücksetzen',
+    `Alle erfassten Ablege-Zeitpunkte für „${p.pseudo}" werden entfernt.`,
+    () => { p.sensorikAblegen = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
+}
+
+// Abschnitt „Datensicherung & Desinfektion" am letzten Ablauf-Schritt: zwei reine Häkchen
+// OHNE Zeiterfassung (bewusst kein Timestamp) — „alle Daten gesichert" (LSL, App, Sensorik,
+// Varjo Base) und „alles desinfiziert/aufbereitet". Sind beide gesetzt, kann direkt der
+// nächste Durchlauf (nächste:r Teilnehmende:r) gestartet werden.
+function datensicherungSectionHTML() {
+  const p = ablaufProband();
+  if (!p) return '';
+  if (!p.ablauf) p.ablauf = {};
+  const d = p.ablauf[LAST_FLOW_STEP_ID] || {};
+  const secured     = !!d.dataSecured;
+  const disinfected = !!d.disinfected;
+  return `<div class="bew-section">
+    <div class="card-label" style="margin-bottom:6px">DATENSICHERUNG &amp; DESINFEKTION</div>
+    <div class="sensorik-list">
+      <button class="sensorik-item${secured ? ' checked' : ''}" data-datensicherung-toggle="dataSecured">
+        <span class="sensorik-check">${secured ? '✓' : ''}</span>
+        <span class="sensorik-info">
+          <span class="sensorik-name">Alle Daten gesichert</span>
+          <span class="sensorik-time">LSL, App, Sensorik, Varjo Base</span>
+        </span>
+      </button>
+      <button class="sensorik-item${disinfected ? ' checked' : ''}" data-datensicherung-toggle="disinfected">
+        <span class="sensorik-check">${disinfected ? '✓' : ''}</span>
+        <span class="sensorik-info">
+          <span class="sensorik-name">Alles desinfiziert / aufbereitet</span>
+        </span>
+      </button>
+    </div>
+    ${secured && disinfected ? '<button class="btn btn-primary full-width" id="ablauf-next-durchlauf" style="margin-top:12px">↻ Nächsten Durchlauf starten</button>' : ''}
+  </div>`;
+}
+
+function toggleDatensicherung(field) {
+  const p = ablaufProband();
+  if (!p || (field !== 'dataSecured' && field !== 'disinfected')) return;
+  if (!p.ablauf) p.ablauf = {};
+  const prev = p.ablauf[LAST_FLOW_STEP_ID] || {};
+  prev[field] = !prev[field];
+  p.ablauf[LAST_FLOW_STEP_ID] = prev;
+  save();
+  renderAblauf();
+}
+
+// „Nächsten Durchlauf starten": öffnet Schritt 1 wieder, damit dort eine neue Person als
+// Teilnehmende:r angelegt werden kann — der bisherige Durchlauf bleibt vollständig erhalten.
+function startNextDurchlauf() {
+  expandedFlowStepId = 'fs_01';
+  renderAblauf();
+  showToast('Bereit für den nächsten Durchlauf');
+}
+
 // Trainerbewertungsbogen als eigener Ablauf-Schritt (fs_08 Hologate / fs_11 Rollercoaster —
 // strukturell identisch, nur Hinweistext/Bezeichnung unterscheiden sich). Seit v2.29.0 direkt
 // im Schritt dargestellt und ausfüllbar (kein „anlegen"-Button/Overlay mehr): genau ein Bogen
@@ -2597,49 +2838,63 @@ function resetBewInline(stepId) {
   });
 }
 
-// Abschnitt „VR-Szenario-Durchläufe" im Detailbereich von fs_07 / fs_10.
-// fs_07 (Hologate): 5 feste Durchläufe, je nur Start + Stopp, direkt im Schritt.
-// fs_10 (Rollercoaster): Liste + Overlay.
+// Abschnitt „VR-Szenario-Durchlauf" im Detailbereich von fs_07 (Hologate) / fs_10
+// (Rollercoaster). Beide sind seit v2.32.0 feste Durchläufe direkt im Schritt-Panel, ohne
+// Hinzufügen/Löschen/Umbenennen — Hologate mit 5 festen Durchläufen (eigener Name je Position,
+// Bezeichnungen in den Einstellungen editierbar), Rollercoaster mit genau einem.
 function szenarioSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
-  if (stepId === 'fs_07') return szenarioFixedSectionHTML(stepId);
-  const meta = SZENARIO_STEP_META[stepId];
-  const list = (p.szenarien && p.szenarien[stepId]) || [];
+  const isHologate = stepId === 'fs_07';
+  const runs   = isHologate ? ensureHologateRuns(p) : ensureRollercoasterRun(p);
   const phases = szPhasesFor(stepId);
-  const rows = list.map(run => {
-    const done = phases.filter(ph => run.phases && run.phases[ph.id]).length;
-    return `<button class="bew-list-item" data-sz-edit="${esc(run.id)}">
-      <span class="bew-list-label">${esc(run.label || 'Durchlauf')}</span>
-      <span class="bew-list-meta">${done}/${phases.length} Phasen</span>
-    </button>`;
-  }).join('');
+  const runsHTML = isHologate
+    ? runs.map((run, i) => `<div class="ablauf-sz-run">
+        <div class="ablauf-sz-runname">${i + 1}. ${esc(run.label)}</div>
+        ${szRunPhasesHTML(stepId, run, phases)}
+      </div>`).join('')
+    : `<div class="ablauf-sz-run">${szRunPhasesHTML(stepId, runs[0], phases)}</div>`;
+  const title = isHologate ? 'HOLOGATE' : 'ROLLERCOASTER';
+  const hint  = isHologate
+    ? 'Feste Reihenfolge — Start/Ende je über Button „Jetzt" oder manuelle Eingabe erfassen.'
+    : 'Start/Ende erfassen ausschließlich den VR-Szenario-Durchlauf selbst — über Button „Jetzt" oder manuelle Eingabe, die übrigen Phasen abhaken.';
   return `<div class="bew-section">
-    <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLÄUFE · ${esc(meta.title)}</div>
-    <p class="meta-text" style="margin-bottom:8px">Je Durchlauf öffnen — „Szenario starten"/„Szenario beendet" über Button „Jetzt" oder manuelle Eingabe, die übrigen Phasen abhaken.</p>
-    <div class="bew-list">${rows || '<div class="meta-text">Noch kein Durchlauf angelegt.</div>'}</div>
-    <button class="btn btn-primary full-width" data-sz-add="${esc(stepId)}" style="margin-top:8px">＋ Durchlauf hinzufügen</button>
+    <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLAUF · ${esc(title)}</div>
+    <p class="meta-text" style="margin-bottom:8px">${esc(hint)}</p>
+    ${runsHTML}
   </div>`;
 }
 
-// fs_07: stellt sicher, dass p.szenarien.fs_07 genau die 5 festen Hologate-Durchläufe in
-// vorgegebener Reihenfolge enthält (stabile IDs hg_0..hg_4). Bereits erfasste Zeitstempel
-// bleiben erhalten. Reine In-Memory-Normalisierung — persistiert wird beim nächsten save().
-function ensureHologateRuns(p) {
+// Gemeinsame Normalisierung für die festen Szenario-Durchläufe: baut p.szenarien[stepId]
+// anhand einer festen Bezeichnungsliste (Länge = Anzahl Durchläufe) mit stabilen IDs neu auf,
+// erhält dabei vorhandene `phases` je Position. Reine In-Memory-Normalisierung — persistiert
+// wird beim nächsten save().
+function ensureFixedSzenarioRuns(p, stepId, labels, idPrefix) {
   if (!p.szenarien || typeof p.szenarien !== 'object' || Array.isArray(p.szenarien)) p.szenarien = {};
-  const cur = Array.isArray(p.szenarien.fs_07) ? p.szenarien.fs_07 : [];
-  p.szenarien.fs_07 = hologateLabels.map((label, i) => {
-    const prev = cur.find(r => r && r.id === 'hg_' + i) || cur[i] || {};
+  const cur = Array.isArray(p.szenarien[stepId]) ? p.szenarien[stepId] : [];
+  p.szenarien[stepId] = labels.map((label, i) => {
+    const prev = cur.find(r => r && r.id === idPrefix + i) || cur[i] || {};
     const phases = (prev.phases && typeof prev.phases === 'object' && !Array.isArray(prev.phases)) ? prev.phases : {};
-    return { id: 'hg_' + i, label, phases };
+    return { id: idPrefix + i, label, phases };
   });
-  return p.szenarien.fs_07;
+  return p.szenarien[stepId];
+}
+// fs_07: genau die 5 festen Hologate-Durchläufe (stabile IDs hg_0..hg_4), Bezeichnungen aus
+// den editierbaren Einstellungen `hologateLabels`.
+function ensureHologateRuns(p) {
+  return ensureFixedSzenarioRuns(p, 'fs_07', hologateLabels, 'hg_');
+}
+// fs_10: genau 1 fester Rollercoaster-Durchlauf (stabile ID rc_0). Frühere Mehrfach-Durchläufe
+// (vor v2.32.0, per „+ Durchlauf hinzufügen" angelegt) werden dabei auf den ersten reduziert —
+// siehe migrateRollercoasterTimeV232 für die frühere Schritt-Zeit selbst.
+function ensureRollercoasterRun(p) {
+  return ensureFixedSzenarioRuns(p, 'fs_10', ['Rollercoaster'], 'rc_');
 }
 
 // Rendert eine Szenario-Phase eines Durchlaufs: `ts:true` (Start/Ende) als Zeit-Eingabefeld
 // — Button „Jetzt" oder manuelle Eingabe/Korrektur, wie bei den normalen Schritt-Zeitfeldern
 // — `ts:false` weiterhin als antippbares Häkchen (kein Zeitwert). Gemeinsam genutzt von der
-// Hologate-Inline-Darstellung (fs_07) und dem Rollercoaster-Overlay (fs_10).
+// Hologate-Inline-Darstellung (fs_07) und der Rollercoaster-Inline-Darstellung (fs_10).
 function szPhaseFieldHTML(stepId, run, ph) {
   if (ph.ts) {
     const inputId = `sz-time-${run.id}-${ph.id}`;
@@ -2691,25 +2946,6 @@ function writeSzRunTime(stepId, runId, phaseId) {
     run.phases[phaseId] = rebuildISO(prevISO, t);
   }
   save();
-}
-
-// fs_07: 5 feste Durchläufe (Scheiben/Köpfe/Laufen/Drohnen/Kombi) — direkt im Schritt-Panel,
-// ohne Overlay, ohne Hinzufügen/Löschen. Start/Ende je über Button „Jetzt" oder manuelle
-// Eingabe.
-function szenarioFixedSectionHTML(stepId) {
-  const p = ablaufProband();
-  if (!p) return '';
-  const runs   = ensureHologateRuns(p);
-  const phases = szPhasesFor(stepId);
-  const runsHTML = runs.map((run, i) => `<div class="ablauf-sz-run">
-      <div class="ablauf-sz-runname">${i + 1}. ${esc(run.label)}</div>
-      ${szRunPhasesHTML(stepId, run, phases)}
-    </div>`).join('');
-  return `<div class="bew-section">
-    <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLÄUFE · HOLOGATE</div>
-    <p class="meta-text" style="margin-bottom:8px">Feste Reihenfolge — Start/Ende je über Button „Jetzt" oder manuelle Eingabe erfassen.</p>
-    ${runsHTML}
-  </div>`;
 }
 
 // ── Ereignis-Overlay ───────────────────────────────────────────────────────────
@@ -2824,75 +3060,11 @@ document.getElementById('ereignis-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('ereignis-overlay')) closeEreignisOverlay();
 });
 
-// ── VR-Szenario-Durchlauf-Overlay ──────────────────────────────────────────────
-let szOvStepId = '';
-let szOvId     = '';
-
-function szCurrentRun() {
-  const p = ablaufProband();
-  if (!p || !szOvStepId) return null;
-  return ((p.szenarien && p.szenarien[szOvStepId]) || []).find(r => r.id === szOvId) || null;
-}
-
-function addSzenarioRun(stepId) {
-  const p = ablaufProband();
-  const meta = SZENARIO_STEP_META[stepId];
-  if (!p || !meta) return;
-  if (!p.szenarien) p.szenarien = {};
-  if (!Array.isArray(p.szenarien[stepId])) p.szenarien[stepId] = [];
-  const n = p.szenarien[stepId].length + 1;
-  const label = n > 1 ? meta.defaultLabel + ' ' + n : meta.defaultLabel;
-  const run = { id: uid(), label, phases: {} };
-  p.szenarien[stepId].push(run);
-  save();
-  renderAblauf();
-  openSzenarioOverlay(stepId, run.id);
-}
-
-function openSzenarioOverlay(stepId, runId) {
-  const p = ablaufProband();
-  if (!p || !SZENARIO_STEP_META[stepId]) return;
-  szOvStepId = stepId;
-  szOvId     = runId;
-  const run = szCurrentRun();
-  if (!run) return;
-  const step = FLOW_STEPS.find(s => s.id === stepId);
-  document.getElementById('sz-ov-context').textContent =
-    `${p.pseudo} · ${step ? (step.nr ? 'Schritt ' + step.nr + ' · ' : '') + step.label : ''}`;
-  document.getElementById('sz-ov-label').value = run.label || '';
-  renderSzOvPhases();
-  document.getElementById('szenario-run-overlay').classList.remove('hidden');
-}
-
-function renderSzOvPhases() {
-  const box = document.getElementById('sz-ov-phases');
-  const run = szCurrentRun();
-  if (!box || !run) return;
-  if (!run.phases) run.phases = {};
-  box.innerHTML = szRunPhasesHTML(szOvStepId, run, szPhasesFor(szOvStepId));
-  box.querySelectorAll('[data-sz-phase-inline]').forEach(btn =>
-    btn.addEventListener('click', () => toggleRunPhase(szOvStepId, run.id, btn.dataset.szPhaseInline, renderSzOvPhases))
-  );
-  box.querySelectorAll('.ablauf-sz-time-input').forEach(inp =>
-    inp.addEventListener('change', () => {
-      writeSzRunTime(inp.dataset.szStep, inp.dataset.szRun, inp.dataset.szTimePhase);
-      renderSzOvPhases();
-    })
-  );
-  box.querySelectorAll('.btn-sz-time-now').forEach(btn =>
-    btn.addEventListener('click', () => {
-      const inp = document.getElementById(btn.dataset.target);
-      if (!inp) return;
-      inp.value = isoToTimeInput(new Date().toISOString());
-      writeSzRunTime(inp.dataset.szStep, inp.dataset.szRun, inp.dataset.szTimePhase);
-      renderSzOvPhases();
-    })
-  );
-}
-
-// Gemeinsame Häkchen-Logik (ts:false-Phasen ohne Zeitwert, z.B. „Person kalibriert") für
-// Overlay (fs_10) und Inline-Darstellung (fs_07 Hologate). Zeit-Phasen (ts:true, Start/Ende)
-// laufen seit v2.29.0 über eigene Zeit-Eingabefelder (siehe writeSzRunTime), nicht mehr hier.
+// ── VR-Szenario-Durchlauf: Häkchen-Phasen ──────────────────────────────────────
+// Gemeinsame Häkchen-Logik (ts:false-Phasen ohne Zeitwert, z.B. „Person kalibriert") für die
+// Inline-Darstellung beider fixer Szenario-Schritte (fs_07 Hologate, fs_10 Rollercoaster).
+// Zeit-Phasen (ts:true, Start/Ende) laufen seit v2.29.0 über eigene Zeit-Eingabefelder (siehe
+// writeSzRunTime), nicht mehr hier.
 function toggleRunPhase(stepId, runId, phaseId, afterFn) {
   const p = ablaufProband();
   if (!p) return;
@@ -2908,43 +3080,6 @@ function toggleRunPhase(stepId, runId, phaseId, afterFn) {
     commit();
   }
 }
-
-function closeSzenarioOverlay() {
-  const run = szCurrentRun();
-  if (run) {
-    const label = document.getElementById('sz-ov-label').value.trim();
-    if (label && label !== run.label) { run.label = label; save(); renderAblauf(); }
-  }
-  document.getElementById('szenario-run-overlay').classList.add('hidden');
-  szOvStepId = ''; szOvId = '';
-}
-
-function deleteSzenarioRun() {
-  const p = ablaufProband();
-  if (!p || !szOvStepId || !szOvId) return;
-  const arr = (p.szenarien && p.szenarien[szOvStepId]) || [];
-  const run = arr.find(r => r.id === szOvId);
-  showConfirm('Durchlauf löschen', `„${run ? run.label : 'Durchlauf'}" wirklich löschen?`, () => {
-    p.szenarien[szOvStepId] = arr.filter(r => r.id !== szOvId);
-    save();
-    document.getElementById('szenario-run-overlay').classList.add('hidden');
-    szOvStepId = ''; szOvId = '';
-    renderAblauf();
-    showToast('Durchlauf gelöscht');
-  });
-}
-
-document.getElementById('sz-ov-close').addEventListener('click', closeSzenarioOverlay);
-document.getElementById('sz-ov-cancel').addEventListener('click', closeSzenarioOverlay);
-document.getElementById('sz-ov-delete').addEventListener('click', deleteSzenarioRun);
-document.getElementById('sz-ov-label').addEventListener('change', () => {
-  const run = szCurrentRun();
-  const label = document.getElementById('sz-ov-label').value.trim();
-  if (run && label && label !== run.label) { run.label = label; save(); renderAblauf(); }
-});
-document.getElementById('szenario-run-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('szenario-run-overlay')) closeSzenarioOverlay();
-});
 
 // „Weiter": aktuellen Schritt sichern und den nächsten Schritt der Liste öffnen.
 function advanceFlowStep() {
@@ -2996,12 +3131,29 @@ function syncAblaufRows() {
         const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
         summary = rDone ? `Durchläufe ${rDone}/${hologateLabels.length}` : 'noch nicht erfasst';
       }
+      if (s.id === 'fs_10') {
+        const run = Array.isArray(p.szenarien && p.szenarien.fs_10) ? p.szenarien.fs_10[0] : null;
+        const ph  = (run && run.phases) || {};
+        summary = (ph.p_start || ph.p_end)
+          ? `${ph.p_start ? localTimeStr(ph.p_start) : '–'} → ${ph.p_end ? localTimeStr(ph.p_end) : '–'}`
+          : 'noch nicht erfasst';
+      }
+      if (s.id === 'fs_14') {
+        const sDone = (p.sensorikAblegen) ? SENSORIK_ITEMS.filter(it => p.sensorikAblegen[it.id]).length : 0;
+        summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
+      }
       if (BEW_STEP_META[s.id]) {
         const b = (p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
         const filled = (b && b.scores) ? BEW_OV_ITEMS.filter(k => b.scores[k] != null).length : 0;
         summary = filled ? `${filled}/${BEW_OV_ITEMS.length} bewertet` : 'noch nicht erfasst';
       }
       if (FRAGEBOGEN_STEPS.has(s.id) && d && d.done) summary = 'Fragebogen ausgefüllt';
+      if (SINGLE_TIME_STEPS.has(s.id)) summary = (d && d.startISO) ? `erfasst ${startTxt}` : 'noch nicht erfasst';
+      if (s.id === LAST_FLOW_STEP_ID) {
+        const secured = !!(d && d.dataSecured), disinfected = !!(d && d.disinfected);
+        summary = (secured && disinfected) ? 'gesichert & desinfiziert'
+          : (secured || disinfected) ? 'teilweise abgehakt' : 'noch nicht erfasst';
+      }
       sub.textContent = `${s.tag}  ·  ${summary}`;
     }
   });
@@ -3053,7 +3205,10 @@ function clearFlowStep(stepId) {
   if (!p.ablauf || !p.ablauf[stepId]) { renderAblauf(); return; }
   const step  = FLOW_STEPS.find(s => s.id === stepId);
   const label = step ? step.label : 'diesen Schritt';
-  showConfirm('Schritt leeren', `Erfasste Start-/Endzeit für „${label}" entfernen?`, () => {
+  const question = SINGLE_TIME_STEPS.has(stepId)
+    ? `Erfassten Zeitpunkt für „${label}" entfernen?`
+    : `Erfasste Start-/Endzeit für „${label}" entfernen?`;
+  showConfirm('Schritt leeren', question, () => {
     const prev = p.ablauf[stepId] || {};
     if (prev.note && prev.note.trim()) {
       p.ablauf[stepId] = { note: prev.note, noteISO: prev.noteISO || null };

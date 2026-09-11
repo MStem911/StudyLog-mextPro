@@ -15,7 +15,7 @@ eines strukturierten Bewertungsbogens für die durchführende Trainingsleitung. 
 bleiben dabei ausschließlich auf dem jeweiligen Gerät.
 
 Seit **v2.14.0** ist die App **eine einzige Ansicht: der Ablauf** — eine chronologische
-Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–16, seit v2.27.0).
+Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–15, seit v2.32.0).
 Links die Schritt-Leiste (mit eigener Scrollbar), rechts das Detailfeld für den gewählten
 Schritt; auf dem Smartphone klappt der Schritt in der Liste auf. Zu jedem Schritt (der
 Zeitfelder hat) werden pro Teilnehmende:r Start- und Endzeit erfasst (Button „Jetzt" oder
@@ -33,12 +33,14 @@ Ablauf, da sie nur die inzwischen unerreichbaren Sitzungsaufzeichnungs-/Bewertun
 betraf). **Schritt 1 (Aufklärung + Einverständnis)** ist beim Start direkt geöffnet und hat
 keine Zeitfelder — dort wird die Person angelegt („＋ Teilnehmende:n anlegen"), danach geht
 es automatisch zu Schritt 2 (Sensorik). Weitere Personen über ＋ oben; bearbeiten über ✎.
-Der CSV/JSON-Export (in Schritt 16) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
+Der CSV/JSON-Export (im letzten Schritt, 15) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
-Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe** an Schritt 7
-(fünf feste Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi — direkt im Schritt,
-ohne eigene Schritt-Zeiterfassung) und Schritt 10 (Rollercoaster, frei anlegbare Durchläufe
-über ein Overlay); Start/Ende jedes Durchlaufs werden seit v2.29.0 **wie normale Zeitfelder**
+Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchlauf** an Schritt 7
+(fünf feste Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi) und Schritt 10
+(Rollercoaster, seit v2.32.0 ebenfalls genau **ein** fester Durchlauf ohne „+ Durchlauf
+hinzufügen"/Overlay) — beide direkt im Schritt-Panel, ohne eigene Schritt-Zeiterfassung: das
+Start/Ende der jeweiligen Schritt-Zeitfelder meint seither ausdrücklich den VR-Szenario-
+Durchlauf selbst; Start/Ende jedes Durchlaufs werden seit v2.29.0 **wie normale Zeitfelder**
 erfasst (Button „Jetzt" oder manuelle Eingabe/Korrektur), die übrigen Phasen bleiben reine
 Häkchen. **Schritt 6 (Tutorial)** hat seit v2.28.0 **wieder** normale Start-/Ende-Felder wie
 Schritt 4 „TMS", seit v2.29.1 beschriftet als „Start (VR-Tutorial)"/„Ende (VR-Tutorial)" mit
@@ -56,7 +58,16 @@ speichern sofort, weder Schritt 8 noch 11 haben einen Ereignis-Button),
 seit v2.30.0 auch Ziel für freie Anmerkungen, siehe oben). Die Fragebogen-Schritte 3/5/9/12 sind seit
 v2.26.1 einheitlich aufgebaut: keine Start/Ende-Zeiterfassung, nur eine Bestätigungs-Checkbox
 „Fragebogen ausgefüllt" (färbt den Schritt grün). Die separaten Schritte zum An-/Ablegen von
-VR-Equipment (Hologate) bzw. der VR-Brille (Rollercoaster) entfallen seit v2.27.0 ersatzlos.
+VR-Equipment (Hologate) bzw. der VR-Brille (Rollercoaster) entfallen seit v2.27.0 ersatzlos,
+der Schritt „Verabschiedung" seit v2.32.0 ebenfalls ersatzlos. **Stop Sensorik (Schritt 13)**
+erfasst seit v2.32.0 nur noch einen einzelnen Zeitpunkt („Aufzeichnung beendet") statt
+Start/Ende. **Sensorik ablegen (Schritt 14)** hat seit v2.32.0 eine eigene Sensorik-Checkliste
+(dieselben drei Items wie beim Anlegen in Schritt 2, aber eigener Datenspeicher/Zeitstempel je
+Item). Der letzte Schritt, **Datensicherung/Desinfektion (Schritt 15)**, besteht seit v2.32.0
+nur noch aus zwei Häkchen **ohne** Zeiterfassung — „Alle Daten gesichert" (LSL, App, Sensorik,
+Varjo Base) und „Alles desinfiziert/aufbereitet"; sind beide gesetzt, erscheint ein Button
+„↻ Nächsten Durchlauf starten", der den Ablauf wieder bei Schritt 1 öffnet, ohne die Daten der
+bisherigen Person zu verändern.
 **Noch offen:** der CSV/JSON-Export basiert noch auf der alten Datenstruktur
 (`sl_sessions`/`sl_bewertungen`) und bezieht die neuen Ablauf-Daten nicht ein; die alte
 Protokoll-Liste hat keinen Aufruf mehr.

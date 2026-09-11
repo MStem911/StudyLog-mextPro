@@ -32,7 +32,7 @@ löschen" (siehe eigener Abschnitt unten). Alles Weitere wird aus dem Ablauf her
 |---|---|
 | **＋** neben der Personen-Auswahl (oder „＋ Teilnehmende:n anlegen" in Schritt 1) | Overlay „Teilnehmende:n anlegen": Pseudonym + Händigkeit + optionale Notiz |
 | **✎** neben der Personen-Auswahl | Bearbeiten-Dialog der aktuell gewählten Person |
-| Button in **Schritt 16** („Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
+| Button im **letzten Schritt** (15, „Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
 
 **Einstellungen (⚙-Icon):** seit v2.31.0 zwei anpassbare Bereiche statt der früheren
 „Mehrere Teilnehmende gleichzeitig"-Option (entfallen, da ohne Wirkung auf den heutigen
@@ -74,7 +74,7 @@ basiert weiter auf der alten Datenstruktur. Bereits erfasste Daten bleiben gespe
 
 ## Die Ablauf-Schrittliste nutzen
 
-Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab (Schritte 1–16,
+Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab (Schritte 1–15,
 von „Aufklärung + Einverständniserklärung" über „Anlegen Sensorik", „Fragebogen 1", „TMS", …
 bis „Datensicherung / Aufbereitung"). Die Kürzel
 VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt fachlich
@@ -99,9 +99,14 @@ verantwortet — sie haben keine weitere Funktion.
      andere Schritte haben **keine** eigenen Start/Ende-Felder, weil die relevante Zeit anders
      erfasst
      wird oder entfällt: Schritt 1 (Person anlegen), Schritt 2 (nur die Sensorik-Checkliste),
-     Schritt 7 (Zeiten stecken in den 5 Hologate-Durchläufen), Schritt 8 und 11
-     (Trainerbewertungsbogen — kein Timer, die Bögen tragen ihre eigene Speicherzeit) sowie die
+     Schritt 7 und Schritt 10 (Zeiten stecken im jeweiligen VR-Szenario-Durchlauf, siehe unten),
+     Schritt 8 und 11 (Trainerbewertungsbogen — kein Timer, die Bögen tragen ihre eigene
+     Speicherzeit), Schritt 14 (nur die Sensorik-Ablege-Checkliste, siehe unten) und der letzte
+     Schritt (nur zwei Häkchen ohne Zeiterfassung, siehe unten) sowie die
      Fragebogen-Schritte 3, 5, 9, 12 (nur die Checkbox „Fragebogen ausgefüllt", siehe unten).
+     **Schritt 13 „Stop Sensorik"** ist ein Sonderfall: statt Start **und** Ende gibt es dort
+     nur ein einzelnes Feld **„Zeitpunkt"** (Aufzeichnung beendet) — ebenfalls über
+     **🕐 Jetzt** oder manuelle Eingabe.
    - **✓ Weiter zum nächsten Schritt**: sitzt in **jedem** Schritt **ganz unten** (nach allen
      Abschnitten), speichert und öffnet den folgenden Schritt. Am letzten Schritt steht dort
      stattdessen der Export-Button.
@@ -111,12 +116,13 @@ verantwortet — sie haben keine weitere Funktion.
    - **gelb** – angefangen (nur Start *oder* nur Ende erfasst — bzw. schrittspezifisch,
      siehe unten),
    - **grün** – Start *und* Ende erfasst (bzw. schrittspezifisch „vollständig").
-   Oben läuft ein Fortschrittsbalken („X / 16 komplett").
-4. **Schritt leeren** (im aufgeklappten Schritt, nur an Schritten mit Start-/Ende-Feldern)
-   entfernt nach Rückfrage die erfassten Zeiten dieses einen Schritts. Schritte ohne eigene
-   Zeitfelder haben stattdessen ihre eigene, spezifische Rückgängig-/Reset-Funktion (z. B.
-   „Checkliste zurücksetzen" an Schritt 2, erneutes Antippen der Checkbox an den
-   Fragebogen-Schritten, „Bewertung zurücksetzen" an Schritt 8/11).
+   Oben läuft ein Fortschrittsbalken („X / 15 komplett").
+4. **Schritt leeren** (im aufgeklappten Schritt, an Schritten mit Start-/Ende-Feldern **oder**
+   dem einzelnen Zeitpunkt-Feld an Schritt 13) entfernt nach Rückfrage die erfassten Zeiten
+   dieses einen Schritts. Schritte ohne eigene Zeitfelder haben stattdessen ihre eigene,
+   spezifische Rückgängig-/Reset-Funktion (z. B. „Checkliste zurücksetzen" an Schritt 2 bzw.
+   14, erneutes Antippen der Checkbox an den Fragebogen-Schritten, „Bewertung zurücksetzen"
+   an Schritt 8/11, erneutes Antippen der Häkchen am letzten Schritt).
 5. **Ereignisse / Probleme / Anmerkungen** (an jedem Schritt **außer** Schritt 8/11, siehe
    unten) — deckt seit v2.30.0 auch freie Anmerkungen ab; einen separaten Anmerkung-Punkt je
    Schritt gibt es nicht mehr, das wäre inhaltlich doppelt gewesen. Über
@@ -145,27 +151,47 @@ Einzelne Schritte haben zusätzliche Felder:
   abhakbare Erinnerung an den Ablauf angezeigt (Abschnitt „Tutorial-Ablauf"): *Person
   kalibriert*, *Person durchläuft das Tutorial*, *Direkt ins VR-Szenario gewechselt* — diese
   drei Punkte tragen keinen eigenen Zeitstempel.
-- **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**. Seit v2.29.0 werden „Szenario
-  starten"/„Szenario beendet" **wie normale Zeitfelder** erfasst — Button „Jetzt" oder
-  manuelle Eingabe/Korrektur (nicht mehr per einfachem Antippen mit Rückfrage zum Entfernen).
-  Die übrigen Phasen (z. B. „Person kalibriert", „Brille abgezogen") bleiben reine Häkchen
-  ohne Zeit — antippen, erneutes Antippen macht das nach Rückfrage rückgängig.
+- **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**, beide seit v2.32.0 strukturell
+  gleich: genau feste Durchläufe **direkt im Schritt**, nichts hinzufügen/löschen. Seit
+  v2.29.0 werden „Szenario starten"/„Szenario beendet" **wie normale Zeitfelder** erfasst —
+  Button „Jetzt" oder manuelle Eingabe/Korrektur. Die übrigen Phasen (z. B. „Person
+  kalibriert", „Brille abgezogen") bleiben reine Häkchen ohne Zeit — antippen, erneutes
+  Antippen macht das nach Rückfrage rückgängig. Beide Schritte haben **keine** eigene
+  Start/Ende-Zeiterfassung auf Schrittebene — die Zeiten stecken ausschließlich im jeweiligen
+  Durchlauf.
   - **Schritt 7 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
     Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi (Standardbezeichnungen, in den
-    Einstellungen änderbar, siehe oben) — direkt im Schritt, nichts hinzufügen/löschen; je
-    Durchlauf nur die Felder **Szenario starten** und
-    **Szenario beendet**. Dieser Schritt hat **keine** eigene Start/Ende-Zeiterfassung — die
-    Zeiten stecken in den Durchläufen. Zeile wird grün bei 5/5 vollständigen Durchläufen
-    (Anzeige „Durchläufe X/5").
-  - **Schritt 10 (Rollercoaster):** Durchlauf über **＋ Durchlauf hinzufügen**, Bezeichnung
-    und Phasen im Overlay: Szenario starten (Zeitfeld) · Person kalibriert (Häkchen) · Person
-    durchläuft das Szenario (Häkchen) · Szenario beendet (Zeitfeld) · Brille abgezogen
-    (Häkchen) · Selbstbewertung + Bewertungsbogen (Häkchen).
+    Einstellungen änderbar, siehe oben); je Durchlauf nur die Felder **Szenario starten** und
+    **Szenario beendet**. Zeile wird grün bei 5/5 vollständigen Durchläufen (Anzeige
+    „Durchläufe X/5").
+  - **Schritt 10 (Rollercoaster):** seit v2.32.0 **genau ein fester Durchlauf** (der frühere
+    Button „＋ Durchlauf hinzufügen" und das zugehörige Overlay entfallen — es gibt nur den
+    einen Rollercoaster-Durchlauf), direkt im Schritt mit denselben Phasen wie zuvor: Szenario
+    starten (Zeitfeld) · Person kalibriert (Häkchen) · Person durchläuft das Szenario
+    (Häkchen) · Szenario beendet (Zeitfeld) · Brille abgezogen (Häkchen) · Selbstbewertung +
+    Bewertungsbogen (Häkchen). **„Szenario starten"/„Szenario beendet" sind hier ausdrücklich
+    der Start/das Ende des VR-Szenario-Durchlaufs selbst** — nicht des gesamten Schritts.
+    Zeile wird grün, sobald Start und Ende erfasst sind.
 - **Schritt 8 / Schritt 11**: der **Trainerbewertungsbogen**, direkt im Schritt (siehe oben)
   — ebenfalls ohne eigene Start/Ende-Zeiterfassung; Zeile wird grün, sobald alle 4 Fragen
   beantwortet sind (Anzeige „X/4 bewertet").
+- **Schritt 14 „Sensorik ablegen"**: eine **eigene Sensorik-Checkliste** (Shimmer, Brustgurt,
+  Uhr) — genau wie an Schritt 2, aber unabhängig davon: ein Item antippen, sobald die
+  Sensorik bei dieser Person abgelegt wurde, der Zeitpunkt wird automatisch erfasst; erneutes
+  Antippen macht das nach Rückfrage rückgängig. Zeile wird grün, sobald alle drei Items
+  abgelegt sind (Anzeige „Sensorik X/3"); **„Checkliste zurücksetzen"** setzt alle Items auf
+  einmal zurück.
+- **Letzter Schritt (15) „Datensicherung / Desinfektion & Aufbereitung Sensorik /
+  StudyLog-Daten sichern"**: seit v2.32.0 **keine Zeiterfassung mehr**, stattdessen genau
+  zwei Häkchen ohne Zeitstempel: **„Alle Daten gesichert"** (LSL, App, Sensorik, Varjo Base)
+  und **„Alles desinfiziert / aufbereitet"**. Sobald **beide** angetippt sind, erscheint
+  zusätzlich der Button **„↻ Nächsten Durchlauf starten"** — er öffnet direkt wieder Schritt 1,
+  damit die nächste teilnehmende Person angelegt werden kann (die Daten der gerade
+  abgeschlossenen Person bleiben dabei vollständig erhalten). Darunter weiterhin der Export-
+  Button (siehe „Aufbau der App" oben).
 - Die früheren Schritte „VR-Equipment/VR-Brille an-/ablegen" (Hologate und Rollercoaster)
-  entfallen seit v2.27.0 ersatzlos.
+  entfallen seit v2.27.0 ersatzlos, der Schritt „Verabschiedung" seit v2.32.0 ebenfalls
+  ersatzlos.
 
 Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind
 aktuell **nicht** Teil des CSV-/JSON-Exports.
@@ -176,7 +202,8 @@ aktuell **nicht** Teil des CSV-/JSON-Exports.
 > (Sensorik-, Szenario-, Bewertungs-, Ereignis- und Protokoll-Tab). Diese Bereiche sind ab
 > v2.14.0 nicht mehr direkt erreichbar und werden gerade in die Ablauf-Schritte überführt.
 > Aktuell gültig sind „Aufbau der App" und „Die Ablauf-Schrittliste nutzen" oben sowie
-> Abschnitt 1 (Person anlegen — jetzt über **＋** im Ablauf) und der Export (über Schritt 16).
+> Abschnitt 1 (Person anlegen — jetzt über **＋** im Ablauf) und der Export (über den letzten
+> Schritt, 15).
 
 ### 1. Teilnehmende Person anlegen (einmalig pro Person)
 

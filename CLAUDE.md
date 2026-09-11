@@ -33,11 +33,16 @@ gerätespezifische Logik.
 
 ### Kanonischer Ablauf (Schritte)
 
-**Aktueller Stand (seit v2.27.0, 16 Schritte) — ersetzt die ursprüngliche 19-Schritt-Planung
-unten in diesem Abschnitt:** die Schritte „Ankommen, Begrüßung" sowie „VR-Equipment/VR-Brille
-an-/ablegen" (Hologate **und** Rollercoaster) entfallen ersatzlos; der Trainerbewertungsbogen
-ist kein eingebetteter Abschnitt an einem Fragebogen-Schritt mehr, sondern ein **eigener
-Schritt direkt nach dem jeweiligen VR-Durchlauf**.
+**Aktueller Stand (seit v2.32.0, 15 Schritte) — ersetzt die ursprüngliche 19-Schritt-Planung
+unten in diesem Abschnitt:** die Schritte „Ankommen, Begrüßung", „VR-Equipment/VR-Brille
+an-/ablegen" (Hologate **und** Rollercoaster) sowie „Verabschiedung" entfallen ersatzlos; der
+Trainerbewertungsbogen ist kein eingebetteter Abschnitt an einem Fragebogen-Schritt mehr,
+sondern ein **eigener Schritt direkt nach dem jeweiligen VR-Durchlauf**. Rollercoaster
+(Schritt 10) hat seit v2.32.0 wie Hologate nur noch einen festen Durchlauf (kein „+ Durchlauf
+hinzufügen" mehr) mit Start/Ende ausschließlich am Durchlauf selbst statt am ganzen Schritt.
+Stop Sensorik (Schritt 13) erfasst nur noch einen einzelnen Zeitpunkt statt Start/Ende.
+Datensicherung (letzter Schritt) besteht nur noch aus zwei Häkchen ohne Zeiterfassung — sind
+beide gesetzt, kann direkt der nächste Durchlauf (nächste:r Teilnehmende:r) gestartet werden.
 
 | Nr. | Schritt | Label |
 |-----|---------|-------|
@@ -55,8 +60,7 @@ Schritt direkt nach dem jeweiligen VR-Durchlauf**.
 | 12  | Fragebogen 4 | SEN / VR |
 | 13  | Stop Sensorik (Aufzeichnung beenden) | SEN |
 | 14  | Sensorik ablegen | SEN |
-| 15  | Verabschiedung | VR / SEN |
-| 16  | Datensicherung (VR) / Desinfektion & Aufbereitung Sensorik (SEN) / StudyLog-Daten sichern (beide) | VR / SEN |
+| 15  | Datensicherung (VR) / Desinfektion & Aufbereitung Sensorik (SEN) / StudyLog-Daten sichern (beide) | VR / SEN |
 
 Diese Liste ist die Referenz für die Default-Schritte. Ob die Schrittliste im UI
 editierbar/erweiterbar ist, ist noch offen (siehe unten).
