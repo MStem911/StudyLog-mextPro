@@ -80,8 +80,12 @@ verantwortet — sie haben keine weitere Funktion.
    Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
      übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. Das gilt auch für
-     **Schritt 6 „Einweisung + Tutorial VR"** — genau wie bei Schritt 4 „TMS". Mehrere andere
-     Schritte haben **keine** eigenen Start/Ende-Felder, weil die relevante Zeit anders erfasst
+     **Schritt 6 „Einweisung + Tutorial VR"** — genau wie bei Schritt 4 „TMS", mit einer
+     Klarstellung: Die Felder heißen dort **„Start (VR-Tutorial)"**/**„Ende (VR-Tutorial)"**
+     und ein Hinweistext macht deutlich, dass ausdrücklich das **VR-Szenario-Tutorial selbst**
+     gemeint ist — **nicht** die vorangehende Einweisung bzw. der gesamte Schritt. Mehrere
+     andere Schritte haben **keine** eigenen Start/Ende-Felder, weil die relevante Zeit anders
+     erfasst
      wird oder entfällt: Schritt 1 (Person anlegen), Schritt 2 (nur die Sensorik-Checkliste),
      Schritt 7 (Zeiten stecken in den 5 Hologate-Durchläufen), Schritt 8 und 11
      (Trainerbewertungsbogen — kein Timer, die Bögen tragen ihre eigene Speicherzeit) sowie die
@@ -119,10 +123,12 @@ Einzelne Schritte haben zusätzliche Felder:
   rückgängig. Der Schritt wird grün, sobald alle drei Items angelegt sind (Anzeige
   „Sensorik 3/3"). Eine Anmerkung (mit Uhrzeit) ist wie in jedem Schritt möglich.
 - **Schritt 6 „Einweisung + Tutorial VR"**: normale Start-/Ende-Zeiterfassung wie bei jedem
-  Standardschritt (siehe oben, wie Schritt 4 „TMS"). Zusätzlich als reine, nicht abhakbare
-  Erinnerung an den Ablauf angezeigt (Abschnitt „Tutorial-Ablauf"): *Person kalibriert*,
-  *Person durchläuft das Tutorial*, *Direkt ins VR-Szenario gewechselt* — diese drei Punkte
-  tragen keinen eigenen Zeitstempel.
+  Standardschritt (siehe oben, wie Schritt 4 „TMS") — beschriftet als **„Start (VR-Tutorial)"**/
+  **„Ende (VR-Tutorial)"** mit Hinweistext, dass gezielt das VR-Szenario-Tutorial gemeint ist
+  (nicht die vorangehende Einweisung/der gesamte Schritt). Zusätzlich als reine, nicht
+  abhakbare Erinnerung an den Ablauf angezeigt (Abschnitt „Tutorial-Ablauf"): *Person
+  kalibriert*, *Person durchläuft das Tutorial*, *Direkt ins VR-Szenario gewechselt* — diese
+  drei Punkte tragen keinen eigenen Zeitstempel.
 - **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**. Seit v2.29.0 werden „Szenario
   starten"/„Szenario beendet" **wie normale Zeitfelder** erfasst — Button „Jetzt" oder
   manuelle Eingabe/Korrektur (nicht mehr per einfachem Antippen mit Rückfrage zum Entfernen).

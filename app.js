@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.29.0';
+const APP_VERSION = '2.29.1';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -135,7 +135,7 @@ const TUTORIAL_REMINDERS = [
 function tutorialReminderSectionHTML() {
   return `<div class="bew-section">
     <div class="card-label" style="margin-bottom:6px">TUTORIAL-ABLAUF</div>
-    <p class="meta-text" style="margin-bottom:8px">Nur zur Erinnerung — Start/Ende oben erfassen die Zeit dieses Schritts.</p>
+    <p class="meta-text" style="margin-bottom:8px">Nur zur Erinnerung — Start/Ende oben erfassen das VR-Szenario-Tutorial selbst.</p>
     ${TUTORIAL_REMINDERS.map(t => `<div class="ablauf-sz-reminder"><span class="ablauf-sz-reminder-mark">•</span>${esc(t)}</div>`).join('')}
   </div>`;
 }
@@ -2039,6 +2039,18 @@ const FRAGEBOGEN_STEPS = new Set(['fs_03', 'fs_05', 'fs_09', 'fs_12']);
 // es nur Anmerkung + schrittabhängige Abschnitte.
 const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_07', ...Object.keys(BEW_STEP_META), ...FRAGEBOGEN_STEPS]);
 
+// Abweichende Beschriftung der Start-/Ende-Felder für einzelne Schritte, wenn „Start"/„Ende"
+// allein missverständlich wäre. Schritt 6 „Einweisung + Tutorial VR" besteht aus zwei Teilen
+// (Einweisung + eigentliches VR-Tutorial) — die Felder erfassen ausdrücklich nur Start/Ende
+// des VR-Szenario-Tutorials, nicht der gesamten Einweisung.
+const TIME_FIELD_LABELS = {
+  fs_06: {
+    start: 'Start (VR-Tutorial)',
+    end:   'Ende (VR-Tutorial)',
+    hint:  'Start/Ende erfassen ausschließlich das VR-Szenario-Tutorial selbst — nicht die vorangehende Einweisung bzw. den gesamten Schritt.',
+  },
+};
+
 // Eingabefelder eines Schritts (Start/Ende soweit vorhanden + Anmerkung + „…entfernen"/
 // „Schritt leeren"). **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
 // stepPanelBodyHTML() nach den Zusatzabschnitten angehängt. fs_01 hat gar keine Felder.
@@ -2047,17 +2059,23 @@ function flowStepFieldsHTML(d, stepId) {
   const noTime   = NO_TIME_STEPS.has(stepId);
   const noteTime = (d.noteISO && d.note && d.note.trim())
     ? ` <span class="ablauf-note-time">· notiert ${esc(localTimeStr(d.noteISO))}</span>` : '';
-  const timeFields = noTime ? '' : `
+  // Schritt 6 „Einweisung + Tutorial VR" umfasst zwei Teile — Start/Ende meinen hier
+  // ausdrücklich nur das VR-Szenario-Tutorial selbst, nicht die vorangehende Einweisung.
+  const cfg = TIME_FIELD_LABELS[stepId];
+  const startLabel = cfg ? cfg.start : 'Start';
+  const endLabel   = cfg ? cfg.end   : 'Ende';
+  const fieldHint  = cfg ? `<p class="meta-text" style="margin-bottom:8px">${esc(cfg.hint)}</p>` : '';
+  const timeFields = noTime ? '' : `${fieldHint}
     <div class="edit-row-2">
       <div>
-        <label class="field-label" for="ablauf-edit-start">Start</label>
+        <label class="field-label" for="ablauf-edit-start">${esc(startLabel)}</label>
         <div class="time-capture-row">
           <input type="time" id="ablauf-edit-start" step="1" value="${esc(isoToTimeInput(d.startISO))}">
           <button type="button" class="btn btn-ghost btn-time-now" data-target="ablauf-edit-start">🕐 Jetzt</button>
         </div>
       </div>
       <div>
-        <label class="field-label" for="ablauf-edit-end">Ende</label>
+        <label class="field-label" for="ablauf-edit-end">${esc(endLabel)}</label>
         <div class="time-capture-row">
           <input type="time" id="ablauf-edit-end" step="1" value="${esc(isoToTimeInput(d.endISO))}">
           <button type="button" class="btn btn-ghost btn-time-now" data-target="ablauf-edit-end">🕐 Jetzt</button>

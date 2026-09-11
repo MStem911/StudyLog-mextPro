@@ -35,9 +35,11 @@ ohne eigene Schritt-Zeiterfassung) und Schritt 10 (Rollercoaster, frei anlegbare
 über ein Overlay); Start/Ende jedes Durchlaufs werden seit v2.29.0 **wie normale Zeitfelder**
 erfasst (Button „Jetzt" oder manuelle Eingabe/Korrektur), die übrigen Phasen bleiben reine
 Häkchen. **Schritt 6 (Tutorial)** hat seit v2.28.0 **wieder** normale Start-/Ende-Felder wie
-Schritt 4 „TMS"; die drei Zwischenschritte „Person kalibriert" / „Person durchläuft das
-Tutorial" / „Direkt ins VR-Szenario gewechselt" werden als reine, nicht abhakbare
-Ablauf-Erinnerung angezeigt. **Trainerbewertungsbogen** (seit v2.27.0 **eigener Schritt**
+Schritt 4 „TMS", seit v2.29.1 beschriftet als „Start (VR-Tutorial)"/„Ende (VR-Tutorial)" mit
+Hinweistext, dass explizit das VR-Szenario-Tutorial gemeint ist — nicht die vorangehende
+Einweisung bzw. der gesamte Schritt; die drei Zwischenschritte „Person kalibriert" / „Person
+durchläuft das Tutorial" / „Direkt ins VR-Szenario gewechselt" werden als reine, nicht
+abhakbare Ablauf-Erinnerung angezeigt. **Trainerbewertungsbogen** (seit v2.27.0 **eigener Schritt**
 direkt nach dem jeweiligen VR-Durchlauf statt eingebettet an einem Fragebogen-Schritt: Schritt
 8 bewertet alle Hologate-Szenarien aus Schritt 7 gemeinsam, ohne das Tutorial; Schritt 11
 bewertet nur den Rollercoaster-Durchlauf inkl. des in der Szene enthaltenen Schießens — seit
