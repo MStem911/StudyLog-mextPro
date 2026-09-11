@@ -90,38 +90,41 @@ verantwortet — sie haben keine weitere Funktion.
      Schritt 7 (Zeiten stecken in den 5 Hologate-Durchläufen), Schritt 8 und 11
      (Trainerbewertungsbogen — kein Timer, die Bögen tragen ihre eigene Speicherzeit) sowie die
      Fragebogen-Schritte 3, 5, 9, 12 (nur die Checkbox „Fragebogen ausgefüllt", siehe unten).
-   - **Hinweis / Anmerkung**: Freitext zu diesem Schritt (z. B. Besonderheiten, Abweichungen).
-     Sobald etwas eingetragen ist, wird die **Uhrzeit der Notiz** festgehalten und neben dem
-     Feld angezeigt („· notiert 14:51"). Gilt in **jedem** Schritt.
    - **✓ Weiter zum nächsten Schritt**: sitzt in **jedem** Schritt **ganz unten** (nach allen
      Abschnitten), speichert und öffnet den folgenden Schritt. Am letzten Schritt steht dort
      stattdessen der Export-Button.
    Eingaben werden sofort gespeichert.
 3. Die **Farbe** jedes Schritts zeigt den Stand auf einen Blick:
    - **grau** – noch nichts erfasst,
-   - **gelb** – angefangen (nur Start *oder* Ende *oder* nur eine Anmerkung),
-   - **grün** – Start *und* Ende erfasst.
-   Ein ✎ neben dem Schrittnamen zeigt an, dass eine Anmerkung hinterlegt ist. Oben läuft ein
-   Fortschrittsbalken („X / 16 komplett").
-4. **Schritt leeren** (im aufgeklappten Schritt) entfernt nach Rückfrage die erfassten Zeiten
-   und die Anmerkung dieses einen Schritts.
-5. **Ereignisse / Probleme** (an jedem Schritt **außer** Schritt 8/11, siehe unten): über
+   - **gelb** – angefangen (nur Start *oder* nur Ende erfasst — bzw. schrittspezifisch,
+     siehe unten),
+   - **grün** – Start *und* Ende erfasst (bzw. schrittspezifisch „vollständig").
+   Oben läuft ein Fortschrittsbalken („X / 16 komplett").
+4. **Schritt leeren** (im aufgeklappten Schritt, nur an Schritten mit Start-/Ende-Feldern)
+   entfernt nach Rückfrage die erfassten Zeiten dieses einen Schritts. Schritte ohne eigene
+   Zeitfelder haben stattdessen ihre eigene, spezifische Rückgängig-/Reset-Funktion (z. B.
+   „Checkliste zurücksetzen" an Schritt 2, erneutes Antippen der Checkbox an den
+   Fragebogen-Schritten, „Bewertung zurücksetzen" an Schritt 8/11).
+5. **Ereignisse / Probleme / Anmerkungen** (an jedem Schritt **außer** Schritt 8/11, siehe
+   unten) — deckt seit v2.30.0 auch freie Anmerkungen ab; einen separaten Anmerkung-Punkt je
+   Schritt gibt es nicht mehr, das wäre inhaltlich doppelt gewesen. Über
    **＋ Ereignis erfassen** eine Kategorie wählen (Sensorik / VR / Fragebogen / TMS /
-   Sonstiges), eine kurze Beschreibung eintragen und entweder einen **Zeitpunkt** oder einen
-   **Zeitraum** festhalten (Button „Jetzt" oder manuell). Erfasste Ereignisse stehen als Liste
-   am jeweiligen Schritt und lassen sich antippen zum Bearbeiten/Löschen.
+   Sonstiges — **Sonstiges** eignet sich für eine reine Anmerkung ohne Problembezug), eine
+   kurze Beschreibung eintragen und entweder einen **Zeitpunkt** oder einen **Zeitraum**
+   festhalten (Button „Jetzt" oder manuell). Erfasste Einträge stehen als Liste am jeweiligen
+   Schritt und lassen sich antippen zum Bearbeiten/Löschen.
 
 Einzelne Schritte haben zusätzliche Felder:
 - **Fragebogen-Schritte (3, 5, 9, 12)**: alle vier sind gleich aufgebaut — **keine**
-  Start/Ende-Zeiterfassung, nur die Checkbox **„Fragebogen ausgefüllt"** (plus die überall
-  mögliche Anmerkung). Antippen, sobald die teilnehmende Person den jeweiligen Fragebogen
-  bearbeitet hat — der Schritt wird dann **grün** (Anzeige „Fragebogen ausgefüllt"). Erneutes
-  Antippen hebt die Bestätigung wieder auf. „Anmerkung entfernen" lässt die Bestätigung stehen.
+  Start/Ende-Zeiterfassung, nur die Checkbox **„Fragebogen ausgefüllt"**. Antippen, sobald
+  die teilnehmende Person den jeweiligen Fragebogen bearbeitet hat — der Schritt wird dann
+  **grün** (Anzeige „Fragebogen ausgefüllt"). Erneutes Antippen hebt die Bestätigung wieder
+  auf — einen eigenen „entfernen"-Button gibt es dafür nicht mehr.
 - **Schritt 2 „Anlegen Sensorik"**: **nur** die **Sensorik-Checkliste** (Shimmer, Brustgurt,
   Uhr) — keine Start/Ende-Felder. Ein Item antippen, sobald die Sensorik angelegt ist — der
   Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)
   rückgängig. Der Schritt wird grün, sobald alle drei Items angelegt sind (Anzeige
-  „Sensorik 3/3"). Eine Anmerkung (mit Uhrzeit) ist wie in jedem Schritt möglich.
+  „Sensorik 3/3"); **„Checkliste zurücksetzen"** setzt alle Items auf einmal zurück.
 - **Schritt 6 „Einweisung + Tutorial VR"**: normale Start-/Ende-Zeiterfassung wie bei jedem
   Standardschritt (siehe oben, wie Schritt 4 „TMS") — beschriftet als **„Start (VR-Tutorial)"**/
   **„Ende (VR-Tutorial)"** mit Hinweistext, dass gezielt das VR-Szenario-Tutorial gemeint ist

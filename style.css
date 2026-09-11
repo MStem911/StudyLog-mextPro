@@ -1165,8 +1165,6 @@ input[type="time"] { color-scheme: dark; }
 .ablauf-step-sub   { font-size: var(--text-sm); color: var(--text2); }
 .ablauf-step[data-state="teilweise"] .ablauf-step-sub { color: var(--amber-txt); }
 .ablauf-step[data-state="komplett"] .ablauf-step-sub  { color: var(--teal-txt); }
-.ablauf-note-badge { color: var(--purple-lt); font-size: var(--text-sm); }
-.ablauf-note-time  { color: var(--text3); font-size: var(--text-sm); font-weight: 400; }
 .ablauf-step-chevron { color: var(--text3); font-size: var(--text-md); flex-shrink: 0; }
 
 .ablauf-step-panel {

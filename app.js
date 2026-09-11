@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.29.1';
+const APP_VERSION = '2.30.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -2051,21 +2051,36 @@ const TIME_FIELD_LABELS = {
   },
 };
 
-// Eingabefelder eines Schritts (Start/Ende soweit vorhanden + Anmerkung + „…entfernen"/
-// „Schritt leeren"). **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
+// Eingabefelder eines Schritts (Start/Ende soweit vorhanden + „Schritt leeren"). Der frühere
+// separate „Hinweis / Anmerkung"-Punkt je Schritt entfällt seit v2.30.0 (inhaltlich doppelt
+// zu „Ereignisse / Probleme / Anmerkungen", siehe ereignisSectionHTML) — freie Anmerkungen
+// gehören jetzt dorthin. **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
 // stepPanelBodyHTML() nach den Zusatzabschnitten angehängt. fs_01 hat gar keine Felder.
 function flowStepFieldsHTML(d, stepId) {
   if (stepId === 'fs_01') return '';
-  const noTime   = NO_TIME_STEPS.has(stepId);
-  const noteTime = (d.noteISO && d.note && d.note.trim())
-    ? ` <span class="ablauf-note-time">· notiert ${esc(localTimeStr(d.noteISO))}</span>` : '';
+  const noTime = NO_TIME_STEPS.has(stepId);
   // Schritt 6 „Einweisung + Tutorial VR" umfasst zwei Teile — Start/Ende meinen hier
   // ausdrücklich nur das VR-Szenario-Tutorial selbst, nicht die vorangehende Einweisung.
   const cfg = TIME_FIELD_LABELS[stepId];
   const startLabel = cfg ? cfg.start : 'Start';
   const endLabel   = cfg ? cfg.end   : 'Ende';
   const fieldHint  = cfg ? `<p class="meta-text" style="margin-bottom:8px">${esc(cfg.hint)}</p>` : '';
-  const timeFields = noTime ? '' : `${fieldHint}
+  let fragebogenToggle = '';
+  if (FRAGEBOGEN_STEPS.has(stepId)) {
+    const fbDone = !!d.done;
+    const fbSub  = fbDone ? `bestätigt ${esc(localTimeStr(d.done))}` : 'noch nicht bestätigt';
+    fragebogenToggle = `<button class="sensorik-item${fbDone ? ' checked' : ''}" id="ablauf-edit-done" style="margin-bottom:12px">
+      <span class="sensorik-check">${fbDone ? '✓' : ''}</span>
+      <span class="sensorik-info">
+        <span class="sensorik-name">Fragebogen ausgefüllt</span>
+        <span class="sensorik-time">${fbSub}</span>
+      </span>
+    </button>`;
+  }
+  // Kein Zeitfeld an diesem Schritt → nichts mehr generisch zu leeren (Checkliste/Fragebogen-
+  // Häkchen/Bewertungsbogen haben je ihre eigene Rückgängig-/Reset-Funktion).
+  if (noTime) return `${fragebogenToggle}`;
+  return `${fragebogenToggle}${fieldHint}
     <div class="edit-row-2">
       <div>
         <label class="field-label" for="ablauf-edit-start">${esc(startLabel)}</label>
@@ -2081,27 +2096,9 @@ function flowStepFieldsHTML(d, stepId) {
           <button type="button" class="btn btn-ghost btn-time-now" data-target="ablauf-edit-end">🕐 Jetzt</button>
         </div>
       </div>
-    </div>`;
-  const clearLabel = stepId === 'fs_02' ? 'Anmerkung entfernen (Checkliste bleibt)'
-                   : noTime             ? 'Anmerkung entfernen'
-                   : 'Schritt leeren';
-  let fragebogenToggle = '';
-  if (FRAGEBOGEN_STEPS.has(stepId)) {
-    const fbDone = !!d.done;
-    const fbSub  = fbDone ? `bestätigt ${esc(localTimeStr(d.done))}` : 'noch nicht bestätigt';
-    fragebogenToggle = `<button class="sensorik-item${fbDone ? ' checked' : ''}" id="ablauf-edit-done" style="margin-bottom:12px">
-      <span class="sensorik-check">${fbDone ? '✓' : ''}</span>
-      <span class="sensorik-info">
-        <span class="sensorik-name">Fragebogen ausgefüllt</span>
-        <span class="sensorik-time">${fbSub}</span>
-      </span>
-    </button>`;
-  }
-  return `${fragebogenToggle}${timeFields}
-    <label class="field-label" for="ablauf-edit-note">Hinweis / Anmerkung${noteTime}</label>
-    <textarea id="ablauf-edit-note" rows="2" placeholder="Anmerkung zu diesem Schritt…" autocorrect="off">${esc(d.note || '')}</textarea>
+    </div>
     <div class="btn-col" style="margin-top:10px">
-      <button class="btn btn-ghost full-width" id="ablauf-edit-clear">${clearLabel}</button>
+      <button class="btn btn-ghost full-width" id="ablauf-edit-clear">Schritt leeren</button>
     </div>`;
 }
 
@@ -2129,21 +2126,19 @@ function flowStepState(d) {
   if (!d) return 'offen';
   const hasStart = !!d.startISO;
   const hasEnd   = !!d.endISO;
-  const hasNote  = !!(d.note && d.note.trim());
   if (hasStart && hasEnd) return 'komplett';
-  if (hasStart || hasEnd || hasNote) return 'teilweise';
+  if (hasStart || hasEnd) return 'teilweise';
   return 'offen';
 }
 // Schritt 1: erledigt, sobald eine Person aktiv ist. Schritt 2: nach Sensorik-Checkliste
-// (alle Items angelegt = komplett), sonst Standard-Logik über Start/Ende/Anmerkung.
+// (alle Items angelegt = komplett), sonst Standard-Logik über Start/Ende.
 function flowStepStateFor(stepId, d) {
   if (stepId === 'fs_01') return ablaufProband() ? 'komplett' : 'offen';
   if (stepId === 'fs_02') {
     const p = ablaufProband();
     const done = (p && p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
-    const hasNote = !!(d && d.note && d.note.trim());
     if (done === SENSORIK_ITEMS.length) return 'komplett';
-    if (done > 0 || hasNote) return 'teilweise';
+    if (done > 0) return 'teilweise';
     return 'offen';
   }
   if (stepId === 'fs_07') {
@@ -2151,18 +2146,16 @@ function flowStepStateFor(stepId, d) {
     const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07 : [];
     const full    = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
     const started = runs.filter(r => r.phases && (r.phases.p_start || r.phases.p_end)).length;
-    const hasNote = !!(d && d.note && d.note.trim());
     if (full === HOLOGATE_RUN_LABELS.length) return 'komplett';
-    if (started > 0 || hasNote) return 'teilweise';
+    if (started > 0) return 'teilweise';
     return 'offen';
   }
   if (BEW_STEP_META[stepId]) {
     const p = ablaufProband();
     const b = (p && p.bewertungen && Array.isArray(p.bewertungen[stepId])) ? p.bewertungen[stepId][0] : null;
     const filled = (b && b.scores) ? BEW_OV_ITEMS.filter(k => b.scores[k] != null).length : 0;
-    const hasNote = !!(d && d.note && d.note.trim());
     if (filled === BEW_OV_ITEMS.length) return 'komplett';
-    if (filled > 0 || hasNote) return 'teilweise';
+    if (filled > 0) return 'teilweise';
     return 'offen';
   }
   if (FRAGEBOGEN_STEPS.has(stepId) && d && d.done) return 'komplett';
@@ -2233,13 +2226,12 @@ function renderAblauf() {
       summary = filled ? `${filled}/${BEW_OV_ITEMS.length} bewertet` : 'noch nicht erfasst';
     }
     if (FRAGEBOGEN_STEPS.has(s.id) && d.done) summary = 'Fragebogen ausgefüllt';
-    const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
     return `
     <div class="ablauf-step-wrap">
       <button class="ablauf-step${isOpen ? ' selected' : ''}" data-state="${state}" data-id="${esc(s.id)}" aria-expanded="${isOpen}">
         <span class="ablauf-step-nr">${s.nr ? esc(s.nr) : '•'}</span>
         <span class="ablauf-step-body">
-          <span class="ablauf-step-label">${esc(s.label)}${noteBadge}</span>
+          <span class="ablauf-step-label">${esc(s.label)}</span>
           <span class="ablauf-step-sub">${esc(s.tag)}  ·  ${esc(summary)}</span>
         </span>
         <span class="ablauf-step-chevron">${isOpen ? '▾' : '▸'}</span>
@@ -2267,7 +2259,7 @@ function renderAblauf() {
   timeline.querySelectorAll('.ablauf-step').forEach(btn =>
     btn.addEventListener('click', () => {
       // offenen Schritt zuerst sichern, falls der Feld-„change" noch nicht gefeuert hat
-      if (expandedFlowStepId && document.getElementById('ablauf-edit-note')) {
+      if (expandedFlowStepId && document.getElementById('ablauf-edit-start')) {
         writeFlowStep(expandedFlowStepId);
       }
       expandedFlowStepId = (expandedFlowStepId === btn.dataset.id) ? '' : btn.dataset.id;
@@ -2288,7 +2280,7 @@ function renderAblauf() {
       syncAblaufRows();
     })
   );
-  ['ablauf-edit-start','ablauf-edit-end','ablauf-edit-note'].forEach(id => {
+  ['ablauf-edit-start','ablauf-edit-end'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', () => { writeFlowStep(expandedFlowStepId); syncAblaufRows(); });
   });
@@ -2378,7 +2370,9 @@ function flowStepExtrasHTML(stepId) {
   return html;
 }
 
-// Abschnitt „Ereignisse / Probleme" im Detailbereich jedes Schritts.
+// Abschnitt „Ereignisse / Probleme / Anmerkungen" im Detailbereich jedes Schritts (deckt
+// seit v2.30.0 auch freie Anmerkungen ab — der frühere separate Anmerkung-Punkt je Schritt
+// entfällt, da inhaltlich doppelt).
 function ereignisSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
@@ -2393,8 +2387,8 @@ function ereignisSectionHTML(stepId) {
     </button>`;
   }).join('');
   return `<div class="bew-section">
-    <div class="card-label" style="margin-bottom:6px">EREIGNISSE / PROBLEME</div>
-    <div class="bew-list">${rows || '<div class="meta-text">Kein Ereignis zu diesem Schritt.</div>'}</div>
+    <div class="card-label" style="margin-bottom:6px">EREIGNISSE / PROBLEME / ANMERKUNGEN</div>
+    <div class="bew-list">${rows || '<div class="meta-text">Noch nichts erfasst.</div>'}</div>
     <button class="btn btn-ghost full-width" data-ev-add="${esc(stepId)}" style="margin-top:8px">＋ Ereignis erfassen</button>
   </div>`;
 }
@@ -2903,7 +2897,7 @@ document.getElementById('szenario-run-overlay').addEventListener('click', e => {
 
 // „Weiter": aktuellen Schritt sichern und den nächsten Schritt der Liste öffnen.
 function advanceFlowStep() {
-  if (expandedFlowStepId && document.getElementById('ablauf-edit-note')) {
+  if (expandedFlowStepId && document.getElementById('ablauf-edit-start')) {
     writeFlowStep(expandedFlowStepId);
   }
   const idx = FLOW_STEPS.findIndex(s => s.id === expandedFlowStepId);
@@ -2959,16 +2953,6 @@ function syncAblaufRows() {
       if (FRAGEBOGEN_STEPS.has(s.id) && d && d.done) summary = 'Fragebogen ausgefüllt';
       sub.textContent = `${s.tag}  ·  ${summary}`;
     }
-    const label = row.querySelector('.ablauf-step-label');
-    if (label) {
-      const badge   = label.querySelector('.ablauf-note-badge');
-      const hasNote = !!(d && d.note && d.note.trim());
-      if (hasNote && !badge) {
-        label.insertAdjacentHTML('beforeend', ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>');
-      } else if (!hasNote && badge) {
-        badge.remove();
-      }
-    }
   });
   const c   = ablaufCounts(p);
   const bar = document.querySelector('#ablauf-progress .ablauf-progress-bar span');
@@ -2979,17 +2963,18 @@ function syncAblaufRows() {
 }
 
 // Schreibt den aktuell geöffneten Schritt aus den Eingabefeldern in p.ablauf (ohne Re-Render).
+// Schreibt Start/Ende aus den Zeitfeldern. Ein evtl. aus einer älteren Version noch
+// vorhandenes `note`/`noteISO` (der frühere separate Anmerkung-Punkt, seit v2.30.0 ohne
+// eigenes Eingabefeld) wird unangetastet übernommen statt stillschweigend gelöscht.
 function writeFlowStep(stepId) {
   const p = ablaufProband();
   if (!p || !stepId) return;
   if (!p.ablauf) p.ablauf = {};
   const startEl = document.getElementById('ablauf-edit-start');
   const endEl   = document.getElementById('ablauf-edit-end');
-  const noteEl  = document.getElementById('ablauf-edit-note');
-  if (!startEl && !endEl && !noteEl) return; // Panel nicht offen
+  if (!startEl && !endEl) return; // Panel nicht offen / Schritt ohne Zeitfelder
   const startT = startEl ? startEl.value : '';
   const endT   = endEl   ? endEl.value   : '';
-  const note   = noteEl  ? noteEl.value.trim() : '';
   const prev      = p.ablauf[stepId] || {};
   const baseStart = prev.startISO || new Date().toISOString();
   const baseEnd   = prev.endISO   || prev.startISO || new Date().toISOString();
@@ -2998,46 +2983,36 @@ function writeFlowStep(stepId) {
   if (startISO && endISO && new Date(endISO) < new Date(startISO)) {
     showToast('⚠ Ende liegt vor Start — trotzdem gespeichert');
   }
-  // Anmerkung bekommt einen Zeitstempel (Zeitpunkt der ersten Erfassung); wird die Anmerkung
-  // geleert, entfällt auch der Zeitstempel.
-  let noteISO = prev.noteISO || null;
-  if (note && !noteISO) noteISO = new Date().toISOString();
-  if (!note)            noteISO = null;
-  // Fragebogen-Bestätigung (fs_03/05/10/14) hat ein eigenes Bedienelement — hier nur erhalten.
-  const done = prev.done || null;
-  if (!startISO && !endISO && !note && !done) {
+  const note    = prev.note    || '';
+  const noteISO = prev.noteISO || null;
+  if (!startISO && !endISO && !note) {
     delete p.ablauf[stepId];
   } else {
-    p.ablauf[stepId] = done
-      ? { startISO, endISO, note, noteISO, done }
-      : { startISO, endISO, note, noteISO };
+    p.ablauf[stepId] = { startISO, endISO, note, noteISO };
   }
   save();
 }
 
+// „Schritt leeren" ist seit v2.30.0 nur noch an Schritten mit Zeitfeldern verfügbar (NO_TIME-
+// Schritte haben je ihre eigene Rückgängig-/Reset-Funktion: Checkliste, Fragebogen-Häkchen,
+// Bewertungsbogen). Ein evtl. noch vorhandenes altes `note`/`noteISO` bleibt erhalten.
 function clearFlowStep(stepId) {
   const p = ablaufProband();
   if (!p || !stepId) return;
   if (!p.ablauf || !p.ablauf[stepId]) { renderAblauf(); return; }
   const step  = FLOW_STEPS.find(s => s.id === stepId);
   const label = step ? step.label : 'diesen Schritt';
-  const isS2   = stepId === 'fs_02';
-  const noTime = NO_TIME_STEPS.has(stepId);
-  const isFb   = FRAGEBOGEN_STEPS.has(stepId);
-  const what   = noTime ? 'Anmerkung' : 'Erfasste Zeiten und Anmerkung';
-  const fbHint = isFb ? ' (Die Fragebogen-Bestätigung bleibt erhalten.)' : '';
-  showConfirm((isS2 || noTime) ? 'Anmerkung entfernen' : 'Schritt leeren',
-    isS2
-      ? `Anmerkung für „${label}" entfernen? (Die Sensorik-Checkliste bleibt erhalten.)`
-      : `${what} für „${label}" entfernen?${fbHint}`,
-    () => {
-      const keepDone = p.ablauf[stepId] && p.ablauf[stepId].done;
+  showConfirm('Schritt leeren', `Erfasste Start-/Endzeit für „${label}" entfernen?`, () => {
+    const prev = p.ablauf[stepId] || {};
+    if (prev.note && prev.note.trim()) {
+      p.ablauf[stepId] = { note: prev.note, noteISO: prev.noteISO || null };
+    } else {
       delete p.ablauf[stepId];
-      if (keepDone) p.ablauf[stepId] = { done: keepDone };
-      save();
-      renderAblauf();
-      showToast(isS2 ? 'Anmerkung entfernt' : 'Schritt geleert');
-    });
+    }
+    save();
+    renderAblauf();
+    showToast('Schritt geleert');
+  });
 }
 
 // Fragebogen-Bestätigung umschalten (fs_03 / fs_05 / fs_09 / fs_12). Gesetzt → Schritt grün.

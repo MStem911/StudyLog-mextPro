@@ -17,11 +17,13 @@ bleiben dabei ausschließlich auf dem jeweiligen Gerät.
 Seit **v2.14.0** ist die App **eine einzige Ansicht: der Ablauf** — eine chronologische
 Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–16, seit v2.27.0).
 Links die Schritt-Leiste (mit eigener Scrollbar), rechts das Detailfeld für den gewählten
-Schritt; auf dem Smartphone klappt der Schritt in der Liste auf. Zu jedem Schritt werden
-pro Teilnehmende:r Start- und Endzeit (Button „Jetzt" oder manuelle Eingabe) sowie eine
-Anmerkung erfasst; eine Farbcodierung (grau = offen, gelb = angefangen, grün = Start und
+Schritt; auf dem Smartphone klappt der Schritt in der Liste auf. Zu jedem Schritt (der
+Zeitfelder hat) werden pro Teilnehmende:r Start- und Endzeit erfasst (Button „Jetzt" oder
+manuelle Eingabe); eine Farbcodierung (grau = offen, gelb = angefangen, grün = Start und
 Ende erfasst) gibt den Überblick. „✓ Weiter" öffnet den nächsten Schritt, per Tap in der
-Leiste kann jederzeit frei gesprungen werden.
+Leiste kann jederzeit frei gesprungen werden. Einen separaten Anmerkung-Punkt je Schritt
+gibt es seit v2.30.0 nicht mehr — freie Anmerkungen gehören in den Bereich „Ereignisse /
+Probleme / Anmerkungen" (an jedem Schritt außer Schritt 8/11), das war sonst doppelt.
 
 Die frühere Tab-Navigation entfällt. Einstellungen liegen hinter dem ⚙-Icon oben rechts
 (Overlay). **Schritt 1 (Aufklärung + Einverständnis)** ist beim Start direkt geöffnet und hat
@@ -45,8 +47,9 @@ direkt nach dem jeweiligen VR-Durchlauf statt eingebettet an einem Fragebogen-Sc
 bewertet nur den Rollercoaster-Durchlauf inkl. des in der Szene enthaltenen Schießens — seit
 v2.16.0 inhaltlich reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items; seit
 v2.29.0 **direkt im Schritt** ausfüllbar, kein Overlay/„anlegen"-Button mehr, Antworten
-speichern sofort, weder Schritt 8 noch 11 haben einen Ereignis-Button), **Ereignisse/Probleme**
-(an jedem anderen Schritt, Zeitpunkt oder Zeitraum). Die Fragebogen-Schritte 3/5/9/12 sind seit
+speichern sofort, weder Schritt 8 noch 11 haben einen Ereignis-Button),
+**Ereignisse/Probleme/Anmerkungen** (an jedem anderen Schritt, Zeitpunkt oder Zeitraum —
+seit v2.30.0 auch Ziel für freie Anmerkungen, siehe oben). Die Fragebogen-Schritte 3/5/9/12 sind seit
 v2.26.1 einheitlich aufgebaut: keine Start/Ende-Zeiterfassung, nur eine Bestätigungs-Checkbox
 „Fragebogen ausgefüllt" (färbt den Schritt grün). Die separaten Schritte zum An-/Ablegen von
 VR-Equipment (Hologate) bzw. der VR-Brille (Rollercoaster) entfallen seit v2.27.0 ersatzlos.
