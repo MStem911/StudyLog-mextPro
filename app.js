@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.32.0';
+const APP_VERSION = '2.32.1';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -2133,6 +2133,10 @@ document.getElementById('btn-add-event-tag').addEventListener('click', () => {
 //          rechts ein fest sichtbares Detailfeld für den gewählten Schritt.
 let selectedAblaufProbandId = '';
 let expandedFlowStepId       = 'fs_01';  // Schritt 1 ist beim Start direkt geöffnet
+// Merkt sich, für welchen Schritt die Detailspalte (breites Layout) zuletzt befüllt wurde —
+// nur bei einem tatsächlichen Schrittwechsel wird dort nach oben gescrollt, nicht bei jedem
+// Re-Render desselben Schritts (z. B. nach Antippen einer Checkliste), siehe renderAblauf().
+let lastAblaufDetailStepId  = '';
 const ABLAUF_WIDE_MQ = window.matchMedia('(min-width: 1024px)');
 // Beim Wechsel Hoch-/Querformat neu aufbauen, damit Inline-Panel <-> Detailspalte umschaltet.
 ABLAUF_WIDE_MQ.addEventListener('change', () => {
@@ -2431,8 +2435,15 @@ function renderAblauf() {
         ? `<div class="ablauf-detail-head">${s.nr ? 'Schritt ' + esc(s.nr) + ' · ' : ''}${esc(s.label)}</div>` +
           stepPanelBodyHTML(d, s)
         : '';
+      // Nur bei echtem Schrittwechsel nach oben scrollen — ein Re-Render desselben Schritts
+      // (z. B. nach Antippen einer Checkliste) soll die aktuelle Scroll-Position nicht stören.
+      if (expandedFlowStepId !== lastAblaufDetailStepId) {
+        detail.scrollTop = 0;
+        lastAblaufDetailStepId = expandedFlowStepId;
+      }
     } else if (wide) {
       detail.innerHTML = '<div class="ablauf-detail-empty">Einen Schritt links auswählen, um Start-/Endzeit und eine Anmerkung zu erfassen.</div>';
+      lastAblaufDetailStepId = '';
     } else {
       detail.innerHTML = '';
     }

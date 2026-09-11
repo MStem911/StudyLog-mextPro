@@ -237,7 +237,11 @@ links `.ablauf-timeline` (Schritt-Leiste mit eigener `overflow-y:auto`-Scrollbar
 (`ABLAUF_WIDE_MQ = matchMedia('(min-width:768px)')`, `change`-Listener → Re-Render).
 „✓ Weiter" (`#ablauf-edit-next` → `advanceFlowStep()`) öffnet den nächsten `FLOW_STEPS`-
 Eintrag; am letzten Schritt (`LAST_FLOW_STEP_ID`) stattdessen die Datensicherung-Häkchen +
-der Export-Button
+der Export-Button. **Scroll-Reset der Detailspalte (seit v2.32.1):** `renderAblauf()`
+vergleicht `expandedFlowStepId` mit dem zuletzt gerenderten `lastAblaufDetailStepId` und
+setzt `detail.scrollTop = 0` nur bei einem **echten** Schrittwechsel (Header-Klick, „✓
+Weiter", „↻ Nächsten Durchlauf starten") — ein Re-Render desselben Schritts (z. B. nach
+Antippen einer Checkliste/eines Häkchens) lässt die aktuelle Scroll-Position unangetastet
 (`flowStepExtrasHTML`).
 
 ## Bewertungsbogen — Item-Struktur
