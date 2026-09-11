@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.32.1';
+const APP_VERSION = '2.32.2';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -115,19 +115,14 @@ const SZENARIO_FIXED_STEPS = new Set(['fs_07', 'fs_10']);
 // (Zeitstempel). Die Anzahl (5) ist fest, die Bezeichnungen sind seit v2.31.0 in den
 // Einstellungen editierbar (siehe `hologateLabels` im State-Abschnitt / KEY_HOLOGATE_LABELS).
 const DEFAULT_HOLOGATE_LABELS = ['Scheiben', 'Köpfe', 'Laufen', 'Drohnen', 'Kombi'];
-const SZENARIO_PHASES_HOLOGATE = [
+// Feste Phasen je Durchlauf, gemeinsam für Hologate (fs_07) UND Rollercoaster (fs_10, seit
+// v2.32.2 — die vier bis dahin zusätzlichen Häkchen-Phasen „Person kalibriert"/„Person
+// durchläuft das Szenario"/„Brille abgezogen"/„Selbstbewertung + Bewertungsbogen" entfallen
+// dort ersatzlos, nur Start/Stopp bleiben). `ts: true` → beim Abhaken wird ein Zeitstempel
+// erfasst.
+const SZENARIO_PHASES_START_END = [
   { id: 'p_start', label: 'Szenario starten', ts: true },
   { id: 'p_end',   label: 'Szenario beendet', ts: true },
-];
-// Feste Phasen je Durchlauf. `ts: true` → beim Abhaken wird ein Zeitstempel erfasst;
-// `ts: false` → reines Häkchen ohne Zeit.
-const SZENARIO_PHASES_RUN = [
-  { id: 'p_start',  label: 'Szenario starten',                  ts: true  },
-  { id: 'p_kalib',  label: 'Person kalibriert',                 ts: false },
-  { id: 'p_run',    label: 'Person durchläuft das Szenario',    ts: false },
-  { id: 'p_end',    label: 'Szenario beendet',                  ts: true  },
-  { id: 'p_brille', label: 'Brille abgezogen',                  ts: false },
-  { id: 'p_bew',    label: 'Selbstbewertung + Bewertungsbogen', ts: false },
 ];
 // Tutorial (Schritt 6): Zeit wird — wie bei TMS (Schritt 4) — über die normalen Start-/Ende-
 // Felder erfasst (Button „Jetzt" oder manuelle Eingabe), seit v2.28.0 kein eigener
@@ -146,8 +141,7 @@ function tutorialReminderSectionHTML() {
   </div>`;
 }
 function szPhasesFor(stepId) {
-  if (stepId === 'fs_07') return SZENARIO_PHASES_HOLOGATE;
-  return SZENARIO_PHASES_RUN;
+  return SZENARIO_PHASES_START_END;
 }
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -2528,10 +2522,7 @@ function renderAblauf() {
   extrasScope.querySelectorAll('[data-ev-edit]').forEach(btn =>
     btn.addEventListener('click', () => openEreignisOverlay(expandedFlowStepId, btn.dataset.evEdit))
   );
-  // VR-Szenario-Phasen — Inline-Darstellung (fs_07 Hologate / fs_10 Rollercoaster)
-  extrasScope.querySelectorAll('[data-sz-phase-inline]').forEach(btn =>
-    btn.addEventListener('click', () => toggleRunPhase(btn.dataset.szStep, btn.dataset.szRun, btn.dataset.szPhaseInline))
-  );
+  // VR-Szenario-Zeitfelder — Inline-Darstellung (fs_07 Hologate / fs_10 Rollercoaster)
   extrasScope.querySelectorAll('.ablauf-sz-time-input').forEach(inp =>
     inp.addEventListener('change', () => { writeSzRunTime(inp.dataset.szStep, inp.dataset.szRun, inp.dataset.szTimePhase); syncAblaufRows(); })
   );
@@ -2868,7 +2859,7 @@ function szenarioSectionHTML(stepId) {
   const title = isHologate ? 'HOLOGATE' : 'ROLLERCOASTER';
   const hint  = isHologate
     ? 'Feste Reihenfolge — Start/Ende je über Button „Jetzt" oder manuelle Eingabe erfassen.'
-    : 'Start/Ende erfassen ausschließlich den VR-Szenario-Durchlauf selbst — über Button „Jetzt" oder manuelle Eingabe, die übrigen Phasen abhaken.';
+    : 'Start/Ende erfassen ausschließlich den VR-Szenario-Durchlauf selbst — über Button „Jetzt" oder manuelle Eingabe.';
   return `<div class="bew-section">
     <div class="card-label" style="margin-bottom:6px">VR-SZENARIO-DURCHLAUF · ${esc(title)}</div>
     <p class="meta-text" style="margin-bottom:8px">${esc(hint)}</p>
@@ -2902,42 +2893,28 @@ function ensureRollercoasterRun(p) {
   return ensureFixedSzenarioRuns(p, 'fs_10', ['Rollercoaster'], 'rc_');
 }
 
-// Rendert eine Szenario-Phase eines Durchlaufs: `ts:true` (Start/Ende) als Zeit-Eingabefeld
-// — Button „Jetzt" oder manuelle Eingabe/Korrektur, wie bei den normalen Schritt-Zeitfeldern
-// — `ts:false` weiterhin als antippbares Häkchen (kein Zeitwert). Gemeinsam genutzt von der
-// Hologate-Inline-Darstellung (fs_07) und der Rollercoaster-Inline-Darstellung (fs_10).
+// Rendert eine Szenario-Phase eines Durchlaufs als Zeit-Eingabefeld — Button „Jetzt" oder
+// manuelle Eingabe/Korrektur, wie bei den normalen Schritt-Zeitfeldern. Gemeinsam genutzt von
+// der Hologate- (fs_07) und der Rollercoaster-Inline-Darstellung (fs_10); beide Schritte haben
+// seit v2.32.2 ausschließlich `ts:true`-Phasen (nur Start/Stopp), siehe
+// `SZENARIO_PHASES_START_END` — der frühere `ts:false`-Zweig (reines Häkchen ohne Zeitwert,
+// z. B. „Person kalibriert") entfällt daher.
 function szPhaseFieldHTML(stepId, run, ph) {
-  if (ph.ts) {
-    const inputId = `sz-time-${run.id}-${ph.id}`;
-    const val = (run.phases && run.phases[ph.id]) || null;
-    return `<div>
-      <label class="field-label" for="${esc(inputId)}">${esc(ph.label)}</label>
-      <div class="time-capture-row">
-        <input type="time" step="1" id="${esc(inputId)}" class="ablauf-sz-time-input" data-sz-step="${esc(stepId)}" data-sz-run="${esc(run.id)}" data-sz-time-phase="${esc(ph.id)}" value="${esc(isoToTimeInput(val))}">
-        <button type="button" class="btn btn-ghost btn-sz-time-now" data-target="${esc(inputId)}">🕐 Jetzt</button>
-      </div>
-    </div>`;
-  }
-  const done = !!(run.phases && run.phases[ph.id]);
-  return `<button class="sensorik-item${done ? ' checked' : ''}" data-sz-phase-inline="${esc(ph.id)}" data-sz-run="${esc(run.id)}" data-sz-step="${esc(stepId)}">
-    <span class="sensorik-check">${done ? '✓' : ''}</span>
-    <span class="sensorik-info">
-      <span class="sensorik-name">${esc(ph.label)}</span>
-      <span class="sensorik-time">${done ? 'erledigt' : 'offen'}</span>
-    </span>
-  </button>`;
+  const inputId = `sz-time-${run.id}-${ph.id}`;
+  const val = (run.phases && run.phases[ph.id]) || null;
+  return `<div>
+    <label class="field-label" for="${esc(inputId)}">${esc(ph.label)}</label>
+    <div class="time-capture-row">
+      <input type="time" step="1" id="${esc(inputId)}" class="ablauf-sz-time-input" data-sz-step="${esc(stepId)}" data-sz-run="${esc(run.id)}" data-sz-time-phase="${esc(ph.id)}" value="${esc(isoToTimeInput(val))}">
+      <button type="button" class="btn btn-ghost btn-sz-time-now" data-target="${esc(inputId)}">🕐 Jetzt</button>
+    </div>
+  </div>`;
 }
 
-// Alle Phasen eines Durchlaufs: die Zeit-Phasen (ts:true, i.d.R. Start/Ende) nebeneinander
-// wie die normalen Schritt-Zeitfelder, darunter die reinen Häkchen-Phasen (falls vorhanden).
+// Alle Phasen eines Durchlaufs nebeneinander wie die normalen Schritt-Zeitfelder (aktuell
+// ausschließlich Start/Stopp, siehe oben).
 function szRunPhasesHTML(stepId, run, phases) {
-  const timePhases = phases.filter(ph => ph.ts);
-  const boolPhases = phases.filter(ph => !ph.ts);
-  const timeHTML = timePhases.length
-    ? `<div class="edit-row-2">${timePhases.map(ph => szPhaseFieldHTML(stepId, run, ph)).join('')}</div>` : '';
-  const boolHTML = boolPhases.length
-    ? `<div class="sensorik-list" style="margin-top:8px">${boolPhases.map(ph => szPhaseFieldHTML(stepId, run, ph)).join('')}</div>` : '';
-  return timeHTML + boolHTML;
+  return `<div class="edit-row-2">${phases.map(ph => szPhaseFieldHTML(stepId, run, ph)).join('')}</div>`;
 }
 
 // Schreibt den Wert eines Szenario-Zeitfelds (Start/Ende) aus dem zugehörigen
@@ -3072,26 +3049,6 @@ document.getElementById('ereignis-overlay').addEventListener('click', e => {
 });
 
 // ── VR-Szenario-Durchlauf: Häkchen-Phasen ──────────────────────────────────────
-// Gemeinsame Häkchen-Logik (ts:false-Phasen ohne Zeitwert, z.B. „Person kalibriert") für die
-// Inline-Darstellung beider fixer Szenario-Schritte (fs_07 Hologate, fs_10 Rollercoaster).
-// Zeit-Phasen (ts:true, Start/Ende) laufen seit v2.29.0 über eigene Zeit-Eingabefelder (siehe
-// writeSzRunTime), nicht mehr hier.
-function toggleRunPhase(stepId, runId, phaseId, afterFn) {
-  const p = ablaufProband();
-  if (!p) return;
-  const run = ((p.szenarien && p.szenarien[stepId]) || []).find(r => r.id === runId);
-  const ph  = szPhasesFor(stepId).find(x => x.id === phaseId);
-  if (!run || !ph || ph.ts) return;
-  if (!run.phases) run.phases = {};
-  const commit = () => { save(); if (afterFn) afterFn(); renderAblauf(); };
-  if (run.phases[phaseId]) {
-    showConfirm('Phase zurücksetzen', `Häkchen bei „${ph.label}" entfernen?`, () => { delete run.phases[phaseId]; commit(); });
-  } else {
-    run.phases[phaseId] = true;
-    commit();
-  }
-}
-
 // „Weiter": aktuellen Schritt sichern und den nächsten Schritt der Liste öffnen.
 function advanceFlowStep() {
   if (expandedFlowStepId && document.getElementById('ablauf-edit-start')) {

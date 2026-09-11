@@ -151,27 +151,23 @@ Einzelne Schritte haben zusätzliche Felder:
   abhakbare Erinnerung an den Ablauf angezeigt (Abschnitt „Tutorial-Ablauf"): *Person
   kalibriert*, *Person durchläuft das Tutorial*, *Direkt ins VR-Szenario gewechselt* — diese
   drei Punkte tragen keinen eigenen Zeitstempel.
-- **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**, beide seit v2.32.0 strukturell
-  gleich: genau feste Durchläufe **direkt im Schritt**, nichts hinzufügen/löschen. Seit
-  v2.29.0 werden „Szenario starten"/„Szenario beendet" **wie normale Zeitfelder** erfasst —
-  Button „Jetzt" oder manuelle Eingabe/Korrektur. Die übrigen Phasen (z. B. „Person
-  kalibriert", „Brille abgezogen") bleiben reine Häkchen ohne Zeit — antippen, erneutes
-  Antippen macht das nach Rückfrage rückgängig. Beide Schritte haben **keine** eigene
-  Start/Ende-Zeiterfassung auf Schrittebene — die Zeiten stecken ausschließlich im jeweiligen
-  Durchlauf.
+- **Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**, beide seit v2.32.2 strukturell
+  identisch aufgebaut: genau feste Durchläufe **direkt im Schritt**, nichts hinzufügen/
+  löschen, je nur die zwei Felder **Szenario starten** und **Szenario beendet** — seit
+  v2.29.0 **wie normale Zeitfelder** erfasst (Button „Jetzt" oder manuelle Eingabe/
+  Korrektur). Weitere abhakbare Zwischenschritte gibt es an keinem der beiden Schritte mehr
+  (an Schritt 10 bis v2.32.1 noch vier zusätzliche Häkchen, siehe unten — auf Wunsch
+  ersatzlos entfernt). Beide Schritte haben **keine** eigene Start/Ende-Zeiterfassung auf
+  Schrittebene — die Zeiten stecken ausschließlich im jeweiligen Durchlauf.
   - **Schritt 7 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
     Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi (Standardbezeichnungen, in den
-    Einstellungen änderbar, siehe oben); je Durchlauf nur die Felder **Szenario starten** und
-    **Szenario beendet**. Zeile wird grün bei 5/5 vollständigen Durchläufen (Anzeige
-    „Durchläufe X/5").
+    Einstellungen änderbar, siehe oben). Zeile wird grün bei 5/5 vollständigen Durchläufen
+    (Anzeige „Durchläufe X/5").
   - **Schritt 10 (Rollercoaster):** seit v2.32.0 **genau ein fester Durchlauf** (der frühere
     Button „＋ Durchlauf hinzufügen" und das zugehörige Overlay entfallen — es gibt nur den
-    einen Rollercoaster-Durchlauf), direkt im Schritt mit denselben Phasen wie zuvor: Szenario
-    starten (Zeitfeld) · Person kalibriert (Häkchen) · Person durchläuft das Szenario
-    (Häkchen) · Szenario beendet (Zeitfeld) · Brille abgezogen (Häkchen) · Selbstbewertung +
-    Bewertungsbogen (Häkchen). **„Szenario starten"/„Szenario beendet" sind hier ausdrücklich
-    der Start/das Ende des VR-Szenario-Durchlaufs selbst** — nicht des gesamten Schritts.
-    Zeile wird grün, sobald Start und Ende erfasst sind.
+    einen Rollercoaster-Durchlauf), direkt im Schritt. **„Szenario starten"/„Szenario
+    beendet" sind hier ausdrücklich der Start/das Ende des VR-Szenario-Durchlaufs selbst**
+    — nicht des gesamten Schritts. Zeile wird grün, sobald Start und Ende erfasst sind.
 - **Schritt 8 / Schritt 11**: der **Trainerbewertungsbogen**, direkt im Schritt (siehe oben)
   — ebenfalls ohne eigene Start/Ende-Zeiterfassung; Zeile wird grün, sobald alle 4 Fragen
   beantwortet sind (Anzeige „X/4 bewertet").
