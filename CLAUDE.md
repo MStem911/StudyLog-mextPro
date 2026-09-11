@@ -33,27 +33,30 @@ gerätespezifische Logik.
 
 ### Kanonischer Ablauf (Schritte)
 
+**Aktueller Stand (seit v2.27.0, 16 Schritte) — ersetzt die ursprüngliche 19-Schritt-Planung
+unten in diesem Abschnitt:** die Schritte „Ankommen, Begrüßung" sowie „VR-Equipment/VR-Brille
+an-/ablegen" (Hologate **und** Rollercoaster) entfallen ersatzlos; der Trainerbewertungsbogen
+ist kein eingebetteter Abschnitt an einem Fragebogen-Schritt mehr, sondern ein **eigener
+Schritt direkt nach dem jeweiligen VR-Durchlauf**.
+
 | Nr. | Schritt | Label |
 |-----|---------|-------|
-| –   | Ankommen, Begrüßung | VR / SEN |
 | 1   | Aufklärung + Einverständniserklärung | VR / SEN |
 | 2   | Anlegen Sensorik (Shimmer, Brustgurt, Uhr) | SEN |
 | 3   | Fragebogen 1 | SEN / VR |
 | 4   | TMS (ca. 0,5 h) | TMS (extern) |
 | 5   | Fragebogen 2 | SEN / VR |
-| 6   | Anlegen VR-Equipment (Hologate) | VR |
-| 7   | Einweisung + Tutorial VR (Hologate) | VR |
-| 8   | VR-Szenarien Hologate (5 Szenarien) | VR |
-| 9   | Ablegen VR-Equipment (Hologate) | VR |
-| 10  | Fragebogen 3 | SEN / VR |
-| 11  | VR-Brille anlegen (Rollercoaster) | VR |
-| 12  | Rollercoaster (Varjo) | VR |
-| 13  | VR-Brille ablegen (Rollercoaster) | VR |
-| 14  | Fragebogen 4 | SEN / VR |
-| 15  | Stop Sensorik (Aufzeichnung beenden) | SEN |
-| 16  | Sensorik ablegen | SEN |
-| 17  | Verabschiedung | VR / SEN |
-| 18  | Datensicherung (VR) / Desinfektion & Aufbereitung Sensorik (SEN) / StudyLog-Daten sichern (beide) | VR / SEN |
+| 6   | Einweisung + Tutorial VR (Hologate) | VR |
+| 7   | VR-Szenarien Hologate (5 Szenarien) | VR |
+| 8   | Trainerbewertungsbogen (Hologate) | VR |
+| 9   | Fragebogen 3 | SEN / VR |
+| 10  | Rollercoaster (Varjo) | VR |
+| 11  | Trainerbewertungsbogen (Rollercoaster) | VR |
+| 12  | Fragebogen 4 | SEN / VR |
+| 13  | Stop Sensorik (Aufzeichnung beenden) | SEN |
+| 14  | Sensorik ablegen | SEN |
+| 15  | Verabschiedung | VR / SEN |
+| 16  | Datensicherung (VR) / Desinfektion & Aufbereitung Sensorik (SEN) / StudyLog-Daten sichern (beide) | VR / SEN |
 
 Diese Liste ist die Referenz für die Default-Schritte. Ob die Schrittliste im UI
 editierbar/erweiterbar ist, ist noch offen (siehe unten).
@@ -77,9 +80,10 @@ Die Inhalte der bisherigen Feature-Tabs werden **kontextabhängig in die passend
 Ablaufschritte eingebettet**, nicht als separate Tabs beibehalten:
 - **Sensorik-Checkliste** (abhakbare Items mit Timestamp) → Schritt 2 „Anlegen Sensorik".
 - **VR-Szenario-Ablauf mit Timestamps** (Szenario in Teilschritte unterteilt, je abhakbar) →
-  Schritt 8 „VR-Szenarien Hologate" bzw. Schritt 12 „Rollercoaster".
-- **Trainerbewertungsbogen (20 Items), einmal pro VR-Szenario** → bei den VR-Szenario-
-  Schritten, je Teilnehmer*in + Szenario ein Bogen.
+  Schritt 7 „VR-Szenarien Hologate" bzw. Schritt 10 „Rollercoaster".
+- **Trainerbewertungsbogen** (reduziert auf 4 Items, siehe `docs/ARCHITECTURE.md`) → eigener
+  Schritt direkt nach dem jeweiligen VR-Durchlauf (Schritt 8 nach Hologate, Schritt 11 nach
+  Rollercoaster), nicht mehr an einem Fragebogen-Schritt eingebettet.
 - **Ereignis-Erfassung** (Zeitpunkt-/Zeitraum-Erfassung von Problemen) → pro Schritt bzw. als
   schrittübergreifende Erfassung im Ablauf.
 - **Handedness (Links-/Rechtshänder)** → Attribut der Teilnehmenden, gesetzt beim Anlegen
@@ -98,7 +102,7 @@ Ablaufschritt).
 - Editierbarkeit der Schrittliste (fixe Defaults vs. pro Session anpassbar).
 - Navigation im Ablauf: freies Springen vs. sequenziell; Verhalten bei parallelen Geräten
   (VR-Team/SEN-Team) ohne Sync.
-- Zusammenspiel „ein Ablauf" mit „mehreren VR-Szenarien" (Schritt 8: 5 Szenarien) und
+- Zusammenspiel „ein Ablauf" mit „mehreren VR-Szenarien" (Schritt 7: 5 Szenarien) und
   mehreren Bewertungsbögen.
 - Ob der bisherige Session-Timer/„Protokoll" vollständig im Ablauf aufgeht.
 

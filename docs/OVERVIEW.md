@@ -15,7 +15,7 @@ eines strukturierten Bewertungsbogens für die durchführende Trainingsleitung. 
 bleiben dabei ausschließlich auf dem jeweiligen Gerät.
 
 Seit **v2.14.0** ist die App **eine einzige Ansicht: der Ablauf** — eine chronologische
-Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–18).
+Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–16, seit v2.27.0).
 Links die Schritt-Leiste (mit eigener Scrollbar), rechts das Detailfeld für den gewählten
 Schritt; auf dem Smartphone klappt der Schritt in der Liste auf. Zu jedem Schritt werden
 pro Teilnehmende:r Start- und Endzeit (Button „Jetzt" oder manuelle Eingabe) sowie eine
@@ -27,24 +27,25 @@ Die frühere Tab-Navigation entfällt. Einstellungen liegen hinter dem ⚙-Icon 
 (Overlay). **Schritt 1 (Aufklärung + Einverständnis)** ist beim Start direkt geöffnet und hat
 keine Zeitfelder — dort wird die Person angelegt („＋ Teilnehmende:n anlegen"), danach geht
 es automatisch zu Schritt 2 (Sensorik). Weitere Personen über ＋ oben; bearbeiten über ✎.
-Der CSV/JSON-Export (in Schritt 18) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
+Der CSV/JSON-Export (in Schritt 16) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
-Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), eine reine **Anzeigeliste des
-VR-Equipments** (Schritt 6 — Fußtracker / Handtracker / Weste / VR-Brille, ohne Abhaken),
-**VR-Szenario-Durchläufe** (Schritt 7/8/12, „starten/beendet" je mit Zeitstempel und ohne
-eigene Schritt-Zeiterfassung; Schritt 7 genau ein Tutorial-Durchlauf direkt im Schritt —
-nur Starten/Beenden erfassbar, die übrigen Punkte reine Ablauf-Erinnerung; Schritt 8 fünf
-feste Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi — je nur Start + Stopp direkt
-im Schritt; Schritt 12 über ein Overlay),
-**Trainerbewertungsbogen** (Schritt 10 je Hologate-Szenario, Schritt 14 für Rollercoaster —
-seit v2.16.0 reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items),
-**Ereignisse/Probleme** (je Schritt, Zeitpunkt oder Zeitraum). Die Fragebogen-Schritte
-3/5/10/14 sind seit v2.26.1 einheitlich aufgebaut: keine Start/Ende-Zeiterfassung, nur eine
-Bestätigungs-Checkbox „Fragebogen ausgefüllt" (färbt den Schritt grün; Schritt 10/14 zusätzlich
-mit Trainerbewertungsbogen). **Noch offen:** der
-CSV/JSON-Export basiert noch auf der alten Datenstruktur (`sl_sessions`/`sl_bewertungen`)
-und bezieht die neuen Ablauf-Daten nicht ein; die alte Protokoll-Liste hat keinen Aufruf
-mehr.
+Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchläufe**
+(Schritt 6/7/10, „starten/beendet" je mit Zeitstempel und ohne eigene Schritt-Zeiterfassung;
+Schritt 6 genau ein Tutorial-Durchlauf direkt im Schritt — nur Starten/Beenden erfassbar, die
+übrigen Punkte reine Ablauf-Erinnerung; Schritt 7 fünf feste Hologate-Durchläufe —
+Scheiben/Köpfe/Laufen/Drohnen/Kombi — je nur Start + Stopp direkt im Schritt; Schritt 10 über
+ein Overlay), **Trainerbewertungsbogen** (seit v2.27.0 **eigener Schritt** direkt nach dem
+jeweiligen VR-Durchlauf statt eingebettet an einem Fragebogen-Schritt: Schritt 8 bewertet alle
+Hologate-Szenarien aus Schritt 7 gemeinsam, ohne das Tutorial; Schritt 11 bewertet nur den
+Rollercoaster-Durchlauf inkl. des in der Szene enthaltenen Schießens — seit v2.16.0 inhaltlich
+reduziert auf den Block „Vergleich zur Selbsteinschätzung", 4 Items), **Ereignisse/Probleme**
+(je Schritt, Zeitpunkt oder Zeitraum). Die Fragebogen-Schritte 3/5/9/12 sind seit v2.26.1
+einheitlich aufgebaut: keine Start/Ende-Zeiterfassung, nur eine Bestätigungs-Checkbox
+„Fragebogen ausgefüllt" (färbt den Schritt grün). Die separaten Schritte zum An-/Ablegen von
+VR-Equipment (Hologate) bzw. der VR-Brille (Rollercoaster) entfallen seit v2.27.0 ersatzlos.
+**Noch offen:** der CSV/JSON-Export basiert noch auf der alten Datenstruktur
+(`sl_sessions`/`sl_bewertungen`) und bezieht die neuen Ablauf-Daten nicht ein; die alte
+Protokoll-Liste hat keinen Aufruf mehr.
 
 ## Zielgruppe / Anwendungskontext
 

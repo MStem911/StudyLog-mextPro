@@ -31,14 +31,18 @@ von Teilnehmenden, „Alle Daten löschen"). Alles Weitere wird aus dem Ablauf h
 |---|---|
 | **＋** neben der Personen-Auswahl (oder „＋ Teilnehmende:n anlegen" in Schritt 1) | Overlay „Teilnehmende:n anlegen": Pseudonym + Händigkeit + optionale Notiz |
 | **✎** neben der Personen-Auswahl | Bearbeiten-Dialog der aktuell gewählten Person |
-| Button in **Schritt 18** („Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
+| Button in **Schritt 16** („Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
 
-**Trainerbewertungsbogen (Schritt 10 / 14):** Im Detailbereich von **Schritt 10
-„Fragebogen 3"** (für die Hologate-Szenarien) bzw. **Schritt 14 „Fragebogen 4"** (für
-Rollercoaster) → **＋ Bewertungsbogen anlegen** → Bezeichnung eintragen (z. B. „Szenario 1"),
-bewerten, optional Anmerkungen, **💾 speichern**. Für Hologate wird pro durchlaufenem
-Szenario ein eigener Bogen angelegt; bestehende Bögen sind in der Liste antippbar
-(bearbeiten/löschen). Gedacht für VR, während die Teilnehmenden den Fragebogen bearbeiten.
+**Trainerbewertungsbogen (Schritt 8 / 11):** eigene Schritte direkt nach dem jeweiligen
+VR-Durchlauf — **Schritt 8** nach den Hologate-Szenarien (Schritt 7), **Schritt 11** nach dem
+Rollercoaster (Schritt 10). Dort → **＋ Bewertungsbogen anlegen** → Bezeichnung eintragen
+(Vorschlag: „Hologate (gesamt)" bzw. „Rollercoaster"), bewerten, optional Anmerkungen,
+**💾 speichern**; bestehende Bögen sind in der Liste antippbar (bearbeiten/löschen). Gedacht
+für VR, während die Teilnehmenden den anschließenden Fragebogen (Schritt 9 bzw. 12)
+bearbeiten. **Schritt 8 bewertet alle Hologate-Szenarien aus Schritt 7 gemeinsam** (ohne das
+Tutorial aus Schritt 6); **Schritt 11 bewertet nur den Rollercoaster-Durchlauf** (inkl. des in
+der Szene enthaltenen Schießens) — der jeweilige Hinweistext im Schritt macht das noch einmal
+deutlich.
 
 Der Bogen ist ab v2.16.0 **reduziert** auf den Block **„Vergleich zur Selbsteinschätzung"** —
 diese vier Fragen entsprechen inhaltlich den Fragen des Teilnehmerfragebogens (Selbst-/
@@ -54,7 +58,7 @@ basiert weiter auf der alten Datenstruktur. Bereits erfasste Daten bleiben gespe
 
 ## Die Ablauf-Schrittliste nutzen
 
-Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab (Schritte 1–18,
+Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab (Schritte 1–16,
 von „Aufklärung + Einverständniserklärung" über „Anlegen Sensorik", „Fragebogen 1", „TMS", …
 bis „Datensicherung / Aufbereitung"). Die Kürzel
 VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt fachlich
@@ -71,9 +75,13 @@ verantwortet — sie haben keine weitere Funktion.
 2. Einen **Schritt antippen** — die Reihenfolge ist frei, man muss nicht oben anfangen.
    Der Schritt zeigt dann (rechts in der Spalte bzw. aufgeklappt in der Liste):
    - **Start** und **Ende**: je über den Button **🕐 Jetzt** die aktuelle Uhrzeit
-     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. **Schritt 1, 2 und 3 haben
-     keine Start/Ende-Felder** (Schritt 1: Person anlegen; Schritt 2: nur die Checkliste;
-     Schritt 3 „Fragebogen 1": keine Zeiterfassung).
+     übernehmen, oder eine Uhrzeit manuell eintragen/korrigieren. Mehrere Schritte haben
+     **keine** eigenen Start/Ende-Felder, weil die relevante Zeit anders erfasst wird oder
+     entfällt: Schritt 1 (Person anlegen), Schritt 2 (nur die Sensorik-Checkliste), Schritt 6
+     (Zeit steckt im Tutorial-Durchlauf), Schritt 7 (Zeiten stecken in den 5
+     Hologate-Durchläufen), Schritt 8 und 11 (Trainerbewertungsbogen — kein Timer, die Bögen
+     tragen ihre eigene Speicherzeit) sowie die Fragebogen-Schritte 3, 5, 9, 12 (nur die
+     Checkbox „Fragebogen ausgefüllt", siehe unten).
    - **Hinweis / Anmerkung**: Freitext zu diesem Schritt (z. B. Besonderheiten, Abweichungen).
      Sobald etwas eingetragen ist, wird die **Uhrzeit der Notiz** festgehalten und neben dem
      Feld angezeigt („· notiert 14:51"). Gilt in **jedem** Schritt.
@@ -86,7 +94,7 @@ verantwortet — sie haben keine weitere Funktion.
    - **gelb** – angefangen (nur Start *oder* Ende *oder* nur eine Anmerkung),
    - **grün** – Start *und* Ende erfasst.
    Ein ✎ neben dem Schrittnamen zeigt an, dass eine Anmerkung hinterlegt ist. Oben läuft ein
-   Fortschrittsbalken („X / 18 komplett").
+   Fortschrittsbalken („X / 16 komplett").
 4. **Schritt leeren** (im aufgeklappten Schritt) entfernt nach Rückfrage die erfassten Zeiten
    und die Anmerkung dieses einen Schritts.
 5. **Ereignisse / Probleme** (an jedem Schritt): über **＋ Ereignis erfassen** eine Kategorie
@@ -96,38 +104,38 @@ verantwortet — sie haben keine weitere Funktion.
    antippen zum Bearbeiten/Löschen.
 
 Einzelne Schritte haben zusätzliche Felder:
-- **Fragebogen-Schritte (3, 5, 10, 14)**: alle vier sind gleich aufgebaut — **keine**
+- **Fragebogen-Schritte (3, 5, 9, 12)**: alle vier sind gleich aufgebaut — **keine**
   Start/Ende-Zeiterfassung, nur die Checkbox **„Fragebogen ausgefüllt"** (plus die überall
   mögliche Anmerkung). Antippen, sobald die teilnehmende Person den jeweiligen Fragebogen
   bearbeitet hat — der Schritt wird dann **grün** (Anzeige „Fragebogen ausgefüllt"). Erneutes
   Antippen hebt die Bestätigung wieder auf. „Anmerkung entfernen" lässt die Bestätigung stehen.
-  An Schritt 10 und 14 erscheint zusätzlich der **Trainerbewertungsbogen** (siehe unten).
 - **Schritt 2 „Anlegen Sensorik"**: **nur** die **Sensorik-Checkliste** (Shimmer, Brustgurt,
   Uhr) — keine Start/Ende-Felder. Ein Item antippen, sobald die Sensorik angelegt ist — der
   Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung (nach Rückfrage)
   rückgängig. Der Schritt wird grün, sobald alle drei Items angelegt sind (Anzeige
   „Sensorik 3/3"). Eine Anmerkung (mit Uhrzeit) ist wie in jedem Schritt möglich.
-- **Schritt 6 „Anlegen VR-Equipment"**: reine **Anzeigeliste** des anzulegenden Equipments
-  (Fußtracker, Handtracker, Weste, VR-Brille) — nichts zum Abhaken, nur als Erinnerung.
-- **Schritt 7 / Schritt 8 / Schritt 12**: **VR-Szenario-Durchläufe**. „Starten"/„Beendet"
+- **Schritt 6 / Schritt 7 / Schritt 10**: **VR-Szenario-Durchläufe**. „Starten"/„Beendet"
   erfassen beim Antippen automatisch die Uhrzeit; erneutes Antippen macht das nach Rückfrage
   rückgängig.
-  - **Schritt 7 (Tutorial):** genau **ein** Durchlauf (nichts hinzufügen/löschen), direkt im
+  - **Schritt 6 (Tutorial):** genau **ein** Durchlauf (nichts hinzufügen/löschen), direkt im
     Schritt. Nur **Tutorial starten** und **Tutorial beendet** werden angetippt (je
     Zeitstempel) — das sind die einzigen erfassten Zeiten dieses Schritts, eine eigene
     Start/Ende-Zeiterfassung des Schritts gibt es nicht. Die Punkte *Person kalibriert*,
     *Person durchläuft das Tutorial* und *Direkt ins VR-Szenario gewechselt* sind **nicht
     abhakbar**, sondern nur als Erinnerung an den Ablauf dargestellt. Zeile wird grün, sobald
     Starten und Beenden erfasst sind.
-  - **Schritt 8 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
+  - **Schritt 7 (Hologate):** **fünf feste Durchläufe** in vorgegebener Reihenfolge — 1.
     Scheiben · 2. Köpfe · 3. Laufen · 4. Drohnen · 5. Kombi. Nichts hinzufügen/löschen; je
     Durchlauf nur **Szenario starten** und **Szenario beendet** antippen (je Zeitstempel).
     Dieser Schritt hat **keine** eigene Start/Ende-Zeiterfassung — die Zeiten stecken in den
     Durchläufen. Zeile wird grün bei 5/5 vollständigen Durchläufen (Anzeige „Durchläufe X/5").
-  - **Schritt 12 (Rollercoaster):** Durchlauf über **＋ Durchlauf hinzufügen**, Bezeichnung
+  - **Schritt 10 (Rollercoaster):** Durchlauf über **＋ Durchlauf hinzufügen**, Bezeichnung
     und Phasen im Overlay: Szenario starten (Zeit) · Person kalibriert · Person durchläuft das
     Szenario · Szenario beendet (Zeit) · Brille abgezogen · Selbstbewertung + Bewertungsbogen.
-- **Schritt 10 / Schritt 14**: der **Trainerbewertungsbogen** (siehe unten).
+- **Schritt 8 / Schritt 11**: der **Trainerbewertungsbogen** (siehe oben) — ebenfalls ohne
+  eigene Start/Ende-Zeiterfassung, Zeile wird grün, sobald mindestens ein Bogen angelegt ist.
+- Die früheren Schritte „VR-Equipment/VR-Brille an-/ablegen" (Hologate und Rollercoaster)
+  entfallen seit v2.27.0 ersatzlos.
 
 Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind
 aktuell **nicht** Teil des CSV-/JSON-Exports.
@@ -138,7 +146,7 @@ aktuell **nicht** Teil des CSV-/JSON-Exports.
 > (Sensorik-, Szenario-, Bewertungs-, Ereignis- und Protokoll-Tab). Diese Bereiche sind ab
 > v2.14.0 nicht mehr direkt erreichbar und werden gerade in die Ablauf-Schritte überführt.
 > Aktuell gültig sind „Aufbau der App" und „Die Ablauf-Schrittliste nutzen" oben sowie
-> Abschnitt 1 (Person anlegen — jetzt über **＋** im Ablauf) und der Export (über Schritt 18).
+> Abschnitt 1 (Person anlegen — jetzt über **＋** im Ablauf) und der Export (über Schritt 16).
 
 ### 1. Teilnehmende Person anlegen (einmalig pro Person)
 

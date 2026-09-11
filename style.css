@@ -1198,15 +1198,7 @@ input[type="time"] { color-scheme: dark; }
 .bew-list-meta  { font-size: var(--text-sm); color: var(--text2); white-space: nowrap; }
 .bew-ov-context { margin-bottom: 8px; }
 
-/* Reine Anzeigeliste (Schritt 6 „VR-Equipment anlegen") — kein Abhaken */
-.ablauf-equip-list { display: flex; flex-direction: column; gap: 6px; }
-.ablauf-equip-item {
-  background: var(--surface3); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 10px 12px;
-  font-weight: 700; color: var(--text1);
-}
-
-/* Inline-Durchlauf (Schritt 7) */
+/* Inline-Durchlauf (Schritt 6 Tutorial / Schritt 7 Hologate) */
 .ablauf-sz-run { margin-bottom: 12px; }
 .ablauf-sz-run + .ablauf-sz-run { padding-top: 12px; border-top: 1px solid var(--border); }
 .ablauf-sz-label {
@@ -1214,9 +1206,9 @@ input[type="time"] { color-scheme: dark; }
   background: var(--surface3); border: 1px solid var(--border2);
   border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text1);
 }
-/* Feste Durchlauf-Bezeichnung (Schritt 8) — nicht editierbar, nur Überschrift */
+/* Feste Durchlauf-Bezeichnung (Schritt 7 Hologate) — nicht editierbar, nur Überschrift */
 .ablauf-sz-runname { font-weight: 700; color: var(--text1); font-size: var(--text-md); }
-/* Reminder-Zeile (Schritt 7) — nicht abhakbar, nur Ablauf-Hinweis */
+/* Reminder-Zeile (Schritt 6 Tutorial) — nicht abhakbar, nur Ablauf-Hinweis */
 .ablauf-sz-reminder {
   display: flex; align-items: baseline; gap: 8px;
   padding: 8px 12px; font-size: var(--text-sm); color: var(--text3);

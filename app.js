@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.26.1';
+const APP_VERSION = '2.27.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -50,34 +50,38 @@ const DEFAULT_EVENT_TAGS = ['Sensorik', 'VR', 'Fragebogen', 'TMS', 'Sonstiges'];
 // Pro Teilnehmende:r wird zu jedem Schritt in p.ablauf[stepId] = { startISO, endISO, note }
 // gespeichert (fehlender Schlüssel = Schritt noch nicht angefasst). Die Labels (tag) sind
 // rein informativ — kein Filter-/Rollenverhalten. Reihenfolge = Anzeigereihenfolge.
+// v2.27.0: Die Schritte „VR-Equipment/VR-Brille an-/ablegen" (Hologate + Rollercoaster)
+// entfallen; der Trainerbewertungsbogen ist kein eingebetteter Abschnitt mehr, sondern ein
+// eigener Schritt direkt nach dem jeweiligen VR-Durchlauf. Migration alter Ablauf-Daten:
+// siehe FLOW_STEP_ID_REMAP_V227 / BEW_STEP_ID_REMAP_V227 in load().
 const FLOW_STEPS = [
   { id: 'fs_01', nr: '1',  label: 'Aufklärung + Einverständniserklärung',                     tag: 'VR / SEN' },
   { id: 'fs_02', nr: '2',  label: 'Anlegen Sensorik (Shimmer, Brustgurt, Uhr)',              tag: 'SEN' },
   { id: 'fs_03', nr: '3',  label: 'Fragebogen 1',                                            tag: 'SEN / VR' },
   { id: 'fs_04', nr: '4',  label: 'TMS (ca. 0,5 h)',                                         tag: 'TMS (extern)' },
   { id: 'fs_05', nr: '5',  label: 'Fragebogen 2',                                            tag: 'SEN / VR' },
-  { id: 'fs_06', nr: '6',  label: 'Anlegen VR-Equipment (Hologate)',                         tag: 'VR' },
-  { id: 'fs_07', nr: '7',  label: 'Einweisung + Tutorial VR (Hologate)',                     tag: 'VR' },
-  { id: 'fs_08', nr: '8',  label: 'VR-Szenarien Hologate (5 Szenarien)',                     tag: 'VR' },
-  { id: 'fs_09', nr: '9',  label: 'Ablegen VR-Equipment (Hologate)',                         tag: 'VR' },
-  { id: 'fs_10', nr: '10', label: 'Fragebogen 3',                                            tag: 'SEN / VR' },
-  { id: 'fs_11', nr: '11', label: 'VR-Brille anlegen (Rollercoaster)',                       tag: 'VR' },
-  { id: 'fs_12', nr: '12', label: 'Rollercoaster (Varjo)',                                   tag: 'VR' },
-  { id: 'fs_13', nr: '13', label: 'VR-Brille ablegen (Rollercoaster)',                       tag: 'VR' },
-  { id: 'fs_14', nr: '14', label: 'Fragebogen 4',                                            tag: 'SEN / VR' },
-  { id: 'fs_15', nr: '15', label: 'Stop Sensorik (Aufzeichnung beenden)',                    tag: 'SEN' },
-  { id: 'fs_16', nr: '16', label: 'Sensorik ablegen',                                        tag: 'SEN' },
-  { id: 'fs_17', nr: '17', label: 'Verabschiedung',                                          tag: 'VR / SEN' },
-  { id: 'fs_18', nr: '18', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
+  { id: 'fs_06', nr: '6',  label: 'Einweisung + Tutorial VR (Hologate)',                     tag: 'VR' },
+  { id: 'fs_07', nr: '7',  label: 'VR-Szenarien Hologate (5 Szenarien)',                     tag: 'VR' },
+  { id: 'fs_08', nr: '8',  label: 'Trainerbewertungsbogen (Hologate)',                       tag: 'VR' },
+  { id: 'fs_09', nr: '9',  label: 'Fragebogen 3',                                            tag: 'SEN / VR' },
+  { id: 'fs_10', nr: '10', label: 'Rollercoaster (Varjo)',                                   tag: 'VR' },
+  { id: 'fs_11', nr: '11', label: 'Trainerbewertungsbogen (Rollercoaster)',                  tag: 'VR' },
+  { id: 'fs_12', nr: '12', label: 'Fragebogen 4',                                            tag: 'SEN / VR' },
+  { id: 'fs_13', nr: '13', label: 'Stop Sensorik (Aufzeichnung beenden)',                    tag: 'SEN' },
+  { id: 'fs_14', nr: '14', label: 'Sensorik ablegen',                                        tag: 'SEN' },
+  { id: 'fs_15', nr: '15', label: 'Verabschiedung',                                          tag: 'VR / SEN' },
+  { id: 'fs_16', nr: '16', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
 ];
 const LAST_FLOW_STEP_ID = FLOW_STEPS[FLOW_STEPS.length - 1].id;
 
-// Schritte, an denen VR den Trainerbewertungsbogen zum vorangegangenen VR-Szenario ausfüllt
-// (nach dem Ablegen, während die Teilnehmenden den Fragebogen bearbeiten). Ein Bogen pro
-// VR-Szenario — Hologate (Schritt 8) hat mehrere, Rollercoaster (Schritt 12) i.d.R. einen.
+// Trainerbewertungsbogen: eigener Ablauf-Schritt direkt nach dem jeweiligen VR-Durchlauf
+// (Hologate → Schritt 8, Rollercoaster → Schritt 11), von VR ausgefüllt, während die
+// Teilnehmenden den anschließenden Fragebogen bearbeiten.
 const BEW_STEP_META = {
-  fs_10: { scenarioLabel: 'Hologate-Szenarien (Schritt 8)',   defaultLabel: 'Szenario ' },
-  fs_14: { scenarioLabel: 'Rollercoaster / Varjo (Schritt 12)', defaultLabel: 'Rollercoaster' },
+  fs_08: { scenarioLabel: 'Hologate-Szenarien (Schritt 7)',     defaultLabel: 'Hologate (gesamt)',
+           hint: 'Bewertet werden alle Hologate-Szenarien aus Schritt 7 gemeinsam (ohne das Tutorial aus Schritt 6) — von VR ausfüllen, während die Teilnehmenden Fragebogen 3 bearbeiten.' },
+  fs_11: { scenarioLabel: 'Rollercoaster / Varjo (Schritt 10)', defaultLabel: 'Rollercoaster',
+           hint: 'Bewertet wird nur der Rollercoaster-Durchlauf (inkl. dem in der Szene enthaltenen Schießen) — von VR ausfüllen, während die Teilnehmenden Fragebogen 4 bearbeiten.' },
 };
 
 // Trainerbewertungsbogen (reduziert, ab v2.16.0): nur der Block „Vergleich zur
@@ -99,11 +103,11 @@ const BEW_OV_QUESTIONS = [
 // zerlegt werden (Anforderung „VR-Szenario-Ablauf mit Timestamps"). Pro Schritt eine Liste
 // von Durchläufen in p.szenarien[stepId] = [ { id, label, phases: { [phaseId]: ISO | true } } ].
 const SZENARIO_STEP_META = {
-  fs_07: { title: 'Tutorial-Durchlauf (Hologate)',      defaultLabel: 'Tutorial' },
-  fs_08: { title: 'Hologate',                           defaultLabel: 'Szenario ' },
-  fs_12: { title: 'Rollercoaster-Durchlauf (Varjo)',    defaultLabel: 'Rollercoaster' },
+  fs_06: { title: 'Tutorial-Durchlauf (Hologate)',      defaultLabel: 'Tutorial' },
+  fs_07: { title: 'Hologate',                           defaultLabel: 'Szenario ' },
+  fs_10: { title: 'Rollercoaster-Durchlauf (Varjo)',    defaultLabel: 'Rollercoaster' },
 };
-// Schritt 8: feste Reihenfolge von 5 Hologate-Durchläufen, je nur mit Start + Stopp
+// Schritt 7: feste Reihenfolge von 5 Hologate-Durchläufen, je nur mit Start + Stopp
 // (Zeitstempel). Reihenfolge und Bezeichnungen sind vorgegeben, nicht editierbar.
 const HOLOGATE_RUN_LABELS = ['Scheiben', 'Köpfe', 'Laufen', 'Drohnen', 'Kombi'];
 const SZENARIO_PHASES_HOLOGATE = [
@@ -112,7 +116,7 @@ const SZENARIO_PHASES_HOLOGATE = [
 ];
 // Feste Phasen je Durchlauf. `ts: true` → beim Abhaken wird ein Zeitstempel erfasst;
 // `ts: false` → reines Häkchen ohne Zeit; `reminder: true` → nicht abhakbar, nur als
-// Ablauf-Erinnerung dargestellt. Tutorial (fs_07) hat eine eigene, kürzere Liste: nur
+// Ablauf-Erinnerung dargestellt. Tutorial (fs_06) hat eine eigene, kürzere Liste: nur
 // „Tutorial starten"/„Tutorial beendet" werden erfasst (Zeitstempel), der Rest ist Reminder.
 const SZENARIO_PHASES_TUTORIAL = [
   { id: 'p_start',   label: 'Tutorial starten',                  ts: true },
@@ -130,8 +134,8 @@ const SZENARIO_PHASES_RUN = [
   { id: 'p_bew',    label: 'Selbstbewertung + Bewertungsbogen', ts: false },
 ];
 function szPhasesFor(stepId) {
-  if (stepId === 'fs_07') return SZENARIO_PHASES_TUTORIAL;
-  if (stepId === 'fs_08') return SZENARIO_PHASES_HOLOGATE;
+  if (stepId === 'fs_06') return SZENARIO_PHASES_TUTORIAL;
+  if (stepId === 'fs_07') return SZENARIO_PHASES_HOLOGATE;
   return SZENARIO_PHASES_RUN;
 }
 
@@ -178,6 +182,67 @@ function save() {
   } catch(e) { showToast('⚠ Speicherfehler'); }
 }
 
+// ── Migration v2.27.0: Ablauf-Umbau (VR-Equipment-Schritte entfallen, Trainerbewertungsbogen
+// wird eigener Schritt) ─────────────────────────────────────────────────────────────────────
+// Alte Schritt-ID → neue Schritt-ID für p.ablauf/p.szenarien/p.ereignisse (fs_01–fs_05
+// unverändert, daher hier nicht aufgeführt). `null` = Schritt entfallen (VR-Equipment/
+// VR-Brille an-/ablegen) — dessen Anmerkung/Zeiten werden verworfen.
+const FLOW_STEP_ID_REMAP_V227 = {
+  fs_06: null,    // Anlegen VR-Equipment (Hologate) — entfällt
+  fs_07: 'fs_06', // Einweisung + Tutorial VR (Hologate)
+  fs_08: 'fs_07', // VR-Szenarien Hologate
+  fs_09: null,    // Ablegen VR-Equipment (Hologate) — entfällt
+  fs_10: 'fs_09', // Fragebogen 3
+  fs_11: null,    // VR-Brille anlegen (Rollercoaster) — entfällt
+  fs_12: 'fs_10', // Rollercoaster (Varjo)
+  fs_13: null,    // VR-Brille ablegen (Rollercoaster) — entfällt
+  fs_14: 'fs_12', // Fragebogen 4
+  fs_15: 'fs_13', // Stop Sensorik
+  fs_16: 'fs_14', // Sensorik ablegen
+  fs_17: 'fs_15', // Verabschiedung
+  fs_18: 'fs_16', // Datensicherung / Desinfektion / StudyLog-Daten sichern
+};
+// p.bewertungen war bisher am jeweiligen Fragebogen-Schritt eingebettet (fs_10/fs_14) und
+// zieht jetzt auf den neuen, eigenen Bewertungsbogen-Schritt um (fs_08/fs_11) — andere
+// Zielspalte als beim allgemeinen Remap oben, deshalb eine eigene Tabelle.
+const BEW_STEP_ID_REMAP_V227 = { fs_10: 'fs_08', fs_14: 'fs_11' };
+
+// Baut ein { [stepId]: … }-Objekt anhand einer Remap-Tabelle neu auf: entfallene Schritte
+// (Ziel `null`) werden verworfen, alle anderen Schlüssel unverändert übernommen.
+function remapStepKeyedObject(obj, map) {
+  if (!obj || typeof obj !== 'object') return {};
+  const next = {};
+  Object.keys(obj).forEach(key => {
+    if (Object.prototype.hasOwnProperty.call(map, key)) {
+      const target = map[key];
+      if (target) next[target] = obj[key];
+    } else {
+      next[key] = obj[key];
+    }
+  });
+  return next;
+}
+
+// Einmalige Migration pro Teilnehmende:r (Flag `_flowIdsMigratedV227` verhindert eine
+// zweite, dann falsche Anwendung auf bereits umgezogene Daten). Rückgabewert: true, wenn
+// tatsächlich migriert wurde (Aufrufer nutzt das, um genau einmal direkt zu speichern).
+function migrateFlowStepIdsV227(pr) {
+  if (pr._flowIdsMigratedV227) return false;
+  pr.ablauf      = remapStepKeyedObject(pr.ablauf, FLOW_STEP_ID_REMAP_V227);
+  pr.szenarien   = remapStepKeyedObject(pr.szenarien, FLOW_STEP_ID_REMAP_V227);
+  pr.bewertungen = remapStepKeyedObject(pr.bewertungen, BEW_STEP_ID_REMAP_V227);
+  if (Array.isArray(pr.ereignisse)) {
+    pr.ereignisse = pr.ereignisse
+      .filter(ev => !ev.stepId || !(ev.stepId in FLOW_STEP_ID_REMAP_V227) || FLOW_STEP_ID_REMAP_V227[ev.stepId])
+      .map(ev => {
+        const target = ev.stepId && FLOW_STEP_ID_REMAP_V227[ev.stepId];
+        return target ? { ...ev, stepId: target } : ev;
+      });
+  }
+  pr._flowIdsMigratedV227 = true;
+  return true;
+}
+
 function load() {
   try {
     const p  = localStorage.getItem(KEY_PROBANDEN);
@@ -211,6 +276,13 @@ function load() {
     if (!scenarios.length) scenarios = deepCopy(DEFAULT_SCENARIOS);
     tags = tg ? JSON.parse(tg) : [...DEFAULT_TAGS];
     if (!tags.length) tags = [...DEFAULT_TAGS];
+    // v2.27.0: VR-Equipment-Schritte entfallen, Trainerbewertungsbogen wird eigener Schritt —
+    // Alt-Daten (Ablauf/Szenarien/Bewertungen/Ereignisse) auf die neuen Schritt-IDs ummappen.
+    // Erst hier (nach scenarios/tags), damit ein sofortiges save() diese nicht mit ihren
+    // Modul-Startwerten überschreibt; migrateFlowStepIdsV227 gibt zurück, ob sich etwas
+    // geändert hat, damit die Migration direkt persistiert wird statt auf den nächsten
+    // ohnehin fälligen save() zu warten.
+    if (probanden.map(migrateFlowStepIdsV227).some(Boolean)) save();
   } catch(e) {
     scenarios = deepCopy(DEFAULT_SCENARIOS);
     tags = [...DEFAULT_TAGS];
@@ -1922,16 +1994,17 @@ ABLAUF_WIDE_MQ.addEventListener('change', () => {
   if (document.getElementById('screen-ablauf')?.classList.contains('active')) renderAblauf();
 });
 
-// Fragebogen-Schritte (3 / 5 / 10 / 14): einheitlich aufgebaut wie Schritt 3 — keine
+// Fragebogen-Schritte (3 / 5 / 9 / 12): einheitlich aufgebaut wie Schritt 3 — keine
 // Start/Ende-Erfassung, nur die Bestätigungs-Checkbox „Fragebogen ausgefüllt" (+ Anmerkung).
 // Ist sie gesetzt (p.ablauf[stepId].done = ISO-Zeitstempel), gilt der Schritt als komplett.
-const FRAGEBOGEN_STEPS = new Set(['fs_03', 'fs_05', 'fs_10', 'fs_14']);
+const FRAGEBOGEN_STEPS = new Set(['fs_03', 'fs_05', 'fs_09', 'fs_12']);
 
 // Schritte ohne Start/Ende-Erfassung: 1 (nur Person anlegen), 2 (nur Sensorik-Checkliste),
-// die Fragebogen-Schritte 3/5/10/14, 7 (Zeit steckt im Tutorial-Durchlauf), 8 (Zeiten
-// stecken in den 5 Hologate-Durchläufen). Hier gibt es nur Anmerkung + schrittabhängige
-// Abschnitte.
-const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_07', 'fs_08', ...FRAGEBOGEN_STEPS]);
+// die Fragebogen-Schritte 3/5/9/12, 6 (Zeit steckt im Tutorial-Durchlauf), 7 (Zeiten stecken
+// in den 5 Hologate-Durchläufen), die Trainerbewertungsbogen-Schritte 8/11 (keine eigene
+// Zeiterfassung — die Bögen tragen ihr eigenes `savedAt`). Hier gibt es nur Anmerkung +
+// schrittabhängige Abschnitte.
+const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_06', 'fs_07', ...Object.keys(BEW_STEP_META), ...FRAGEBOGEN_STEPS]);
 
 // Eingabefelder eines Schritts (Start/Ende soweit vorhanden + Anmerkung + „…entfernen"/
 // „Schritt leeren"). **Kein** „Weiter"-Button — der sitzt IMMER ganz unten und wird von
@@ -2022,23 +2095,31 @@ function flowStepStateFor(stepId, d) {
     if (done > 0 || hasNote) return 'teilweise';
     return 'offen';
   }
-  if (stepId === 'fs_07') {
+  if (stepId === 'fs_06') {
     const p = ablaufProband();
-    const run = (p && p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07[0] : null;
+    const run = (p && p.szenarien && Array.isArray(p.szenarien.fs_06)) ? p.szenarien.fs_06[0] : null;
     const ph  = (run && run.phases) || {};
     const hasNote = !!(d && d.note && d.note.trim());
     if (ph.p_start && ph.p_end) return 'komplett';
     if (ph.p_start || ph.p_end || hasNote) return 'teilweise';
     return 'offen';
   }
-  if (stepId === 'fs_08') {
+  if (stepId === 'fs_07') {
     const p = ablaufProband();
-    const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_08)) ? p.szenarien.fs_08 : [];
+    const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07 : [];
     const full    = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
     const started = runs.filter(r => r.phases && (r.phases.p_start || r.phases.p_end)).length;
     const hasNote = !!(d && d.note && d.note.trim());
     if (full === HOLOGATE_RUN_LABELS.length) return 'komplett';
     if (started > 0 || hasNote) return 'teilweise';
+    return 'offen';
+  }
+  if (BEW_STEP_META[stepId]) {
+    const p = ablaufProband();
+    const list = (p && p.bewertungen && p.bewertungen[stepId]) || [];
+    const hasNote = !!(d && d.note && d.note.trim());
+    if (list.length) return 'komplett';
+    if (hasNote) return 'teilweise';
     return 'offen';
   }
   if (FRAGEBOGEN_STEPS.has(stepId) && d && d.done) return 'komplett';
@@ -2098,17 +2179,21 @@ function renderAblauf() {
       const sDone = (p && p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
       summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
     }
-    if (s.id === 'fs_07') {
-      const run = (p && p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07[0] : null;
+    if (s.id === 'fs_06') {
+      const run = (p && p.szenarien && Array.isArray(p.szenarien.fs_06)) ? p.szenarien.fs_06[0] : null;
       const ph  = (run && run.phases) || {};
       summary = (ph.p_start || ph.p_end)
         ? `${ph.p_start ? localTimeStr(ph.p_start) : '–'} → ${ph.p_end ? localTimeStr(ph.p_end) : '–'}`
         : 'noch nicht erfasst';
     }
-    if (s.id === 'fs_08') {
-      const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_08)) ? p.szenarien.fs_08 : [];
+    if (s.id === 'fs_07') {
+      const runs = (p && p.szenarien && Array.isArray(p.szenarien.fs_07)) ? p.szenarien.fs_07 : [];
       const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
       summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
+    }
+    if (BEW_STEP_META[s.id]) {
+      const list = (p && p.bewertungen && p.bewertungen[s.id]) || [];
+      summary = list.length ? `${list.length} Bogen erfasst` : 'noch nicht erfasst';
     }
     if (FRAGEBOGEN_STEPS.has(s.id) && d.done) summary = 'Fragebogen ausgefüllt';
     const noteBadge = (d.note && d.note.trim()) ? ' <span class="ablauf-note-badge" aria-label="Anmerkung vorhanden">✎</span>' : '';
@@ -2179,7 +2264,7 @@ function renderAblauf() {
   const expBtn = document.getElementById('ablauf-open-export');
   if (expBtn) expBtn.addEventListener('click', () => showScreen('export'));
 
-  // Trainerbewertungsbogen-Buttons (nur an fs_10 / fs_14)
+  // Trainerbewertungsbogen-Buttons (nur an fs_08 / fs_11)
   const extrasScope = wide && detail ? detail : timeline;
   extrasScope.querySelectorAll('[data-proband-add]').forEach(btn =>
     btn.addEventListener('click', openProbandAddOverlay)
@@ -2203,14 +2288,14 @@ function renderAblauf() {
   extrasScope.querySelectorAll('[data-ev-edit]').forEach(btn =>
     btn.addEventListener('click', () => openEreignisOverlay(expandedFlowStepId, btn.dataset.evEdit))
   );
-  // VR-Szenario-Durchläufe — Overlay-Variante (fs_08 / fs_12)
+  // VR-Szenario-Durchläufe — Overlay-Variante (fs_10 Rollercoaster)
   extrasScope.querySelectorAll('[data-sz-add]').forEach(btn =>
     btn.addEventListener('click', () => addSzenarioRun(btn.dataset.szAdd))
   );
   extrasScope.querySelectorAll('[data-sz-edit]').forEach(btn =>
     btn.addEventListener('click', () => openSzenarioOverlay(expandedFlowStepId, btn.dataset.szEdit))
   );
-  // VR-Szenario-Phasen — Inline-Darstellung (fs_07 Tutorial / fs_08 Hologate)
+  // VR-Szenario-Phasen — Inline-Darstellung (fs_06 Tutorial / fs_07 Hologate)
   extrasScope.querySelectorAll('[data-sz-phase-inline]').forEach(btn =>
     btn.addEventListener('click', () => toggleRunPhase(expandedFlowStepId, btn.dataset.szRun, btn.dataset.szPhaseInline))
   );
@@ -2226,7 +2311,6 @@ function renderAblauf() {
 // fs_02 „Sensorik-Checkliste" werden direkt in stepPanelBodyHTML() platziert.)
 function flowStepExtrasHTML(stepId) {
   let html = '';
-  if (stepId === 'fs_06')          html += vrEquipmentSectionHTML();
   if (SZENARIO_STEP_META[stepId])  html += szenarioSectionHTML(stepId);
   if (BEW_STEP_META[stepId])       html += bewSectionHTML(stepId);
   html += ereignisSectionHTML(stepId);   // Ereignis-Erfassung an jedem Schritt
@@ -2324,7 +2408,8 @@ function resetAblaufSensorik() {
     () => { p.sensorik = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
 }
 
-// Abschnitt „Trainerbewertungsbogen" im Detailbereich der Schritte fs_10 / fs_14.
+// Trainerbewertungsbogen als eigener Ablauf-Schritt (fs_08 Hologate / fs_11 Rollercoaster,
+// seit v2.27.0 kein eingebetteter Abschnitt mehr an den Fragebogen-Schritten).
 function bewSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
@@ -2339,33 +2424,22 @@ function bewSectionHTML(stepId) {
   }).join('');
   return `<div class="bew-section">
     <div class="card-label" style="margin-bottom:6px">TRAINERBEWERTUNGSBOGEN · ${esc(meta.scenarioLabel)}</div>
-    <p class="meta-text" style="margin-bottom:8px">Ein Bogen pro VR-Szenario — von VR ausfüllen, während die Teilnehmenden den Fragebogen bearbeiten.</p>
+    <p class="meta-text" style="margin-bottom:8px">${esc(meta.hint)}</p>
     <div class="bew-list">${rows || '<div class="meta-text">Noch kein Bogen angelegt.</div>'}</div>
     <button class="btn btn-primary full-width" data-bew-add="${esc(stepId)}" style="margin-top:8px">＋ Bewertungsbogen anlegen</button>
   </div>`;
 }
 
-// Ausrüstung, die in Schritt 6 anzulegen ist — reine Anzeigeliste, kein Abhaken.
-const VR_EQUIPMENT_ITEMS = ['Fußtracker', 'Handtracker', 'Weste', 'VR-Brille'];
-function vrEquipmentSectionHTML() {
-  return `<div class="bew-section">
-    <div class="card-label" style="margin-bottom:6px">VR-EQUIPMENT ANLEGEN</div>
-    <div class="ablauf-equip-list">${
-      VR_EQUIPMENT_ITEMS.map(x => `<div class="ablauf-equip-item">${esc(x)}</div>`).join('')
-    }</div>
-  </div>`;
-}
-
-// Abschnitt „VR-Szenario-Durchläufe" im Detailbereich von fs_07 / fs_08 / fs_12.
-// fs_07 (Tutorial): genau ein fester Durchlauf, nur „Tutorial starten/beendet" erfassbar,
+// Abschnitt „VR-Szenario-Durchläufe" im Detailbereich von fs_06 / fs_07 / fs_10.
+// fs_06 (Tutorial): genau ein fester Durchlauf, nur „Tutorial starten/beendet" erfassbar,
 //                   der Rest ist reine Ablauf-Erinnerung — direkt im Schritt (kein Overlay).
-// fs_08 (Hologate): 5 feste Durchläufe, je nur Start + Stopp, direkt im Schritt.
-// fs_12 (Rollercoaster): Liste + Overlay.
+// fs_07 (Hologate): 5 feste Durchläufe, je nur Start + Stopp, direkt im Schritt.
+// fs_10 (Rollercoaster): Liste + Overlay.
 function szenarioSectionHTML(stepId) {
   const p = ablaufProband();
   if (!p) return '';
-  if (stepId === 'fs_07') return szenarioTutorialSectionHTML(stepId);
-  if (stepId === 'fs_08') return szenarioFixedSectionHTML(stepId);
+  if (stepId === 'fs_06') return szenarioTutorialSectionHTML(stepId);
+  if (stepId === 'fs_07') return szenarioFixedSectionHTML(stepId);
   const meta = SZENARIO_STEP_META[stepId];
   const list = (p.szenarien && p.szenarien[stepId]) || [];
   const phases = szPhasesFor(stepId);
@@ -2384,18 +2458,18 @@ function szenarioSectionHTML(stepId) {
   </div>`;
 }
 
-// fs_07: stellt sicher, dass p.szenarien.fs_07 genau einen Durchlauf enthält (stabile ID
+// fs_06: stellt sicher, dass p.szenarien.fs_06 genau einen Durchlauf enthält (stabile ID
 // tut_0). Bereits erfasste Zeitstempel bleiben erhalten. Reine In-Memory-Normalisierung.
 function ensureTutorialRun(p) {
   if (!p.szenarien || typeof p.szenarien !== 'object' || Array.isArray(p.szenarien)) p.szenarien = {};
-  const cur  = Array.isArray(p.szenarien.fs_07) ? p.szenarien.fs_07 : [];
+  const cur  = Array.isArray(p.szenarien.fs_06) ? p.szenarien.fs_06 : [];
   const prev = cur.find(r => r && r.id === 'tut_0') || cur[0] || {};
   const phases = (prev.phases && typeof prev.phases === 'object' && !Array.isArray(prev.phases)) ? prev.phases : {};
-  p.szenarien.fs_07 = [{ id: 'tut_0', label: 'Tutorial', phases }];
-  return p.szenarien.fs_07[0];
+  p.szenarien.fs_06 = [{ id: 'tut_0', label: 'Tutorial', phases }];
+  return p.szenarien.fs_06[0];
 }
 
-// fs_07: genau ein Tutorial-Durchlauf. Nur „Tutorial starten"/„Tutorial beendet" sind
+// fs_06: genau ein Tutorial-Durchlauf. Nur „Tutorial starten"/„Tutorial beendet" sind
 // antippbar (Zeitstempel); die Reminder-Phasen werden nur als Ablauf-Hinweis dargestellt.
 function szenarioTutorialSectionHTML(stepId) {
   const p = ablaufProband();
@@ -2424,21 +2498,21 @@ function szenarioTutorialSectionHTML(stepId) {
   </div>`;
 }
 
-// fs_08: stellt sicher, dass p.szenarien.fs_08 genau die 5 festen Hologate-Durchläufe in
+// fs_07: stellt sicher, dass p.szenarien.fs_07 genau die 5 festen Hologate-Durchläufe in
 // vorgegebener Reihenfolge enthält (stabile IDs hg_0..hg_4). Bereits erfasste Zeitstempel
 // bleiben erhalten. Reine In-Memory-Normalisierung — persistiert wird beim nächsten save().
 function ensureHologateRuns(p) {
   if (!p.szenarien || typeof p.szenarien !== 'object' || Array.isArray(p.szenarien)) p.szenarien = {};
-  const cur = Array.isArray(p.szenarien.fs_08) ? p.szenarien.fs_08 : [];
-  p.szenarien.fs_08 = HOLOGATE_RUN_LABELS.map((label, i) => {
+  const cur = Array.isArray(p.szenarien.fs_07) ? p.szenarien.fs_07 : [];
+  p.szenarien.fs_07 = HOLOGATE_RUN_LABELS.map((label, i) => {
     const prev = cur.find(r => r && r.id === 'hg_' + i) || cur[i] || {};
     const phases = (prev.phases && typeof prev.phases === 'object' && !Array.isArray(prev.phases)) ? prev.phases : {};
     return { id: 'hg_' + i, label, phases };
   });
-  return p.szenarien.fs_08;
+  return p.szenarien.fs_07;
 }
 
-// fs_08: 5 feste Durchläufe (Scheiben/Köpfe/Laufen/Drohnen/Kombi), je nur Start + Stopp
+// fs_07: 5 feste Durchläufe (Scheiben/Köpfe/Laufen/Drohnen/Kombi), je nur Start + Stopp
 // mit Zeitstempel — direkt im Schritt-Panel, ohne Overlay, ohne Hinzufügen/Löschen.
 function szenarioFixedSectionHTML(stepId) {
   const p = ablaufProband();
@@ -2533,9 +2607,7 @@ function openBewOverlay(stepId, bid) {
 
   document.getElementById('bew-ov-title').textContent = existing ? 'Bewertungsbogen bearbeiten' : 'Neuer Bewertungsbogen';
   document.getElementById('bew-ov-context').textContent = `${p.pseudo} · ${meta.scenarioLabel}`;
-  document.getElementById('bew-ov-label').value = existing
-    ? (existing.label || '')
-    : (stepId === 'fs_10' ? meta.defaultLabel + (list.length + 1) : meta.defaultLabel);
+  document.getElementById('bew-ov-label').value = existing ? (existing.label || '') : meta.defaultLabel;
   document.getElementById('bew-ov-notes').value = existing ? (existing.notes || '') : '';
   document.getElementById('bew-ov-form').innerHTML = bewFormHTML();
   BEW_OV_ITEMS.forEach(key => renderBewOvScale(key, existing && existing.scores ? existing.scores[key] : null));
@@ -2733,8 +2805,7 @@ function addSzenarioRun(stepId) {
   if (!p.szenarien) p.szenarien = {};
   if (!Array.isArray(p.szenarien[stepId])) p.szenarien[stepId] = [];
   const n = p.szenarien[stepId].length + 1;
-  const label = stepId === 'fs_08' ? meta.defaultLabel + n
-              : (n > 1 ? meta.defaultLabel + ' ' + n : meta.defaultLabel);
+  const label = n > 1 ? meta.defaultLabel + ' ' + n : meta.defaultLabel;
   const run = { id: uid(), label, phases: {} };
   p.szenarien[stepId].push(run);
   save();
@@ -2780,8 +2851,8 @@ function renderSzOvPhases() {
   );
 }
 
-// Gemeinsame Phasen-Logik für Overlay (fs_12) und Inline-Darstellung (fs_07 Tutorial,
-// fs_08 Hologate). Reminder-Phasen (fs_07) sind nicht abhakbar und werden hier ignoriert.
+// Gemeinsame Phasen-Logik für Overlay (fs_10) und Inline-Darstellung (fs_06 Tutorial,
+// fs_07 Hologate). Reminder-Phasen (fs_06) sind nicht abhakbar und werden hier ignoriert.
 function toggleRunPhase(stepId, runId, phaseId, afterFn) {
   const p = ablaufProband();
   if (!p) return;
@@ -2887,17 +2958,21 @@ function syncAblaufRows() {
         const sDone = (p.sensorik) ? SENSORIK_ITEMS.filter(it => p.sensorik[it.id]).length : 0;
         summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
       }
-      if (s.id === 'fs_07') {
-        const run = Array.isArray(p.szenarien && p.szenarien.fs_07) ? p.szenarien.fs_07[0] : null;
+      if (s.id === 'fs_06') {
+        const run = Array.isArray(p.szenarien && p.szenarien.fs_06) ? p.szenarien.fs_06[0] : null;
         const ph  = (run && run.phases) || {};
         summary = (ph.p_start || ph.p_end)
           ? `${ph.p_start ? localTimeStr(ph.p_start) : '–'} → ${ph.p_end ? localTimeStr(ph.p_end) : '–'}`
           : 'noch nicht erfasst';
       }
-      if (s.id === 'fs_08') {
-        const runs = Array.isArray(p.szenarien && p.szenarien.fs_08) ? p.szenarien.fs_08 : [];
+      if (s.id === 'fs_07') {
+        const runs = Array.isArray(p.szenarien && p.szenarien.fs_07) ? p.szenarien.fs_07 : [];
         const rDone = runs.filter(r => r.phases && r.phases.p_start && r.phases.p_end).length;
         summary = rDone ? `Durchläufe ${rDone}/${HOLOGATE_RUN_LABELS.length}` : 'noch nicht erfasst';
+      }
+      if (BEW_STEP_META[s.id]) {
+        const list = (p.bewertungen && p.bewertungen[s.id]) || [];
+        summary = list.length ? `${list.length} Bogen erfasst` : 'noch nicht erfasst';
       }
       if (FRAGEBOGEN_STEPS.has(s.id) && d && d.done) summary = 'Fragebogen ausgefüllt';
       sub.textContent = `${s.tag}  ·  ${summary}`;
@@ -2983,7 +3058,7 @@ function clearFlowStep(stepId) {
     });
 }
 
-// Fragebogen-Bestätigung umschalten (fs_03 / fs_05 / fs_10 / fs_14). Gesetzt → Schritt grün.
+// Fragebogen-Bestätigung umschalten (fs_03 / fs_05 / fs_09 / fs_12). Gesetzt → Schritt grün.
 function toggleFragebogenDone(stepId) {
   const p = ablaufProband();
   if (!p || !stepId || !FRAGEBOGEN_STEPS.has(stepId)) return;
