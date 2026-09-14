@@ -32,7 +32,7 @@ löschen" (siehe eigener Abschnitt unten). Alles Weitere wird aus dem Ablauf her
 |---|---|
 | **＋** neben der Personen-Auswahl (oder „＋ Teilnehmende:n anlegen" in Schritt 1) | Overlay „Teilnehmende:n anlegen": Pseudonym + Händigkeit + optionale Notiz |
 | **✎** neben der Personen-Auswahl | Bearbeiten-Dialog der aktuell gewählten Person |
-| Button im **letzten Schritt** (15, „Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
+| Button im **letzten Schritt** (14, „Datensicherung") | Vollbild-Dialog „Datensicherung / Export" (CSV/JSON, Statistiken). Mit **✕** zurück |
 
 **Einstellungen (⚙-Icon):** seit v2.31.0 zwei anpassbare Bereiche statt der früheren
 „Mehrere Teilnehmende gleichzeitig"-Option (entfallen, da ohne Wirkung auf den heutigen
@@ -75,7 +75,7 @@ Ereignisse/Probleme/Anmerkungen.
 
 ## Die Ablauf-Schrittliste nutzen
 
-Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab (Schritte 1–15,
+Der Ablauf bildet den kompletten Studienablauf als feste Schrittfolge ab (Schritte 1–14,
 von „Aufklärung + Einverständniserklärung" über „Anlegen Sensorik", „Fragebogen 1", „TMS", …
 bis „Datensicherung / Aufbereitung"). Die Kürzel
 VR / SEN / TMS an den Schritten sind nur ein Hinweis, welches Team den Schritt fachlich
@@ -102,9 +102,9 @@ verantwortet — sie haben keine weitere Funktion.
      wird oder entfällt: Schritt 1 (Person anlegen), Schritt 2 (nur die Sensorik-Checkliste),
      Schritt 7 und Schritt 10 (Zeiten stecken im jeweiligen VR-Szenario-Durchlauf, siehe unten),
      Schritt 8 und 11 (Trainerbewertungsbogen — kein Timer, die Bögen tragen ihre eigene
-     Speicherzeit), Schritt 14 (nur die Sensorik-Ablege-Checkliste, siehe unten) und der letzte
-     Schritt (nur zwei Häkchen ohne Zeiterfassung, siehe unten) sowie die
-     Fragebogen-Schritte 3, 5, 9, 12 (nur die Checkbox „Fragebogen ausgefüllt", siehe unten).
+     Speicherzeit) und der letzte Schritt (nur zwei Häkchen ohne Zeiterfassung, siehe unten)
+     sowie die Fragebogen-Schritte 3, 5, 9, 12 (nur die Checkbox „Fragebogen ausgefüllt", siehe
+     unten).
      **Schritt 13 „Stop Sensorik"** ist ein Sonderfall: statt Start **und** Ende gibt es dort
      nur ein einzelnes Feld **„Zeitpunkt"** (Aufzeichnung beendet) — ebenfalls über
      **🕐 Jetzt** oder manuelle Eingabe.
@@ -117,12 +117,12 @@ verantwortet — sie haben keine weitere Funktion.
    - **gelb** – angefangen (nur Start *oder* nur Ende erfasst — bzw. schrittspezifisch,
      siehe unten),
    - **grün** – Start *und* Ende erfasst (bzw. schrittspezifisch „vollständig").
-   Oben läuft ein Fortschrittsbalken („X / 15 komplett").
+   Oben läuft ein Fortschrittsbalken („X / 14 komplett").
 4. **Schritt leeren** (im aufgeklappten Schritt, an Schritten mit Start-/Ende-Feldern **oder**
    dem einzelnen Zeitpunkt-Feld an Schritt 13) entfernt nach Rückfrage die erfassten Zeiten
    dieses einen Schritts. Schritte ohne eigene Zeitfelder haben stattdessen ihre eigene,
-   spezifische Rückgängig-/Reset-Funktion (z. B. „Checkliste zurücksetzen" an Schritt 2 bzw.
-   14, erneutes Antippen der Checkbox an den Fragebogen-Schritten, „Bewertung zurücksetzen"
+   spezifische Rückgängig-/Reset-Funktion (z. B. „Checkliste zurücksetzen" an Schritt 2,
+   erneutes Antippen der Checkbox an den Fragebogen-Schritten, „Bewertung zurücksetzen"
    an Schritt 8/11, erneutes Antippen der Häkchen am letzten Schritt).
 5. **Ereignisse / Probleme / Anmerkungen** (an jedem Schritt **außer** Schritt 8/11, siehe
    unten) — deckt seit v2.30.0 auch freie Anmerkungen ab; einen separaten Anmerkung-Punkt je
@@ -172,17 +172,11 @@ Einzelne Schritte haben zusätzliche Felder:
 - **Schritt 8 / Schritt 11**: der **Trainerbewertungsbogen**, direkt im Schritt (siehe oben)
   — ebenfalls ohne eigene Start/Ende-Zeiterfassung; Zeile wird grün, sobald alle 4 Fragen
   beantwortet sind (Anzeige „X/4 bewertet").
-- **Schritt 14 „Sensorik ablegen"**: eine **eigene Sensorik-Checkliste** (Shimmer, Brustgurt,
-  Uhr) — genau wie an Schritt 2, aber unabhängig davon: ein Item antippen, sobald die
-  Sensorik bei dieser Person abgelegt wurde, der Zeitpunkt wird automatisch erfasst; erneutes
-  Antippen macht das nach Rückfrage rückgängig. Zeile wird grün, sobald alle drei Items
-  abgelegt sind (Anzeige „Sensorik X/3"); **„Checkliste zurücksetzen"** setzt alle Items auf
-  einmal zurück.
-- **Letzter Schritt (15) „Datensicherung / Desinfektion & Aufbereitung Sensorik /
-  StudyLog-Daten sichern"**: zeigt seit v2.33.0 zuerst die **Gesamtdauer** — Zeitspanne
-  inkl. Datum vom Anlegen der Person (Schritt 1) bis zum letzten erfassten Sensorik-Ablege-
-  Zeitpunkt (Schritt 14); erscheint erst, sobald mindestens ein Sensorik-Item abgelegt wurde
-  (steht dort „noch nicht vollständig", wenn Schritt 14 noch nicht ganz abgeschlossen ist).
+- **Letzter Schritt (14) „Datensicherung / Desinfektion & Aufbereitung Sensorik /
+  StudyLog-Daten sichern"** (bis v2.33.0 Schritt 15 — der frühere Schritt 14 „Sensorik
+  ablegen" entfiel seit v2.34.0 ersatzlos): zeigt seit v2.33.0 zuerst die **Gesamtdauer** —
+  Zeitspanne inkl. Datum vom Anlegen der Person (Schritt 1) bis zum Zeitpunkt von Schritt 13
+  „Stop Sensorik"; erscheint erst, sobald dieser Zeitpunkt erfasst wurde.
   Darunter der **hervorgehobene** Button **„⬇ Daten exportieren (CSV / JSON)"** (öffnet den
   Export, siehe unten) — er sitzt bewusst **vor** den beiden Häkchen. Seit v2.32.0 **keine
   Zeiterfassung** an den Häkchen selbst, stattdessen genau zwei ohne Zeitstempel: **„Alle
@@ -193,7 +187,7 @@ Einzelne Schritte haben zusätzliche Felder:
   bleiben dabei vollständig erhalten).
 - Die früheren Schritte „VR-Equipment/VR-Brille an-/ablegen" (Hologate und Rollercoaster)
   entfallen seit v2.27.0 ersatzlos, der Schritt „Verabschiedung" seit v2.32.0 ebenfalls
-  ersatzlos.
+  ersatzlos, der Schritt „Sensorik ablegen" seit v2.34.0 ebenfalls ersatzlos.
 
 Die im Ablauf erfassten Daten werden lokal bei der jeweiligen Person gespeichert. Sie sind
 aktuell **nicht** Teil des CSV-/JSON-Exports.

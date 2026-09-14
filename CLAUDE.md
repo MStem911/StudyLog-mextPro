@@ -33,16 +33,19 @@ gerätespezifische Logik.
 
 ### Kanonischer Ablauf (Schritte)
 
-**Aktueller Stand (seit v2.32.0, 15 Schritte) — ersetzt die ursprüngliche 19-Schritt-Planung
+**Aktueller Stand (seit v2.34.0, 14 Schritte) — ersetzt die ursprüngliche 19-Schritt-Planung
 unten in diesem Abschnitt:** die Schritte „Ankommen, Begrüßung", „VR-Equipment/VR-Brille
-an-/ablegen" (Hologate **und** Rollercoaster) sowie „Verabschiedung" entfallen ersatzlos; der
-Trainerbewertungsbogen ist kein eingebetteter Abschnitt an einem Fragebogen-Schritt mehr,
-sondern ein **eigener Schritt direkt nach dem jeweiligen VR-Durchlauf**. Rollercoaster
-(Schritt 10) hat seit v2.32.0 wie Hologate nur noch einen festen Durchlauf (kein „+ Durchlauf
-hinzufügen" mehr) mit Start/Ende ausschließlich am Durchlauf selbst statt am ganzen Schritt.
-Stop Sensorik (Schritt 13) erfasst nur noch einen einzelnen Zeitpunkt statt Start/Ende.
-Datensicherung (letzter Schritt) besteht nur noch aus zwei Häkchen ohne Zeiterfassung — sind
-beide gesetzt, kann direkt der nächste Durchlauf (nächste:r Teilnehmende:r) gestartet werden.
+an-/ablegen" (Hologate **und** Rollercoaster), „Verabschiedung" sowie (seit v2.34.0)
+„Sensorik ablegen" entfallen ersatzlos; der Trainerbewertungsbogen ist kein eingebetteter
+Abschnitt an einem Fragebogen-Schritt mehr, sondern ein **eigener Schritt direkt nach dem
+jeweiligen VR-Durchlauf**. Rollercoaster (Schritt 10) hat seit v2.32.0 wie Hologate nur noch
+einen festen Durchlauf (kein „+ Durchlauf hinzufügen" mehr) mit Start/Ende ausschließlich am
+Durchlauf selbst statt am ganzen Schritt. Stop Sensorik (Schritt 13) erfasst nur noch einen
+einzelnen Zeitpunkt statt Start/Ende. Datensicherung (letzter Schritt, seit v2.34.0 Schritt 14
+statt zuvor 15) besteht nur noch aus zwei Häkchen ohne Zeiterfassung — sind beide gesetzt,
+kann direkt der nächste Durchlauf (nächste:r Teilnehmende:r) gestartet werden. Die
+Gesamtdauer-Anzeige am letzten Schritt endet seit v2.34.0 am Zeitpunkt von Schritt 13 „Stop
+Sensorik" (zuvor: am letzten Sensorik-Ablege-Zeitpunkt des entfallenen Schritts 14).
 
 | Nr. | Schritt | Label |
 |-----|---------|-------|
@@ -59,8 +62,7 @@ beide gesetzt, kann direkt der nächste Durchlauf (nächste:r Teilnehmende:r) ge
 | 11  | Trainerbewertungsbogen (Rollercoaster) | VR |
 | 12  | Fragebogen 4 | SEN / VR |
 | 13  | Stop Sensorik (Aufzeichnung beenden) | SEN |
-| 14  | Sensorik ablegen | SEN |
-| 15  | Datensicherung (VR) / Desinfektion & Aufbereitung Sensorik (SEN) / StudyLog-Daten sichern (beide) | VR / SEN |
+| 14  | Datensicherung (VR) / Desinfektion & Aufbereitung Sensorik (SEN) / StudyLog-Daten sichern (beide) | VR / SEN |
 
 Diese Liste ist die Referenz für die Default-Schritte. Ob die Schrittliste im UI
 editierbar/erweiterbar ist, ist noch offen (siehe unten).
@@ -144,8 +146,8 @@ Bei **jedem Commit, der Funktionalität/Inhalt ändert** (nicht bei reinen Doku-
 2. `CACHE`-Konstante in `sw.js` synchron auf denselben Wert setzen (aktuelles Schema:
    `studylog-v<version>`, z.B. `studylog-v2.13.0`) — erzwingt Invalidierung des alten
    Service-Worker-Caches.
-3. Die statischen `<span class="app-version">` Platzhalter in `index.html` (aktuell 2x:
-   Sidebar-Footer + mobile Topbar) auf denselben Wert setzen — sie werden zusätzlich beim
+3. Die statischen `<span class="app-version">` Platzhalter in `index.html` (aktuell 1x, im
+   Einstellungen-Overlay) auf denselben Wert setzen — sie werden zusätzlich beim
    Laden per JS aus `APP_VERSION` überschrieben (Zeile mit
    `document.querySelectorAll('.app-version')...` im INIT-Block von `app.js`), das ist nur
    der No-Flash-Fallback für den ersten Paint.

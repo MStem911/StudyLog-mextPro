@@ -15,7 +15,7 @@ eines strukturierten Bewertungsbogens für die durchführende Trainingsleitung. 
 bleiben dabei ausschließlich auf dem jeweiligen Gerät.
 
 Seit **v2.14.0** ist die App **eine einzige Ansicht: der Ablauf** — eine chronologische
-Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–15, seit v2.32.0).
+Schrittliste des gesamten Studienablaufs (feste Schrittfolge Schritte 1–14, seit v2.34.0).
 Links die Schritt-Leiste (mit eigener Scrollbar), rechts das Detailfeld für den gewählten
 Schritt; auf dem Smartphone klappt der Schritt in der Liste auf. Zu jedem Schritt (der
 Zeitfelder hat) werden pro Teilnehmende:r Start- und Endzeit erfasst (Button „Jetzt" oder
@@ -33,7 +33,7 @@ Ablauf, da sie nur die inzwischen unerreichbaren Sitzungsaufzeichnungs-/Bewertun
 betraf). **Schritt 1 (Aufklärung + Einverständnis)** ist beim Start direkt geöffnet und hat
 keine Zeitfelder — dort wird die Person angelegt („＋ Teilnehmende:n anlegen"), danach geht
 es automatisch zu Schritt 2 (Sensorik). Weitere Personen über ＋ oben; bearbeiten über ✎.
-Der CSV/JSON-Export (im letzten Schritt, 15) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
+Der CSV/JSON-Export (im letzten Schritt, 14) öffnet einen Vollbild-Dialog aus dem Ablauf heraus.
 Direkt im Ablauf erfasst werden inzwischen: **Sensorik-Checkliste** (Schritt 2 — Items
 Shimmer / Brustgurt / Uhr, je mit Anlege-Zeitstempel), **VR-Szenario-Durchlauf** an Schritt 7
 (fünf feste Hologate-Durchläufe — Scheiben/Köpfe/Laufen/Drohnen/Kombi) und Schritt 10
@@ -61,15 +61,16 @@ v2.26.1 einheitlich aufgebaut: keine Start/Ende-Zeiterfassung, nur eine Bestäti
 VR-Equipment (Hologate) bzw. der VR-Brille (Rollercoaster) entfallen seit v2.27.0 ersatzlos,
 der Schritt „Verabschiedung" seit v2.32.0 ebenfalls ersatzlos. **Stop Sensorik (Schritt 13)**
 erfasst seit v2.32.0 nur noch einen einzelnen Zeitpunkt („Aufzeichnung beendet") statt
-Start/Ende. **Sensorik ablegen (Schritt 14)** hat seit v2.32.0 eine eigene Sensorik-Checkliste
-(dieselben drei Items wie beim Anlegen in Schritt 2, aber eigener Datenspeicher/Zeitstempel je
-Item). Der letzte Schritt, **Datensicherung/Desinfektion (Schritt 15)**, besteht seit v2.32.0
-nur noch aus zwei Häkchen **ohne** Zeiterfassung — „Alle Daten gesichert" (LSL, App, Sensorik,
-Varjo Base) und „Alles desinfiziert/aufbereitet"; sind beide gesetzt, erscheint ein Button
-„↻ Nächsten Durchlauf starten", der den Ablauf wieder bei Schritt 1 öffnet, ohne die Daten der
-bisherigen Person zu verändern. Seit v2.33.0 zeigt derselbe Schritt zusätzlich die
-**Gesamtdauer** (inkl. Datum) vom Anlegen der Person bis zum Sensorik ablegen, und der Button
-**„⬇ Daten exportieren"** ist hervorgehoben sowie vor den beiden Häkchen platziert.
+Start/Ende. Der Schritt „Sensorik ablegen" (mit eigener Sensorik-Ablege-Checkliste) entfällt
+seit **v2.34.0** ersatzlos. Der letzte Schritt, **Datensicherung/Desinfektion (Schritt 14,
+zuvor 15)**, besteht seit v2.32.0 nur noch aus zwei Häkchen **ohne** Zeiterfassung — „Alle
+Daten gesichert" (LSL, App, Sensorik, Varjo Base) und „Alles desinfiziert/aufbereitet"; sind
+beide gesetzt, erscheint ein Button „↻ Nächsten Durchlauf starten", der den Ablauf wieder bei
+Schritt 1 öffnet, ohne die Daten der bisherigen Person zu verändern. Seit v2.33.0 zeigt
+derselbe Schritt zusätzlich die **Gesamtdauer** (inkl. Datum) vom Anlegen der Person bis zum
+Zeitpunkt von Schritt 13 „Stop Sensorik" (bis v2.33.0: bis zum inzwischen entfallenen
+Sensorik-ablegen-Zeitpunkt), und der Button **„⬇ Daten exportieren"** ist hervorgehoben sowie
+vor den beiden Häkchen platziert.
 Der CSV/JSON-Export **exportiert seit v2.33.0 alle im Ablauf erfassten Daten** jeder/jedes
 Teilnehmenden auf diesem Gerät (Zeiten je Schritt, Sensorik-Checklisten, VR-Szenario-
 Durchläufe, Trainerbewertungsbögen, Ereignisse/Probleme/Anmerkungen) statt wie zuvor auf der

@@ -3,7 +3,7 @@
 // ── App Version (Single Source of Truth) ───────────────────────────────────
 // Bei jeder inhaltlichen Änderung Patch-Version erhöhen (z.B. 2.2.1 -> 2.2.2).
 // sw.js CACHE-Name manuell synchron mitziehen, damit alte Caches invalidiert werden.
-const APP_VERSION = '2.33.0';
+const APP_VERSION = '2.34.0';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -60,6 +60,10 @@ const DEFAULT_EVENT_TAGS = ['Sensorik', 'VR', 'Fragebogen', 'TMS', 'Sonstiges'];
 // nur noch einen festen Durchlauf ohne Hinzufügen/Löschen. Stop Sensorik (fs_13) erfasst nur
 // noch einen einzelnen Zeitpunkt statt Start/Ende (siehe SINGLE_TIME_STEPS). Datensicherung
 // (letzter Schritt) besteht nur noch aus zwei Häkchen ohne Zeiterfassung.
+// v2.34.0: „Sensorik ablegen" entfällt ersatzlos (inkl. der zugehörigen Ablege-Checkliste),
+// der bisher letzte Schritt „Datensicherung" rückt von fs_15 auf fs_14 nach (siehe
+// FLOW_STEP_ID_REMAP_V234 in load()). Die Gesamtdauer-Kennzahl endet seitdem am Zeitpunkt
+// von Schritt 13 „Stop Sensorik" statt am (entfallenen) Sensorik-Ablege-Zeitpunkt.
 const FLOW_STEPS = [
   { id: 'fs_01', nr: '1',  label: 'Aufklärung + Einverständniserklärung',                     tag: 'VR / SEN' },
   { id: 'fs_02', nr: '2',  label: 'Anlegen Sensorik (Shimmer, Brustgurt, Uhr)',              tag: 'SEN' },
@@ -74,8 +78,7 @@ const FLOW_STEPS = [
   { id: 'fs_11', nr: '11', label: 'Trainerbewertungsbogen (Rollercoaster)',                  tag: 'VR' },
   { id: 'fs_12', nr: '12', label: 'Fragebogen 4',                                            tag: 'SEN / VR' },
   { id: 'fs_13', nr: '13', label: 'Stop Sensorik (Aufzeichnung beenden)',                    tag: 'SEN' },
-  { id: 'fs_14', nr: '14', label: 'Sensorik ablegen',                                        tag: 'SEN' },
-  { id: 'fs_15', nr: '15', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
+  { id: 'fs_14', nr: '14', label: 'Datensicherung / Desinfektion & Aufbereitung Sensorik / StudyLog-Daten sichern', tag: 'VR / SEN' },
 ];
 const LAST_FLOW_STEP_ID = FLOW_STEPS[FLOW_STEPS.length - 1].id;
 
@@ -325,6 +328,29 @@ function migrateRollercoasterTimeV232(pr) {
   return true;
 }
 
+// ── Migration v2.34.0: „Sensorik ablegen" (bisher Schritt 14) entfällt ersatzlos inkl. der
+// zugehörigen Ablege-Checkliste (p.sensorikAblegen); der bisher letzte Schritt „Datensicherung"
+// rückt von fs_15 auf fs_14 nach ─────────────────────────────────────────────────────────────
+const FLOW_STEP_ID_REMAP_V234 = { fs_14: null, fs_15: 'fs_14' };
+
+function migrateSensorikAblegenRemovalV234(pr) {
+  if (pr._sensorikAblegenRemovedV234) return false;
+  pr.ablauf      = remapStepKeyedObject(pr.ablauf, FLOW_STEP_ID_REMAP_V234);
+  pr.szenarien   = remapStepKeyedObject(pr.szenarien, FLOW_STEP_ID_REMAP_V234);
+  pr.bewertungen = remapStepKeyedObject(pr.bewertungen, FLOW_STEP_ID_REMAP_V234);
+  if (Array.isArray(pr.ereignisse)) {
+    pr.ereignisse = pr.ereignisse
+      .filter(ev => !ev.stepId || !(ev.stepId in FLOW_STEP_ID_REMAP_V234) || FLOW_STEP_ID_REMAP_V234[ev.stepId])
+      .map(ev => {
+        const target = ev.stepId && FLOW_STEP_ID_REMAP_V234[ev.stepId];
+        return target ? { ...ev, stepId: target } : ev;
+      });
+  }
+  delete pr.sensorikAblegen;
+  pr._sensorikAblegenRemovedV234 = true;
+  return true;
+}
+
 function load() {
   try {
     const p  = localStorage.getItem(KEY_PROBANDEN);
@@ -354,8 +380,6 @@ function load() {
     probanden.forEach(pr => { if (!Array.isArray(pr.ereignisse)) pr.ereignisse = []; });
     // VR-Szenario-Durchläufe: p.szenarien = { [stepId]: [ {id, label, phases:{[phaseId]: ISO|true}} ] }
     probanden.forEach(pr => { if (!pr.szenarien || typeof pr.szenarien !== 'object' || Array.isArray(pr.szenarien)) pr.szenarien = {}; });
-    // Sensorik-ablegen-Checkliste (Schritt „Sensorik ablegen"): p.sensorikAblegen = { [itemId]: ISO }
-    probanden.forEach(pr => { if (!pr.sensorikAblegen || typeof pr.sensorikAblegen !== 'object') pr.sensorikAblegen = {}; });
     localStorage.removeItem(KEY_SENSORIK);
     scenarios = sc ? JSON.parse(sc) : deepCopy(DEFAULT_SCENARIOS);
     if (!scenarios.length) scenarios = deepCopy(DEFAULT_SCENARIOS);
@@ -367,21 +391,24 @@ function load() {
     if (!Array.isArray(hologateLabels) || hologateLabels.length !== DEFAULT_HOLOGATE_LABELS.length) {
       hologateLabels = [...DEFAULT_HOLOGATE_LABELS];
     }
-    // v2.27.0/v2.28.0/v2.32.0: VR-Equipment-Schritte entfallen, Trainerbewertungsbogen wird
-    // eigener Schritt, Tutorial-Zeit wandert vom Szenario-Durchlauf in normale Start-/Ende-
+    // v2.27.0/v2.28.0/v2.32.0/v2.34.0: VR-Equipment-Schritte entfallen, Trainerbewertungsbogen
+    // wird eigener Schritt, Tutorial-Zeit wandert vom Szenario-Durchlauf in normale Start-/Ende-
     // Felder, „Verabschiedung" entfällt (Datensicherung rückt auf), Rollercoaster-Schrittzeit
-    // wandert in dessen Durchlauf-Phase — Alt-Daten auf die neuen Schritt-IDs/Felder ummappen.
-    // Erst hier (nach scenarios/tags), damit ein sofortiges save() diese nicht mit ihren Modul-
-    // Startwerten überschreibt; alle Migrationsfunktionen geben zurück, ob sich etwas geändert
-    // hat, damit direkt persistiert wird statt auf den nächsten ohnehin fälligen save() zu
-    // warten. migrateTutorialTimeV228 muss NACH migrateFlowStepIdsV227 laufen (siehe dortiger
+    // wandert in dessen Durchlauf-Phase, „Sensorik ablegen" entfällt (Datensicherung rückt
+    // erneut auf) — Alt-Daten auf die neuen Schritt-IDs/Felder ummappen. Erst hier (nach
+    // scenarios/tags), damit ein sofortiges save() diese nicht mit ihren Modul-Startwerten
+    // überschreibt; alle Migrationsfunktionen geben zurück, ob sich etwas geändert hat, damit
+    // direkt persistiert wird statt auf den nächsten ohnehin fälligen save() zu warten.
+    // migrateTutorialTimeV228 muss NACH migrateFlowStepIdsV227 laufen (siehe dortiger
     // Kommentar); migrateVerabschiedungRemovalV232 muss ebenfalls NACH migrateFlowStepIdsV227
-    // laufen (setzt dessen fs_15/fs_16-IDs voraus).
+    // laufen (setzt dessen fs_15/fs_16-IDs voraus); migrateSensorikAblegenRemovalV234 muss NACH
+    // migrateVerabschiedungRemovalV232 laufen (setzt dessen fs_14/fs_15-IDs voraus).
     const migratedIds = probanden.map(migrateFlowStepIdsV227).some(Boolean);
     const migratedTut = probanden.map(migrateTutorialTimeV228).some(Boolean);
     const migratedVer = probanden.map(migrateVerabschiedungRemovalV232).some(Boolean);
     const migratedRc  = probanden.map(migrateRollercoasterTimeV232).some(Boolean);
-    if (migratedIds || migratedTut || migratedVer || migratedRc) save();
+    const migratedSA  = probanden.map(migrateSensorikAblegenRemovalV234).some(Boolean);
+    if (migratedIds || migratedTut || migratedVer || migratedRc || migratedSA) save();
   } catch(e) {
     scenarios = deepCopy(DEFAULT_SCENARIOS);
     tags = [...DEFAULT_TAGS];
@@ -1471,20 +1498,19 @@ document.getElementById('btn-save-edit').addEventListener('click', () => {
 // (Alt-Keys `sl_sessions`/`sl_bewertungen`) sind auf einem regulär nur über den Ablauf
 // genutzten Gerät daher stets leer — der alte Export lieferte in der Praxis nie Daten.
 
-// Gesamtdauer vom Anlegen der/des Teilnehmenden (p.createdAt) bis zum letzten erfassten
-// Sensorik-Ablege-Zeitpunkt (spätester Wert in p.sensorikAblegen, Schritt 14) — Kennzahl für
-// den gesamten Durchlauf, angezeigt am letzten Schritt (siehe ablaufDurationSectionHTML)
-// und im Export. `complete` ist nur true, wenn alle SENSORIK_ITEMS abgelegt sind (vorher ist
-// die Dauer nur ein Zwischenstand).
+// Gesamtdauer vom Anlegen der/des Teilnehmenden (p.createdAt) bis zum Zeitpunkt von Schritt 13
+// „Stop Sensorik" (p.ablauf.fs_13.startISO) — Kennzahl für den gesamten Durchlauf, angezeigt
+// am letzten Schritt (siehe ablaufDurationSectionHTML) und im Export. Seit v2.34.0 (Wegfall
+// von „Sensorik ablegen") gibt es keinen späteren erfassten Zeitpunkt mehr im Ablauf, daher
+// hier `complete: true`, sobald ein Wert vorliegt (kein Teil-/Zwischenstand mehr möglich).
 function ablaufDurationInfo(p) {
   if (!p || !p.createdAt) return null;
-  const vals = SENSORIK_ITEMS.map(it => p.sensorikAblegen && p.sensorikAblegen[it.id]).filter(Boolean);
-  if (!vals.length) return null;
-  const endISO = vals.reduce((max, t) => (!max || new Date(t) > new Date(max)) ? t : max, null);
+  const endISO = p.ablauf && p.ablauf.fs_13 && p.ablauf.fs_13.startISO;
+  if (!endISO) return null;
   return {
     startISO: p.createdAt,
     endISO,
-    complete: vals.length === SENSORIK_ITEMS.length,
+    complete: true,
     seconds: Math.max(0, Math.round((new Date(endISO) - new Date(p.createdAt)) / 1000)),
   };
 }
@@ -1543,9 +1569,8 @@ function ablaufExportHeaders() {
     'BewRollercoaster_Z17', 'BewRollercoaster_Z18', 'BewRollercoaster_Z19', 'BewRollercoaster_Z20', 'BewRollercoaster_Anmerkungen', 'BewRollercoaster_gespeichert_am',
     'Fragebogen4_bestaetigt',
     'StopSensorik_Zeitpunkt',
-    'SensorikAblegen_Shimmer', 'SensorikAblegen_Brustgurt', 'SensorikAblegen_Uhr',
     'AlleDatenGesichert', 'AllesDesinfiziert',
-    'Gesamtdauer_Anlegen_bis_SensorikAblegen',
+    'Gesamtdauer_Anlegen_bis_StopSensorik',
     'Ereignisse_Probleme_Anmerkungen',
   ];
 }
@@ -1585,9 +1610,8 @@ function ablaufExportRow(p) {
     ...bewCols('fs_11'),
     dt(abl.fs_12 && abl.fs_12.done),
     dt(abl.fs_13 && abl.fs_13.startISO),
-    dt(p.sensorikAblegen && p.sensorikAblegen.se_shimmer), dt(p.sensorikAblegen && p.sensorikAblegen.se_brustgurt), dt(p.sensorikAblegen && p.sensorikAblegen.se_uhr),
     last.dataSecured ? 'Ja' : 'Nein', last.disinfected ? 'Ja' : 'Nein',
-    dur ? (dur.complete ? '' : '(unvollständig) ') + formatDurationLong(dur.seconds) : '',
+    dur ? formatDurationLong(dur.seconds) : '',
     ereignisse,
   ].map(escCsv).join(',');
 }
@@ -1610,8 +1634,7 @@ function ablaufExportRecord(p) {
     bewertungen:     deepCopy(p.bewertungen || {}),
     ereignisse:      deepCopy(p.ereignisse || []),
     sensorik:        deepCopy(p.sensorik || {}),
-    sensorikAblegen: deepCopy(p.sensorikAblegen || {}),
-    gesamtdauer: dur ? { startISO: dur.startISO, endISO: dur.endISO, sekunden: dur.seconds, vollstaendig: dur.complete } : null,
+    gesamtdauer: dur ? { startISO: dur.startISO, endISO: dur.endISO, sekunden: dur.seconds } : null,
   };
 }
 document.getElementById('btn-export-json').addEventListener('click', () => {
@@ -2222,7 +2245,7 @@ const FRAGEBOGEN_STEPS = new Set(['fs_03', 'fs_05', 'fs_09', 'fs_12']);
 // Häkchen ohne Zeiterfassung, siehe datensicherungSectionHTML). Schritt 6 (Tutorial) hat seit
 // v2.28.0 **wieder** normale Start/Ende-Felder (wie Schritt 4 „TMS") und steht daher bewusst
 // **nicht** in dieser Liste. Hier gibt es nur Anmerkung + schrittabhängige Abschnitte.
-const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_07', 'fs_10', 'fs_14', LAST_FLOW_STEP_ID, ...Object.keys(BEW_STEP_META), ...FRAGEBOGEN_STEPS]);
+const NO_TIME_STEPS = new Set(['fs_01', 'fs_02', 'fs_07', 'fs_10', LAST_FLOW_STEP_ID, ...Object.keys(BEW_STEP_META), ...FRAGEBOGEN_STEPS]);
 
 // Schritte mit genau EINEM erfassten Zeitpunkt statt Start+Ende (Stop Sensorik, Schritt 13 —
 // hier gibt es nur den einen Zeitpunkt „Aufzeichnung beendet", kein Zeitraum).
@@ -2315,7 +2338,7 @@ function flowStepFieldsHTML(d, stepId) {
 }
 
 // Kompletter Inhalt eines geöffneten Schritts. Reihenfolge überall gleich:
-//   [Sensorik-Checkliste nur fs_02/fs_14] → Felder → Zusatzabschnitte → „✓ Weiter" ganz unten.
+//   [Sensorik-Checkliste nur fs_02] → Felder → Zusatzabschnitte → „✓ Weiter" ganz unten.
 function stepPanelBodyHTML(d, s) {
   const isLast = s.id === LAST_FLOW_STEP_ID;
   const weiterLabel = s.id === 'fs_01' ? '✓ Weiter zur Sensorik' : '✓ Weiter zum nächsten Schritt';
@@ -2328,7 +2351,6 @@ function stepPanelBodyHTML(d, s) {
   }
   let body = '';
   if (s.id === 'fs_02') body += sensorikSectionHTML();
-  if (s.id === 'fs_14') body += sensorikAblegenSectionHTML();
   body += flowStepFieldsHTML(d, s.id);
   body += flowStepExtrasHTML(s.id);
   body += weiter;
@@ -2369,13 +2391,6 @@ function flowStepStateFor(stepId, d) {
     const ph  = (run && run.phases) || {};
     if (ph.p_start && ph.p_end) return 'komplett';
     if (Object.keys(ph).length > 0) return 'teilweise';
-    return 'offen';
-  }
-  if (stepId === 'fs_14') {
-    const p = ablaufProband();
-    const done = (p && p.sensorikAblegen) ? SENSORIK_ITEMS.filter(it => p.sensorikAblegen[it.id]).length : 0;
-    if (done === SENSORIK_ITEMS.length) return 'komplett';
-    if (done > 0) return 'teilweise';
     return 'offen';
   }
   if (BEW_STEP_META[stepId]) {
@@ -2462,10 +2477,6 @@ function renderAblauf() {
       summary = (ph.p_start || ph.p_end)
         ? `${ph.p_start ? localTimeStr(ph.p_start) : '–'} → ${ph.p_end ? localTimeStr(ph.p_end) : '–'}`
         : 'noch nicht erfasst';
-    }
-    if (s.id === 'fs_14') {
-      const sDone = (p && p.sensorikAblegen) ? SENSORIK_ITEMS.filter(it => p.sensorikAblegen[it.id]).length : 0;
-      summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
     }
     if (BEW_STEP_META[s.id]) {
       const b = (p && p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
@@ -2576,12 +2587,6 @@ function renderAblauf() {
   );
   const sensResetBtn = document.getElementById('ablauf-sensorik-reset');
   if (sensResetBtn) sensResetBtn.addEventListener('click', resetAblaufSensorik);
-  // Sensorik-Checkliste Ablegen (nur an fs_14)
-  extrasScope.querySelectorAll('[data-sensorik-ablegen-toggle]').forEach(btn =>
-    btn.addEventListener('click', () => toggleAblaufSensorikAblegen(btn.dataset.sensorikAblegenToggle))
-  );
-  const sensAblegenResetBtn = document.getElementById('ablauf-sensorik-ablegen-reset');
-  if (sensAblegenResetBtn) sensAblegenResetBtn.addEventListener('click', resetAblaufSensorikAblegen);
   // Datensicherung & Desinfektion / „Nächsten Durchlauf starten" (nur am letzten Schritt)
   extrasScope.querySelectorAll('[data-datensicherung-toggle]').forEach(btn =>
     btn.addEventListener('click', () => toggleDatensicherung(btn.dataset.datensicherungToggle))
@@ -2722,72 +2727,18 @@ function resetAblaufSensorik() {
     () => { p.sensorik = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
 }
 
-// Abschnitt „Sensorik-Checkliste (Ablegen)" im Detailbereich von Schritt 14 (Sensorik
-// ablegen) — dieselbe Item-Liste wie beim Anlegen (Schritt 2), aber eigener Datenspeicher
-// p.sensorikAblegen[itemId] (ISO), damit Anlege- und Ablege-Zeitpunkt unabhängig erfasst sind.
-function sensorikAblegenSectionHTML() {
-  const p = ablaufProband();
-  if (!p) return '';
-  if (!p.sensorikAblegen) p.sensorikAblegen = {};
-  const anyDone = SENSORIK_ITEMS.some(it => p.sensorikAblegen[it.id]);
-  const items = SENSORIK_ITEMS.map(item => {
-    const at   = p.sensorikAblegen[item.id] || null;
-    const done = !!at;
-    return `<button class="sensorik-item${done ? ' checked' : ''}" data-sensorik-ablegen-toggle="${esc(item.id)}">
-      <span class="sensorik-check">${done ? '✓' : ''}</span>
-      <span class="sensorik-info">
-        <span class="sensorik-name">${esc(item.label)}</span>
-        <span class="sensorik-time">${done ? esc(localDatetimeStr(at)) : 'noch nicht abgelegt'}</span>
-      </span>
-    </button>`;
-  }).join('');
-  return `<div class="bew-section">
-    <div class="card-label" style="margin-bottom:6px">SENSORIK-CHECKLISTE (ABLEGEN)</div>
-    <p class="meta-text" style="margin-bottom:8px">Auf ein Item tippen, sobald die Sensorik bei dieser Person abgelegt wurde — der Zeitpunkt wird automatisch erfasst. Erneutes Tippen macht die Erfassung rückgängig.</p>
-    <div class="sensorik-list">${items}</div>
-    ${anyDone ? '<button class="btn btn-ghost full-width" id="ablauf-sensorik-ablegen-reset" style="margin-top:8px">↺ Checkliste zurücksetzen</button>' : ''}
-  </div>`;
-}
-
-function toggleAblaufSensorikAblegen(id) {
-  const p = ablaufProband();
-  if (!p) return;
-  if (!p.sensorikAblegen) p.sensorikAblegen = {};
-  const item = SENSORIK_ITEMS.find(x => x.id === id);
-  if (!item) return;
-  if (p.sensorikAblegen[id]) {
-    showConfirm('Erfassung rückgängig machen',
-      `„${item.label}" wurde für ${p.pseudo} um ${localTimeStr(p.sensorikAblegen[id])} als abgelegt erfasst. Erfassung wirklich entfernen?`,
-      () => { delete p.sensorikAblegen[id]; save(); renderAblauf(); showToast('Erfassung entfernt'); });
-  } else {
-    p.sensorikAblegen[id] = new Date().toISOString();
-    save();
-    renderAblauf();
-    showToast('✓ ' + item.label + '  ·  ' + localTimeStr(p.sensorikAblegen[id]));
-  }
-}
-
-function resetAblaufSensorikAblegen() {
-  const p = ablaufProband();
-  if (!p || !p.sensorikAblegen || !Object.keys(p.sensorikAblegen).length) return;
-  showConfirm('Checkliste zurücksetzen',
-    `Alle erfassten Ablege-Zeitpunkte für „${p.pseudo}" werden entfernt.`,
-    () => { p.sensorikAblegen = {}; save(); renderAblauf(); showToast('Checkliste zurückgesetzt'); });
-}
-
 // Abschnitt „Gesamtdauer" am letzten Ablauf-Schritt: Zeitspanne vom Anlegen der/des
-// Teilnehmenden (Schritt 1, `p.createdAt`) bis zum letzten erfassten Sensorik-Ablege-
-// Zeitpunkt (Schritt 14) — mit Datum, siehe ablaufDurationInfo() (EXPORT-Abschnitt, dort
-// auch für die CSV-/JSON-Exportspalte „Gesamtdauer" genutzt). Ohne mindestens einen
-// erfassten Ablege-Zeitpunkt gibt es noch keine sinnvolle Endzeit — dann wird nichts
-// angezeigt.
+// Teilnehmenden (Schritt 1, `p.createdAt`) bis zum Zeitpunkt von Schritt 13 „Stop Sensorik" —
+// mit Datum, siehe ablaufDurationInfo() (EXPORT-Abschnitt, dort auch für die CSV-/JSON-
+// Exportspalte „Gesamtdauer" genutzt). Ohne erfassten Stop-Sensorik-Zeitpunkt gibt es noch
+// keine sinnvolle Endzeit — dann wird nichts angezeigt.
 function ablaufDurationSectionHTML() {
   const dur = ablaufDurationInfo(ablaufProband());
   if (!dur) return '';
   return `<div class="bew-section">
-    <div class="card-label" style="margin-bottom:6px">GESAMTDAUER (ANLEGEN → SENSORIK ABLEGEN)</div>
+    <div class="card-label" style="margin-bottom:6px">GESAMTDAUER (ANLEGEN → STOP SENSORIK)</div>
     <p class="meta-text" style="margin-bottom:4px">Angelegt: ${esc(localDatetimeStr(dur.startISO))}</p>
-    <p class="meta-text" style="margin-bottom:8px">Sensorik ablegen: ${esc(localDatetimeStr(dur.endISO))}${dur.complete ? '' : ' (noch nicht vollständig)'}</p>
+    <p class="meta-text" style="margin-bottom:8px">Stop Sensorik: ${esc(localDatetimeStr(dur.endISO))}</p>
     <p class="meta-text" style="margin:0"><strong>Dauer: ${esc(formatDurationLong(dur.seconds))}</strong></p>
   </div>`;
 }
@@ -3196,10 +3147,6 @@ function syncAblaufRows() {
         summary = (ph.p_start || ph.p_end)
           ? `${ph.p_start ? localTimeStr(ph.p_start) : '–'} → ${ph.p_end ? localTimeStr(ph.p_end) : '–'}`
           : 'noch nicht erfasst';
-      }
-      if (s.id === 'fs_14') {
-        const sDone = (p.sensorikAblegen) ? SENSORIK_ITEMS.filter(it => p.sensorikAblegen[it.id]).length : 0;
-        summary = sDone ? `Sensorik ${sDone}/${SENSORIK_ITEMS.length}` : 'noch nicht erfasst';
       }
       if (BEW_STEP_META[s.id]) {
         const b = (p.bewertungen && Array.isArray(p.bewertungen[s.id])) ? p.bewertungen[s.id][0] : null;
